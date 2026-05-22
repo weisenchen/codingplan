@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — Bash Basics & Understanding Your Computer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f14;
+    color: #d4d4dc;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.7;
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid #2a2a35;
+    margin-bottom: 3rem;
+  }
+  .header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .header .subtitle {
+    color: #8b8ba7;
+    font-size: 1.05rem;
+    margin-top: 0.6rem;
+  }
+  .header .badge {
+    display: inline-block;
+    background: #1e6f5c;
+    color: #b5f0e6;
+    padding: 0.2rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+
+  /* Sections */
+  section { margin-bottom: 3.5rem; }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e8e8f0;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #2a2a35;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  h2 .num {
+    background: #1e6f5c;
+    color: #b5f0e6;
+    font-size: 0.85rem;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.4rem;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #c8c8e0;
+    margin: 1.5rem 0 0.8rem;
+  }
+  p { margin-bottom: 1rem; color: #b0b0c4; }
+
+  /* Info box */
+  .info-box {
+    background: #1a1a24;
+    border-left: 3px solid #3b82f6;
+    padding: 1.2rem 1.5rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.5rem 0;
+  }
+  .info-box strong { color: #e0e0f0; }
+  .info-box code { background: #252533; }
+
+  /* Command block */
+  .cmd-block {
+    background: #16161e;
+    border: 1px solid #2a2a35;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .cmd-block .prompt { color: #6b6b8a; }
+  .cmd-block .cmd { color: #c8e6c9; }
+  .cmd-block .output { color: #8b8ba7; }
+  .cmd-block .comment { color: #5a5a72; font-style: italic; }
+  .cmd-block .highlight { color: #ffcb6b; }
+  .cmd-block .sep { border-top: 1px dashed #2a2a35; margin: 0.8rem 0; }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+  }
+  th {
+    background: #1a1a24;
+    color: #b0b0c4;
+    text-align: left;
+    padding: 0.7rem 1rem;
+    border-bottom: 2px solid #2a2a35;
+    font-weight: 600;
+  }
+  td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #1e1e28;
+    color: #c0c0d4;
+  }
+  td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    color: #c8e6c9;
+    white-space: nowrap;
+  }
+  tr:hover td { background: #1a1a24; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    background: #252533;
+    color: #8b8ba7;
+    padding: 0.15rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin: 0.15rem;
+  }
+
+  /* Analogy card */
+  .analogy {
+    background: linear-gradient(135deg, #1a1a24 0%, #16161e 100%);
+    border: 1px solid #2e2e3a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .analogy h4 { color: #e8e8f0; margin-bottom: 0.6rem; }
+  .analogy p { margin-bottom: 0.4rem; }
+
+  /* Badge colors */
+  .tag-nav { background: #1e3a5f; color: #93c5fd; }
+  .tag-file { background: #1e5f3f; color: #86efac; }
+  .tag-search { background: #5f3f1e; color: #fcd34d; }
+  .tag-pipe { background: #3f1e5f; color: #c4a0e0; }
+  .tag-remote { background: #5f1e2e; color: #fca5a5; }
+
+  /* Challenge box */
+  .challenge {
+    background: #1a2e1a;
+    border: 1px solid #2e4a2e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+  .challenge h3 { color: #86efac; }
+  .challenge code { background: #252533; }
+  .challenge .step { color: #b0b0c4; margin: 0.3rem 0; padding-left: 1.5rem; }
+  .challenge .step::before { content: '→ '; color: #86efac; }
+
+  /* Box model diagram */
+  .box-diagram {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 1.5rem 0;
+  }
+  .box-part {
+    background: #16161e;
+    border: 1px solid #2a2a35;
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+    min-width: 120px;
+    flex: 1;
+  }
+  .box-part .icon { font-size: 1.6rem; margin-bottom: 0.3rem; }
+  .box-part .label { color: #8b8ba7; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .box-part .name { color: #e0e0f0; font-weight: 600; font-size: 0.95rem; }
+  .box-part.cpu { border-color: #3b82f6; }
+  .box-part.ram { border-color: #f59e0b; }
+  .box-part.disk { border-color: #10b981; }
+  .box-part.io { border-color: #ef4444; }
+  .box-part.os { border-color: #8b5cf6; }
+
+  /* Tree visual */
+  .tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #8b8ba7;
+    padding: 1rem;
+    background: #16161e;
+    border-radius: 8px;
+    border: 1px solid #2a2a35;
+    margin: 1rem 0;
+  }
+  .tree .dir { color: #93c5fd; }
+  .tree .file { color: #c8e6c9; }
+  .tree .root { color: #fca5a5; }
+  .tree .hl { color: #ffcb6b; font-weight: 600; }
+
+  @media (max-width: 600px) {
+    body { padding: 1rem 0.75rem; }
+    .header h1 { font-size: 1.6rem; }
+    .box-diagram { flex-direction: column; }
+    td { font-size: 0.8rem; padding: 0.5rem; }
+    td:first-child { font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <h1>🐚 Day 1 — Your Computer & The Bash Shell</h1>
+  <div class="subtitle">First Hour of Your 90-Day Co-op Prep Journey</div>
+  <div class="badge">⏱ 45–60 min &middot; No experience needed</div>
+</div>
+
+<!-- SECTION 1: WHAT IS A COMPUTER -->
+<section>
+<h2><span class="num">1</span> What Is a Computer?</h2>
+
+<p>A computer is a machine that <strong>takes input, processes it, stores results, and produces output</strong>. Every computer — laptop, phone, server — has the same four core parts:</p>
+
+<div class="box-diagram">
+  <div class="box-part cpu">
+    <div class="icon">⚡</div>
+    <div class="name">CPU</div>
+    <div class="label">The brain</div>
+    <div style="font-size:0.75rem;color:#6b6b8a;margin-top:0.3rem">executes instructions</div>
+  </div>
+  <div class="box-part ram">
+    <div class="icon">📝</div>
+    <div class="name">RAM</div>
+    <div class="label">Short-term memory</div>
+    <div style="font-size:0.75rem;color:#6b6b8a;margin-top:0.3rem">fast, cleared on power-off</div>
+  </div>
+  <div class="box-part disk">
+    <div class="icon">💾</div>
+    <div class="name">Storage (SSD/HDD)</div>
+    <div class="label">Long-term memory</div>
+    <div style="font-size:0.75rem;color:#6b6b8a;margin-top:0.3rem">persists, slower</div>
+  </div>
+  <div class="box-part io">
+    <div class="icon">⌨️</div>
+    <div class="name">Input / Output</div>
+    <div class="label">Keyboard, mouse, screen</div>
+    <div style="font-size:0.75rem;color:#6b6b8a;margin-top:0.3rem">you ↔ computer</div>
+  </div>
+</div>
+
+<div class="analogy">
+  <h4>📦 The Desk Analogy</h4>
+  <p><strong>Storage (disk)</strong> = your filing cabinet — all files are stored here permanently, but getting them out takes time.</p>
+  <p><strong>RAM</strong> = your desk surface — only what you're <em>actively working on</em> sits here. You can grab things from the cabinet and put them on your desk (load into RAM).</p>
+  <p><strong>CPU</strong> = your hands and brain — reading, writing, calculating. Whatever is on your desk (RAM), you can work with.</p>
+  <p>This is why a computer with more RAM and a faster CPU feels "snappy" — more desk space, faster hands.</p>
+</div>
+</section>
+
+<!-- SECTION 2: FILES, FOLDERS, PROGRAMS -->
+<section>
+<h2><span class="num">2</span> Files, Folders &amp; Programs</h2>
+
+<h3>📄 Files</h3>
+<p>A <strong>file</strong> is a named bundle of data on your disk. Every file has a type determined by its <strong>extension</strong> (the part after the dot):</p>
+
+<table>
+  <tr><th>Example</th><th>Type</th><th>What it contains</th></tr>
+  <tr><td>report.docx</td><td>Word document</td><td>Text, formatting, images — readable by Microsoft Word</td></tr>
+  <tr><td>photo.jpg</td><td>Image</td><td>Compressed picture data — readable by image viewers</td></tr>
+  <tr><td>script.py</td><td>Python program</td><td>Code — readable by the Python interpreter</td></tr>
+  <tr><td>index.html</td><td>Web page</td><td>HTML markup — readable by a web browser</td></tr>
+  <tr><td>app</td><td>Executable binary</td><td>Machine code (not human-readable) — run directly by the CPU</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>💡 Key insight:</strong> A file's extension doesn't change what's <em>inside</em> — it tells the OS <em>which program</em> to open it with. Rename <code>photo.jpg</code> to <code>photo.txt</code> and it'll still contain image data (your text editor will show gibberish).
+</div>
+
+<h3>📁 Folders (Directories)</h3>
+<p>A <strong>folder</strong> (or <strong>directory</strong>) is a container that holds files and other folders. This creates a <strong>tree structure</strong> — one folder inside another, branching out from the <strong>root</strong>.</p>
+
+<div class="tree">
+<span class="root">/</span>  ← root (the top-level folder)<br>
+├── <span class="dir">home/</span><br>
+│   └── <span class="dir">wei/</span>  ← your home directory (~)<br>
+│       ├── <span class="file">bash-examples.sh</span><br>
+│       ├── <span class="dir">Desktop/</span><br>
+│       ├── <span class="dir">Documents/</span><br>
+│       └── <span class="dir">projects/</span><br>
+│           └── <span class="file">todo.py</span><br>
+├── <span class="dir">tmp/</span>  ← temporary files<br>
+├── <span class="dir">etc/</span>  ← system configuration<br>
+└── <span class="dir">usr/</span>  ← installed programs<br>
+</div>
+
+<p>Every file has a <strong>path</strong> — its address in this tree. <code class="tag">/home/wei/bash-examples.sh</code> means: start at root <code>/</code>, enter <code>home</code>, enter <code>wei</code>, find the file <code>bash-examples.sh</code>.</p>
+
+<h3>⚙️ Programs</h3>
+<p>A <strong>program</strong> is a file that the CPU can execute. When you <em>run</em> a program, the OS:</p>
+<ol style="color:#b0b0c4;padding-left:1.5rem;margin-bottom:1rem;">
+  <li>Reads the program file from <strong>disk</strong></li>
+  <li>Loads it into <strong>RAM</strong></li>
+  <li>Tells the <strong>CPU</strong> to start executing its instructions</li>
+  <li>Keeps track of what's running (memory, files it opened, etc.)</li>
+</ol>
+
+<p>Examples of programs: your browser (Chrome/Firefox), a text editor (VS Code), the terminal, the <code>ls</code> command you'll learn today.</p>
+</section>
+
+<!-- SECTION 3: HOW THE OS WORKS -->
+<section>
+<h2><span class="num">3</span> How the Operating System Works</h2>
+
+<div class="box-diagram">
+  <div class="box-part os" style="border-color:#8b5cf6">
+    <div class="icon">🏢</div>
+    <div class="name">Operating System</div>
+    <div class="label">The manager</div>
+  </div>
+</div>
+
+<p>The <strong>Operating System (OS)</strong> — Linux, Windows, macOS — is the master program that runs the whole computer. Think of it as a <strong>building manager</strong>:</p>
+
+<table>
+  <tr><th>Job</th><th>What the OS does</th><th>Why it matters</th></tr>
+  <tr>
+    <td>📋 Process management</td>
+    <td>Decides which programs get CPU time and when</td>
+    <td>Lets you browser the web while playing music, each thinking it has the CPU</td>
+  </tr>
+  <tr>
+    <td>🧠 Memory management</td>
+    <td>Assigns RAM to each program, prevents them from stepping on each other</td>
+    <td>One program can't read another's private data by accident</td>
+  </tr>
+  <tr>
+    <td>📁 File system</td>
+    <td>Organizes files on disk into the tree you saw above</td>
+    <td>You access files by name/path, not by raw disk sector numbers</td>
+  </tr>
+  <tr>
+    <td>🔒 Permissions</td>
+    <td>Decides which users and programs can read/write/run each file</td>
+    <td>Prevents a random app from deleting your documents</td>
+  </tr>
+  <tr>
+    <td>🔌 Drivers</td>
+    <td>Talks to hardware (keyboard, screen, Wi-Fi, GPU)</td>
+    <td>You don't need to know the exact model of your network card to use the internet</td>
+  </tr>
+</table>
+
+<div class="analogy">
+  <h4>🏢 The Building Manager</h4>
+  <p>The OS is a building manager. The CPU is a meeting room. Programs (tenants) request the room, the manager schedules them, gives them desk space (RAM), a filing cabinet drawer (disk space), and makes sure they don't steal from each other (security). When you hit Ctrl+C, the manager kicks that tenant out and reclaims the room.</p>
+</div>
+
+<h3>File System Mental Model</h3>
+<p>The file system is the most important concept for Day 1. Memorize this:</p>
+
+<div class="info-box">
+  <strong>Three facts about the file system:</strong><br>
+  1. It's a <strong>tree</strong> — one root (<code>/</code>), everything branches from there<br>
+  2. Every file/folder has <strong>one parent</strong> (except root)<br>
+  3. You are always <strong>"in"</strong> one folder called the <strong>current working directory</strong>
+</div>
+
+<p>When you open a terminal, you start in your <strong>home directory</strong> — usually <code>/home/yourname</code> (shortcut: <code>~</code>). From there you can navigate <strong>down</strong> into subfolders (<code>cd Desktop</code>) or <strong>up</strong> to the parent (<code>cd ..</code>).</p>
+</section>
+
+<!-- SECTION 4: WHAT IS A TERMINAL -->
+<section>
+<h2><span class="num">4</span> What Is a Terminal?</h2>
+
+<h3>📟 Terminal vs Shell</h3>
+<p>Two things you'll hear constantly — they're different but always used together:</p>
+
+<table>
+  <tr><th>Term</th><th>What it is</th><th>Analogy</th></tr>
+  <tr>
+    <td>Terminal</td>
+    <td>The <strong>window</strong> app — just draws text and accepts keystrokes</td>
+    <td>The physical monitor + keyboard you're looking at</td>
+  </tr>
+  <tr>
+    <td>Shell</td>
+    <td>The <strong>program running inside</strong> — interprets commands, runs them, shows results</td>
+    <td>The person sitting at the desk, reading your request and doing it</td>
+  </tr>
+  <tr>
+    <td>Bash</td>
+    <td>The most common shell on Linux (Bourne Again SHell)</td>
+    <td>Alex — a very experienced assistant who knows a lot of shortcuts</td>
+  </tr>
+</table>
+
+<p>When you open a terminal app, it starts a shell (bash). You see a <strong>prompt</strong> like:</p>
+
+<div class="cmd-block">
+<span class="prompt">wei@computer:~$</span> <span class="comment"># this is the prompt — it's waiting for you</span>
+</div>
+
+<p>The prompt tells you: <strong>who</strong> you are (wei), <strong>where</strong> you are (~ = home), and that it's ready for a command ($).</p>
+
+<h3>⚡ Why Use a Terminal?</h3>
+<p>Why not just use the mouse and click folders?</p>
+<ul style="color:#b0b0c4;padding-left:1.5rem;margin-bottom:1rem;">
+  <li><strong>Speed</strong> — one command can do what takes 10 clicks. A single <code>grep -r "error" /var/log/</code> searches thousands of files instantly.</li>
+  <li><strong>Automation</strong> — write commands in a script and run them all at once, on a schedule, or on 100 servers.</li>
+  <li><strong>Remote work</strong> — no mouse on a remote server (SSH). Terminal is the only way.</li>
+  <li><strong>Power</strong> — many development tools (git, docker, compilers, package managers) are CLI-only or faster in CLI.</li>
+  <li><strong>Transparency</strong> — you see exactly what happens, no hidden clicks, no GUIs lying to you.</li>
+</ul>
+
+<div class="info-box">
+  <strong>🔥 Your first rule:</strong> Every time you find yourself clicking through five menus to do something, ask yourself: "Can I type this instead?" The answer is almost always yes, and it'll be faster.
+</div>
+</section>
+
+<!-- SECTION 5: BASH COMMANDS -->
+<section>
+<h2><span class="num">5</span> Bash Commands — Learn by Running</h2>
+
+<p>All commands below are in <code>bash-examples.sh</code>. Run it to see them live:</p>
+<div class="cmd-block"><span class="prompt">wei@computer:~$</span> <span class="cmd">bash bash-examples.sh</span></div>
+
+<h3>📍 Navigate</h3>
+<table>
+  <tr><th>Command</th><th>What it does</th><th>Try it</th></tr>
+  <tr><td>pwd</td><td>Print where you are</td><td><code>pwd</code></td></tr>
+  <tr><td>ls</td><td>List files here</td><td><code>ls -l</code> (details) &middot; <code>ls -a</code> (hidden)</td></tr>
+  <tr><td>cd folder</td><td>Go into a folder</td><td><code>cd Desktop</code> &middot; <code>cd ..</code> (up) &middot; <code>cd ~</code> (home)</td></tr>
+  <tr><td>cd -</td><td>Go back to previous folder</td><td><code>cd -</code></td></tr>
+</table>
+
+<h3>📄 Create &amp; Manage Files</h3>
+<table>
+  <tr><th>Command</th><th>What it does</th><th>Try it</th></tr>
+  <tr><td>touch file</td><td>Create empty file</td><td><code>touch notes.txt</code></td></tr>
+  <tr><td>mkdir folder</td><td>Create a folder</td><td><code>mkdir myproject</code></td></tr>
+  <tr><td>cp file1 file2</td><td>Copy a file</td><td><code>cp notes.txt backup.txt</code></td></tr>
+  <tr><td>cp -r folder1 folder2</td><td>Copy a whole folder</td><td><code>cp -r myproject myproject_copy</code></td></tr>
+  <tr><td>mv file1 file2</td><td>Move or rename</td><td><code>mv notes.txt old-notes.txt</code></td></tr>
+  <tr><td>rm file</td><td>Delete a file</td><td><code>rm backup.txt</code></td></tr>
+  <tr><td>rm -r folder</td><td>Delete a whole folder</td><td><code>rm -r myproject_copy</code></td></tr>
+</table>
+
+<h3>👀 Read &amp; Search Files</h3>
+<table>
+  <tr><th>Command</th><th>What it does</th><th>Try it</th></tr>
+  <tr><td>cat file</td><td>Print entire file (short ones!)</td><td><code>cat notes.txt</code></td></tr>
+  <tr><td>head -n 5 file</td><td>First 5 lines</td><td><code>head -5 /var/log/syslog</code></td></tr>
+  <tr><td>tail -n 5 file</td><td>Last 5 lines</td><td><code>tail -5 /var/log/syslog</code></td></tr>
+  <tr><td>wc -l file</td><td>Count lines</td><td><code>wc -l notes.txt</code></td></tr>
+  <tr><td>grep "word" file</td><td>Find lines with "word"</td><td><code>grep "error" log.txt</code></td></tr>
+  <tr><td>grep -i "word" file</td><td>Case-insensitive search</td><td><code>grep -i "warning" log.txt</code></td></tr>
+  <tr><td>grep -v "word" file</td><td>Lines WITHOUT "word"</td><td><code>grep -v "#" config.txt</code></td></tr>
+  <tr><td>grep -c "word" file</td><td>Count matches</td><td><code>grep -c "TODO" *.py</code></td></tr>
+</table>
+
+<h3>🔗 Pipes &amp; Redirection</h3>
+<table>
+  <tr><th>Symbol</th><th>What it does</th><th>Try it</th></tr>
+  <tr><td>cmd1 | cmd2</td><td>Send output of cmd1 into cmd2</td><td><code>ls -la | grep ".sh"</code></td></tr>
+  <tr><td>cmd > file</td><td>Save output to file (overwrite)</td><td><code>ls > filelist.txt</code></td></tr>
+  <tr><td>cmd >> file</td><td>Append output to file</td><td><code>date >> log.txt</code></td></tr>
+  <tr><td>sort file | uniq</td><td>Sort and remove duplicates</td><td><code>sort names.txt | uniq</code></td></tr>
+  <tr><td>sort file | uniq -c</td><td>Sort and count duplicates</td><td><code>sort names.txt | uniq -c</code></td></tr>
+</table>
+
+<h3>🔐 Permissions</h3>
+<table>
+  <tr><th>Command</th><th>What it does</th><th>Try it</th></tr>
+  <tr><td>chmod +x file</td><td>Make a file executable</td><td><code>chmod +x run.sh</code></td></tr>
+  <tr><td>chmod 755 file</td><td>Set standard permissions</td><td><code>chmod 755 script.py</code></td></tr>
+</table>
+
+<h3>🌐 SSH &amp; Remote Connections</h3>
+<table>
+  <tr><th>Command</th><th>What it does</th><th>Try it</th></tr>
+  <tr><td>ssh user@host</td><td>Log into a remote machine</td><td><code>ssh wei@192.168.1.50</code></td></tr>
+  <tr><td>ssh user@host "cmd"</td><td>Run one command remotely</td><td><code>ssh server "uptime"</code></td></tr>
+  <tr><td>scp file user@host:./</td><td>Copy file to remote</td><td><code>scp script.py server:./</code></td></tr>
+  <tr><td>scp user@host:file ./</td><td>Copy file from remote</td><td><code>scp server:/data/report.pdf ./</code></td></tr>
+  <tr><td>ssh-keygen -t ed25519</td><td>Create SSH key (passwordless login)</td><td><code>ssh-keygen -t ed25519</code></td></tr>
+  <tr><td>ssh-copy-id user@host</td><td>Install key on remote</td><td><code>ssh-copy-id server</code></td></tr>
+</table>
+
+<h3>🆘 Everyday Shortcuts</h3>
+<table>
+  <tr><th>Thing</th><th>What it does</th></tr>
+  <tr><td>man command</td><td>Show manual for any command (<code>man ls</code>, <code>man grep</code>) — press <strong>q</strong> to quit</td></tr>
+  <tr><td>echo "text"</td><td>Print text (<code>echo "Hello"</code>, <code>echo "Today is $(date)"</code>)</td></tr>
+  <tr><td>clear</td><td>Clean the screen</td></tr>
+  <tr><td>Ctrl + C</td><td>Cancel the current command</td></tr>
+  <tr><td>Ctrl + D</td><td>Exit the shell / end input</td></tr>
+  <tr><td>↑ Arrow</td><td>Repeat the last command (edit it, then Enter)</td></tr>
+  <tr><td>Tab</td><td>Auto-complete file/folder names (press Tab once or twice)</td></tr>
+  <tr><td>!!</td><td>Repeat the last command entirely</td></tr>
+  <tr><td>cmd1 && cmd2</td><td>Run cmd2 only if cmd1 succeeds</td></tr>
+  <tr><td>cmd1 || cmd2</td><td>Run cmd2 only if cmd1 fails</td></tr>
+</table>
+</section>
+
+<!-- SECTION 6: PUTTING IT ALL TOGETHER -->
+<section>
+<h2><span class="num">6</span> Putting It All Together — Real Example</h2>
+
+<p>Let's trace what happens when you type this in the terminal:</p>
+
+<div class="cmd-block">
+<span class="prompt">wei@computer:~$</span> <span class="cmd">grep "error" /var/log/syslog | tail -5</span><br>
+<span class="comment"># What happens step by step:</span><br>
+<span class="comment"># 1. bash reads your line, splits it by |</span><br>
+<span class="comment"># 2. bash starts grep "error" /var/log/syslog</span><br>
+<span class="comment">#    - The OS loads /usr/bin/grep into RAM</span><br>
+<span class="comment">#    - grep asks the OS to open /var/log/syslog</span><br>
+<span class="comment">#    - The OS checks: can wei read this file? (permissions)</span><br>
+<span class="comment">#    - Yes → OS reads the file from disk, hands data to grep</span><br>
+<span class="comment">#    - grep filters lines containing "error", sends them to stdout</span><br>
+<span class="comment"># 3. The | pipe connects grep's stdout to tail's stdin</span><br>
+<span class="comment"># 4. tail -5 reads the first 5 lines from stdin, prints them</span><br>
+<span class="comment"># 5. bash shows the output on your screen</span><br>
+<span class="comment"># 6. bash prints a new prompt — ready for your next command</span>
+</div>
+
+<p>Every command you run follows this same cycle. The OS, the shell, file permissions, pipes — they all work together.</p>
+</section>
+
+<!-- SECTION 7: PRACTICE CHALLENGE -->
+<section>
+<h2><span class="num">7</span> 🏆 Your 5-Minute Challenge</h2>
+
+<p>Type these commands one by one in your terminal. Do <strong>not</strong> copy-paste — type them. Your fingers need to learn the keys.</p>
+
+<div class="challenge">
+  <div class="step"><code>cd /tmp</code> <span style="color:#6b6b8a;">  # go to temp folder</span></div>
+  <div class="step"><code>mkdir my_practice</code> <span style="color:#6b6b8a;">  # create a folder</span></div>
+  <div class="step"><code>cd my_practice</code> <span style="color:#6b6b8a;">  # enter it</span></div>
+  <div class="step"><code>touch readme.txt</code> <span style="color:#6b6b8a;">  # create empty file</span></div>
+  <div class="step"><code>echo "bash is fun" &gt; readme.txt</code> <span style="color:#6b6b8a;">  # write text into it</span></div>
+  <div class="step"><code>cat readme.txt</code> <span style="color:#6b6b8a;">  # read it back</span></div>
+  <div class="step"><code>cp readme.txt backup.txt</code> <span style="color:#6b6b8a;">  # copy it</span></div>
+  <div class="step"><code>ls -l</code> <span style="color:#6b6b8a;">  # see both files</span></div>
+  <div class="step"><code>grep "fun" readme.txt</code> <span style="color:#6b6b8a;">  # search for "fun"</span></div>
+  <div class="step"><code>cd ~</code> <span style="color:#6b6b8a;">  # go home</span></div>
+  <div class="step"><code>pwd</code> <span style="color:#6b6b8a;">  # confirm you're home</span></div>
+</div>
+</section>
+
+<!-- SECTION 8: CHEAT SHEET -->
+<section>
+<h2><span class="num">8</span> 📋 Quick Cheat Sheet</h2>
+
+<p>Print this or save it. Refer to it every day for the first week.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.5rem;">
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">pwd</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">where am I?</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">ls -la</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">list everything</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">cd ..</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">up one folder</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">cd ~</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">home folder</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">mkdir X</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">create folder X</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">touch X</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">create file X</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">cp a b</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">copy a → b</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">mv a b</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">rename/move a→b</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">rm X</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">delete X</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">cat X</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">print file X</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">grep "x" X</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">find "x" in X</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">a | b</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">pipe a → b</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">a > X</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">save output to X</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">ssh user@h</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">login to remote</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">↑ arrow</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">repeat last cmd</div>
+  </div>
+  <div style="background:#16161e;border:1px solid #2a2a35;border-radius:8px;padding:0.8rem;">
+    <div style="font-family:monospace;color:#c8e6c9;font-size:0.9rem;">Tab</div>
+    <div style="color:#8b8ba7;font-size:0.75rem;">auto-complete</div>
+  </div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<div style="border-top:1px solid #2a2a35;padding-top:2rem;margin-top:3rem;text-align:center;color:#6b6b8a;font-size:0.85rem;">
+  <p>Day 1 of the 90-Day Co-op Prep Plan — <a href="90-day-coop-study-plan.html" style="color:#93c5fd;">View full plan</a></p>
+  <p style="margin-top:0.5rem;">Tomorrow: Day 2 — Python: Variables, Types, and Your First Script</p>
+</div>
+
+</div>
+</body>
+</html>
