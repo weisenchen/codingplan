@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>90-Day Co-op Prep Plan — From Zero to Waterloo Ready</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b24;
+  --bg-card-hover: #1e2230;
+  --bg-code: #12141d;
+  --border: #262a36;
+  --border-week: #2d3341;
+  --text: #e2e4eb;
+  --text-dim: #8b8fa3;
+  --text-muted: #636780;
+  --accent: #60a5fa;
+  --accent-soft: #3b82f6;
+  --green: #34d399;
+  --green-bg: rgba(52, 211, 153, 0.08);
+  --amber: #fbbf24;
+  --amber-bg: rgba(251, 191, 36, 0.08);
+  --rose: #fb7185;
+  --rose-bg: rgba(251, 113, 133, 0.08);
+  --indigo: #818cf8;
+  --indigo-bg: rgba(129, 140, 248, 0.08);
+  --teal: #2dd4bf;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout */
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+/* Header */
+.hero {
+  padding: 64px 0 48px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+.hero-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.hero h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  color: #fff;
+}
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--text-dim);
+  max-width: 640px;
+  line-height: 1.6;
+}
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+.stat-value {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  color: #fff;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 0.03em;
+}
+
+/* Section headers */
+.section-header {
+  margin-bottom: 24px;
+}
+.section-header h2 {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.section-header p {
+  color: var(--text-dim);
+  font-size: 0.92rem;
+}
+
+/* Phase cards */
+.phase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.phase-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.phase-card .phase-num {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.phase-card h3 {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.phase-card .phase-dates {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.phase-card .phase-hours {
+  font-size: 0.82rem;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+.phase-card p {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+/* Week entry */
+.week {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.week-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  cursor: default;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.week-header-left { display: flex; align-items: center; gap: 14px; }
+.week-num {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(96, 165, 250, 0.08);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.week-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+.week-dates {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.week-theme {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.theme-pill {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+.theme-python { background: rgba(52, 211, 153, 0.12); color: var(--green); }
+.theme-git    { background: rgba(251, 191, 36, 0.12); color: var(--amber); }
+.theme-web    { background: rgba(129, 140, 248, 0.12); color: var(--indigo); }
+.theme-sql    { background: rgba(45, 212, 191, 0.12); color: var(--teal); }
+.theme-dsa    { background: rgba(251, 113, 133, 0.12); color: var(--rose); }
+.theme-project { background: rgba(96, 165, 250, 0.12); color: var(--accent); }
+
+/* Day grid */
+.day-grid {
+  padding: 12px 20px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.day-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.day-card .day-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.day-card .day-topic {
+  font-size: 0.85rem;
+  color: #fff;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 3px;
+}
+.day-card .day-detail {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.day-card .day-time {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-top: 4px;
+  background: var(--bg-code);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.day-card.day-off {
+  opacity: 0.5;
+}
+.day-card.day-off .day-topic {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Project milestones */
+.project-milestone {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin: 12px 20px 16px;
+}
+.project-milestone h4 {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.project-milestone p {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+.project-milestone code {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: var(--bg-code);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--green);
+}
+.project-milestone .checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.project-milestone .checklist-item {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  background: var(--green-bg);
+  color: var(--green);
+  border-radius: 4px;
+}
+
+/* Daily timeline */
+.daily-flow {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+.daily-flow h3 {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.flow-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.flow-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+}
+.flow-time {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  min-width: 52px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.flow-bar {
+  flex: 1;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #000;
+}
+.flow-bar.learn { background: var(--accent); color: #000; }
+.flow-bar.code { background: var(--green); color: #000; }
+.flow-bar.review { background: var(--amber); color: #000; }
+.flow-bar.project { background: var(--indigo); color: #000; }
+.flow-bar.practice { background: var(--rose); color: #000; }
+.flow-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* Skills matrix */
+.skills-matrix {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+.skills-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.skills-matrix thead th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.skills-matrix tbody td {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.skills-matrix tbody tr:last-child td { border: none; }
+.skills-matrix tbody tr:hover { background: var(--bg-card-hover); }
+.skill-name { color: #fff; font-weight: 500; }
+.skill-hours { font-family: var(--font-mono); color: var(--green); }
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 0;
+  margin-top: 48px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Accordion */
+details.week details {
+  transition: all 0.2s;
+}
+details.week summary {
+  cursor: pointer;
+}
+details.week summary::-webkit-details-marker { display: none; }
+details.week summary::marker { display: none; }
+details.week[open] { border-color: var(--border-week); }
+
+/* Community / tips section */
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 48px;
+}
+.tip-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+.tip-card h4 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.tip-card p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .container { padding: 0 16px; }
+  .hero { padding: 40px 0 32px; }
+  .day-grid { grid-template-columns: 1fr; }
+  .flow-row { flex-wrap: wrap; }
+  .flow-time { min-width: 40px; }
+  .week-header { flex-direction: column; align-items: flex-start; }
+  .phase-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-eyebrow">University of Waterloo Co-op Preparation</div>
+  <h1>90-Day Study &amp; Code Plan</h1>
+  <p class="hero-sub">
+    From zero computer knowledge to co-op ready — one hour per day, every day, for twelve weeks.
+    Designed for incoming first-year CS, SE, and CE students who need to hit the ground running.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-value">90</span>
+      <span class="stat-label">Days</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">60&thinsp;min</span>
+      <span class="stat-label">Per day</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">4</span>
+      <span class="stat-label">Core phases</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">5</span>
+      <span class="stat-label">Portfolio projects</span>
+    </div>
+  </div>
+</div>
+
+<!-- The Daily Formula -->
+<div class="daily-flow">
+  <h3>The One-Hour Daily Formula</h3>
+  <p style="color:var(--text-dim);margin-bottom:14px;font-size:0.88rem">
+    Every day follows the same rhythm. The proportions shift as you progress through the 12 weeks.
+  </p>
+  <div class="flow-timeline">
+
+    <div class="flow-row">
+      <span class="flow-time">0:00</span>
+      <span class="flow-bar learn" style="width:20%;">Learn</span>
+      <span class="flow-label">12 min — Watch / read one concept. No code yet.</span>
+    </div>
+
+    <div class="flow-row">
+      <span class="flow-time">0:12</span>
+      <span class="flow-bar code" style="width:40%;">Code</span>
+      <span class="flow-label">24 min — Type along, experiment, break things.</span>
+    </div>
+
+    <div class="flow-row">
+      <span class="flow-time">0:36</span>
+      <span class="flow-bar review" style="width:20%;">Review</span>
+      <span class="flow-label">12 min — Re-type yesterday's exercise from memory.</span>
+    </div>
+
+    <div class="flow-row">
+      <span class="flow-time">0:48</span>
+      <span class="flow-bar practice" style="width:20%;">Practice</span>
+      <span class="flow-label">12 min — One small problem, one flashcard deck pass.</span>
+    </div>
+
+  </div>
+  <p style="font-size:0.8rem;color:var(--text-muted);margin-top:10px">
+    Days marked <strong style="color:var(--amber);">Review / Catch-up</strong> replace the Code block with review and the Practice block with a full pass through your flashcard deck. One day off per week.
+  </p>
+</div>
+
+<!-- Phase Overview -->
+<div class="section-header">
+  <h2>The Four Phases</h2>
+  <p>Each phase builds on the last. Resist the urge to skip ahead — fundamentals are everything.</p>
+</div>
+
+<div class="phase-grid">
+  <div class="phase-card">
+    <div class="phase-num">Phase I &middot; Weeks 1-3</div>
+    <h3>Python &amp; The Machine</h3>
+    <div class="phase-dates">Days 1–21</div>
+    <div class="phase-hours">21 hours</div>
+    <p>Computer literacy, Linux CLI, Python fundamentals, Git basics. Your first 100 lines of code.</p>
+  </div>
+  <div class="phase-card">
+    <div class="phase-num">Phase II &middot; Weeks 4-6</div>
+    <h3>Web &amp; Data</h3>
+    <div class="phase-dates">Days 22–42</div>
+    <div class="phase-hours">21 hours</div>
+    <p>HTML, CSS, JavaScript, SQL. Your first deployable web page and database-backed app.</p>
+  </div>
+  <div class="phase-card">
+    <div class="phase-num">Phase III &middot; Weeks 7-9</div>
+    <h3>OOP &amp; Tooling</h3>
+    <div class="phase-dates">Days 43–63</div>
+    <div class="phase-hours">21 hours</div>
+    <p>Object-oriented programming, testing, REST APIs, React basics. Professional code hygiene.</p>
+  </div>
+  <div class="phase-card">
+    <div class="phase-num">Phase IV &middot; Weeks 10-12</div>
+    <h3>DSA &amp; Interview Prep</h3>
+    <div class="phase-dates">Days 64–90</div>
+    <div class="phase-hours">27 hours</div>
+    <p>Data structures, algorithms, LeetCode, portfolio polish. Ready for WaterlooWorks.</p>
+  </div>
+</div>
+
+<!-- Skills Hour Budget -->
+<div class="section-header">
+  <h2>Hour Budget by Skill</h2>
+  <p>How the 90 total hours are distributed across topics.</p>
+</div>
+
+<div class="skills-matrix">
+  <table>
+    <thead>
+      <tr>
+        <th>Skill</th>
+        <th>Hours</th>
+        <th>Weeks Covered</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="skill-name">Python (core language)</td><td class="skill-hours">18h</td><td>1–6, 9–11</td></tr>
+      <tr><td class="skill-name">Linux CLI &amp; terminal</td><td class="skill-hours">6h</td><td>1–3</td></tr>
+      <tr><td class="skill-name">Git &amp; GitHub</td><td class="skill-hours">4h</td><td>2–4, 6, 12</td></tr>
+      <tr><td class="skill-name">HTML + CSS</td><td class="skill-hours">5h</td><td>4–5</td></tr>
+      <tr><td class="skill-name">JavaScript</td><td class="skill-hours">7h</td><td>5–7</td></tr>
+      <tr><td class="skill-name">SQL &amp; databases</td><td class="skill-hours">6h</td><td>6–8</td></tr>
+      <tr><td class="skill-name">React (basic)</td><td class="skill-hours">6h</td><td>8–9</td></tr>
+      <tr><td class="skill-name">OOP &amp; testing</td><td class="skill-hours">6h</td><td>7–9</td></tr>
+      <tr><td class="skill-name">Data structures</td><td class="skill-hours">8h</td><td>9–11</td></tr>
+      <tr><td class="skill-name">Algorithms &amp; LeetCode</td><td class="skill-hours">12h</td><td>10–12</td></tr>
+      <tr><td class="skill-name">Portfolio projects</td><td class="skill-hours">12h</td><td>3, 6, 9, 12</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Week-by-Week Plan -->
+<div class="section-header">
+  <h2>Week-by-Week Breakdown</h2>
+  <p>Days run Monday–Saturday. Sunday is off. Each day is <strong>exactly 60 minutes</strong> including review.</p>
+</div>
+
+<!-- Week 1 -->
+<details class="week" open>
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 1</span>
+    <span class="week-title">Computer Basics &amp; First Python</span>
+    <span class="week-dates">Days 1–6</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-python">Python</span>
+    <span class="theme-pill theme-git">Linux</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 1</div>
+    <div class="day-topic">What is a computer? Files, folders, programs</div>
+    <div class="day-detail">How the OS works, file system mental model, what is a terminal. Open the terminal. Type <code>pwd</code>, <code>ls</code>, <code>cd</code>.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 2</div>
+    <div class="day-topic">Linux CLI: navigating the filesystem</div>
+    <div class="day-detail"><code>mkdir</code>, <code>touch</code>, <code>cp</code>, <code>mv</code>, <code>rm</code>, <code>cat</code>, <code>less</code>. Create a folder structure for the next 12 weeks.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 3</div>
+    <div class="day-topic">Install Python. Your first script</div>
+    <div class="day-detail">Install Python 3, VS Code. Write <code>print("hello")</code>. Run it. Variables, basic types (int, str, float).</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 4</div>
+    <div class="day-topic">Python: strings, numbers, input</div>
+    <div class="day-detail">String concatenation, f-strings, type conversion, <code>input()</code>. Build a name-greeting script.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 5</div>
+    <div class="day-topic">Python: if/else, for loops</div>
+    <div class="day-detail">Conditionals, comparison operators, <code>for</code> loops with <code>range()</code>. FizzBuzz.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 6</div>
+    <div class="day-topic">Review + flashcard day</div>
+    <div class="day-detail">Re-type every script from days 1–5 without looking. Create Anki/card deck: Linux commands, Python keywords.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+<div class="project-milestone">
+  <h4>Milestone: CLI Greeter</h4>
+  <p>Script that asks for a name, age, and favorite color, then prints a personalized sentence. Uses <code>input()</code>, f-strings, conditionals.</p>
+  <div class="checklist">
+    <span class="checklist-item">Runs from terminal</span>
+    <span class="checklist-item">Handles empty input</span>
+    <span class="checklist-item">Uses at least one if/else</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 2 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 2</span>
+    <span class="week-title">Python Core: Lists, Loops, Functions</span>
+    <span class="week-dates">Days 7–12</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-python">Python</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 7</div>
+    <div class="day-topic">Lists: create, index, slice, append</div>
+    <div class="day-detail"><code>list</code>, indexing (0-based), <code>.append()</code>, <code>.pop()</code>, slicing <code>[start:end]</code>, <code>len()</code>. Build a shopping list app.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 8</div>
+    <div class="day-topic">Loops over lists. While loops</div>
+    <div class="day-detail"><code>for item in list:</code>, <code>while</code> loops, break, continue. Sum a list of numbers.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 9</div>
+    <div class="day-topic">Functions: define, call, return</div>
+    <div class="day-detail"><code>def</code>, parameters, return values, scope. Extract FizzBuzz into a function.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 10</div>
+    <div class="day-topic">Dictionaries: key-value pairs</div>
+    <div class="day-detail"><code>dict</code>, keys, values, <code>.get()</code>, <code>.items()</code>. Build a phonebook lookup.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 11</div>
+    <div class="day-topic">File I/O: read and write text files</div>
+    <div class="day-detail"><code>open()</code>, <code>.read()</code>, <code>.write()</code>, <code>with</code> block. Read a file, count lines/words, write output.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 12</div>
+    <div class="day-topic">Review + catch-up</div>
+    <div class="day-detail">Re-type week 2 exercises from memory. Flashcards on list/dict methods. Fill any gaps.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 3 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 3</span>
+    <span class="week-title">Git, GitHub &amp; First Project</span>
+    <span class="week-dates">Days 13–18</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-python">Python</span>
+    <span class="theme-pill theme-git">Git</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 13</div>
+    <div class="day-topic">Git init, add, commit</div>
+    <div class="day-detail">Initialize a repo, stage changes, commit with messages. <code>git status</code>, <code>git log</code>.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 14</div>
+    <div class="day-topic">GitHub: remote, push, pull</div>
+    <div class="day-detail">Create a GitHub account, <code>git remote add</code>, <code>git push</code>, <code>git pull</code>, <code>git clone</code>.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 15</div>
+    <div class="day-topic">Python: list comprehensions</div>
+    <div class="day-detail"><code>[expr for item in iterable]</code>, conditional comprehensions. Cleaner, faster loops.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 16</div>
+    <div class="day-topic">Python: try/except, error handling</div>
+    <div class="day-detail"><code>try</code>, <code>except</code>, <code>finally</code>. Handle file-not-found, type errors gracefully.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 17</div>
+    <div class="day-topic">Project Day: CLI Todo List (part 1)</div>
+    <div class="day-detail">Add/list/done/delete tasks. Save to a JSON file. Functions for each operation.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 18</div>
+    <div class="day-topic">Project Day: CLI Todo List (part 2)</div>
+    <div class="day-detail">Polish. Add error handling. Commit to Git. Push to GitHub. Write a README.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+<div class="project-milestone">
+  <h4>Project 1: CLI Todo List</h4>
+  <p>A command-line todo list that persists to disk. Uses functions, file I/O, lists, dicts, and error handling.</p>
+  <div class="checklist">
+    <span class="checklist-item">GitHub repo with README</span>
+    <span class="checklist-item">JSON file persistence</span>
+    <span class="checklist-item">Add, list, done, delete commands</span>
+    <span class="checklist-item">Error handling for missing file</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 4 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 4</span>
+    <span class="week-title">HTML + CSS Foundations</span>
+    <span class="week-dates">Days 19–24</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-web">HTML</span>
+    <span class="theme-pill theme-web">CSS</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 19</div>
+    <div class="day-topic">HTML: structure, tags, attributes</div>
+    <div class="day-detail">Doctype, <code>html</code>, <code>head</code>, <code>body</code>. Headings, paragraphs, links, images. Build a plain HTML page.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 20</div>
+    <div class="day-topic">HTML: lists, tables, forms</div>
+    <div class="day-detail">Ordered/unordered lists, <code>table</code>, <code>form</code>, <code>input</code>, <code>button</code>. Semantic HTML (<code>header</code>, <code>main</code>, <code>footer</code>).</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 21</div>
+    <div class="day-topic">CSS: selectors, colors, units</div>
+    <div class="day-detail">Inline, internal, external CSS. Selectors (element, class, id). Colors, fonts, margins, padding.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 22</div>
+    <div class="day-topic">CSS: Flexbox layout</div>
+    <div class="day-detail"><code>display: flex</code>, <code>justify-content</code>, <code>align-items</code>, <code>flex-direction</code>. Build a navbar and card grid.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 23</div>
+    <div class="day-topic">CSS: responsive design basics</div>
+    <div class="day-detail">Media queries, mobile-first, <code>rem</code>/<code>em</code> units. Make the page look good on phone.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 24</div>
+    <div class="day-topic">Review + catch-up</div>
+    <div class="day-detail">Re-type the HTML page from scratch. Flashcards on CSS selectors and properties.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 5 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 5</span>
+    <span class="week-title">JavaScript Basics</span>
+    <span class="week-dates">Days 25–30</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-web">JavaScript</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 25</div>
+    <div class="day-topic">JS: variables, types, console</div>
+    <div class="day-detail"><code>let</code>, <code>const</code>, strings, numbers, booleans, <code>console.log</code>. Link a <code>.js</code> file to HTML.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 26</div>
+    <div class="day-topic">JS: functions, arrays, loops</div>
+    <div class="day-detail">Function declarations, arrow functions, <code>for</code>, <code>while</code>, array methods (<code>push</code>, <code>pop</code>, <code>length</code>).</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 27</div>
+    <div class="day-topic">JS: DOM manipulation</div>
+    <div class="day-detail"><code>document.getElementById</code>, <code>querySelector</code>, <code>.textContent</code>, <code>.innerHTML</code> (safe usage). Change page content dynamically.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 28</div>
+    <div class="day-topic">JS: events and event handlers</div>
+    <div class="day-detail"><code>addEventListener</code>, click events, input events. Build a button that counts clicks.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 29</div>
+    <div class="day-topic">JS: objects, JSON, fetch</div>
+    <div class="day-detail">JS objects, dot/bracket notation, <code>JSON.stringify</code>/<code>parse</code>. <code>fetch()</code> a public API, display data.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 30</div>
+    <div class="day-topic">Review + catch-up</div>
+    <div class="day-detail">Re-type JS exercises. Flashcards on DOM methods, array methods. Catch up on any missed days.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 6 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 6</span>
+    <span class="week-title">SQL, Databases &amp; Project 2</span>
+    <span class="week-dates">Days 31–36</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-sql">SQL</span>
+    <span class="theme-pill theme-project">Project</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 31</div>
+    <div class="day-topic">SQL: CREATE, INSERT, SELECT</div>
+    <div class="day-detail">Install SQLite. Create a table. Insert rows. <code>SELECT *</code>, <code>WHERE</code>, <code>ORDER BY</code>, <code>LIMIT</code>.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 32</div>
+    <div class="day-topic">SQL: UPDATE, DELETE, aggregations</div>
+    <div class="day-detail"><code>UPDATE</code>, <code>DELETE</code>, <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>GROUP BY</code>, <code>HAVING</code>. Analyze a sample dataset.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 33</div>
+    <div class="day-topic">SQL: JOINs (INNER, LEFT)</div>
+    <div class="day-detail"><code>INNER JOIN</code>, <code>LEFT JOIN</code>, foreign keys. Join users + orders + products.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 34</div>
+    <div class="day-topic">Python + SQLite together</div>
+    <div class="day-detail"><code>sqlite3</code> module in Python. Connect, execute, fetch rows. Python script that queries the DB.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 35</div>
+    <div class="day-topic">Project Day: Bookmark App (part 1)</div>
+    <div class="day-detail">HTML page with a form to save bookmarks. SQLite backend via Python. Add, list, delete.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 36</div>
+    <div class="day-topic">Project Day: Bookmark App (part 2)</div>
+    <div class="day-detail">Polish, CSS styling, search/filter. Push to GitHub. Update README.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+<div class="project-milestone">
+  <h4>Project 2: Bookmark Saver</h4>
+  <p>A web app with an HTML form, Python backend, and SQLite database. Stores, lists, and searches bookmarks.</p>
+  <div class="checklist">
+    <span class="checklist-item">Python + SQLite backend</span>
+    <span class="checklist-item">HTML form to add bookmarks</span>
+    <span class="checklist-item">List all bookmarks</span>
+    <span class="checklist-item">Search / filter by keyword</span>
+    <span class="checklist-item">Deployed on GitHub</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 7 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 7</span>
+    <span class="week-title">OOP, Testing &amp; Node.js</span>
+    <span class="week-dates">Days 37–42</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-python">OOP</span>
+    <span class="theme-pill theme-web">Node.js</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 37</div>
+    <div class="day-topic">OOP: classes and objects in Python</div>
+    <div class="day-detail"><code>class</code>, <code>__init__</code>, <code>self</code>, attributes, methods. Model a <code>Student</code> or <code>Task</code> class.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 38</div>
+    <div class="day-topic">OOP: inheritance, dunder methods</div>
+    <div class="day-detail">Inheritance, <code>super()</code>, <code>__str__</code>, <code>__repr__</code>, <code>__eq__</code>. Extend the <code>Task</code> class.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 39</div>
+    <div class="day-topic">Testing with pytest</div>
+    <div class="day-detail">Install pytest. Write tests for functions and classes. <code>assert</code>, test discovery, test-driven mindset.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 40</div>
+    <div class="day-topic">Node.js basics for backend</div>
+    <div class="day-detail">Install Node. <code>console.log</code>, modules, <code>require</code>/<code>import</code>. Run a JS file outside the browser.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 41</div>
+    <div class="day-topic">Express.js: your first API</div>
+    <div class="day-detail">Install Express. GET endpoint that returns JSON. Test with browser/curl.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 42</div>
+    <div class="day-topic">REST API concepts in practice</div>
+    <div class="day-detail">POST, DELETE endpoints. JSON request/response. Status codes. Connect your HTML form to the API.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 8 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 8</span>
+    <span class="week-title">React Basics &amp; Project 3</span>
+    <span class="week-dates">Days 43–48</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-web">React</span>
+    <span class="theme-pill theme-project">Project</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 43</div>
+    <div class="day-topic">React: components and JSX</div>
+    <div class="day-detail">What is React. Create a simple component. JSX syntax. Props.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 44</div>
+    <div class="day-topic">React: state and useState</div>
+    <div class="day-detail"><code>useState</code> hook. Counter. Toggle. Form input state.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 45</div>
+    <div class="day-topic">React: lists, keys, conditional render</div>
+    <div class="day-detail"><code>.map()</code> for lists, <code>key</code> prop, ternary rendering. Build a filterable list.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 46</div>
+    <div class="day-topic">React: useEffect and data fetching</div>
+    <div class="day-detail"><code>useEffect</code>, fetch data from an API, display loading/error states.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 47</div>
+    <div class="day-topic">Project Day: Weather Dashboard (part 1)</div>
+    <div class="day-detail">React app that fetches weather from a free API. City input, current conditions display.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 48</div>
+    <div class="day-topic">Project Day: Weather Dashboard (part 2)</div>
+    <div class="day-detail">Styling, error states, 5-day forecast. Deploy on GitHub Pages. Push to GitHub.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+<div class="project-milestone">
+  <h4>Project 3: Weather Dashboard (React)</h4>
+  <p>A React app that fetches and displays weather data from a public API. Demonstrates components, state, effects, and API integration.</p>
+  <div class="checklist">
+    <span class="checklist-item">React app with components</span>
+    <span class="checklist-item">Fetches from OpenWeather API</span>
+    <span class="checklist-item">Loading + error states</span>
+    <span class="checklist-item">Styled and responsive</span>
+    <span class="checklist-item">Deployed to GitHub Pages</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 9 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 9</span>
+    <span class="week-title">Data Structures Foundation</span>
+    <span class="week-dates">Days 49–54</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-dsa">DSA</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 49</div>
+    <div class="day-topic">Big O notation &amp; complexity</div>
+    <div class="day-detail">What is Big O. O(1), O(n), O(n^2), O(log n). Count operations in simple loops.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 50</div>
+    <div class="day-topic">Arrays: reverse, two-pointer, sliding window</div>
+    <div class="day-detail">Implement in Python: reverse array, two-sum, find max subarray. LeetCode Easy #1, #26.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 51</div>
+    <div class="day-topic">Strings: palindrome, anagram, frequency</div>
+    <div class="day-detail">Character counts, string reversal, palindrome check. LeetCode Easy #125, #242.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 52</div>
+    <div class="day-topic">Hash maps: frequency counters, two-sum</div>
+    <div class="day-detail"><code>dict</code> as hash map. Two-sum, valid anagram, first non-repeating char. LeetCode Easy #1, #387.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 53</div>
+    <div class="day-topic">Linked lists: traversal, insert, delete</div>
+    <div class="day-detail">Singly linked list class. <code>append</code>, <code>prepend</code>, <code>delete</code>, <code>print</code>. LeetCode #206 (reverse).</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 54</div>
+    <div class="day-topic">Review + problem session</div>
+    <div class="day-detail">Re-solve 5 previous LeetCode problems from memory. Flashcards: time complexities, data structure operations.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 10 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 10</span>
+    <span class="week-title">Trees, Graphs, Recursion</span>
+    <span class="week-dates">Days 55–60</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-dsa">DSA</span>
+    <span class="theme-pill theme-practice">LeetCode</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 55</div>
+    <div class="day-topic">Recursion: base case, call stack</div>
+    <div class="day-detail">Factorial, Fibonacci, countdown. Visualize the call stack. When to use recursion vs iteration.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 56</div>
+    <div class="day-topic">Binary trees: traversal (in/pre/post)</div>
+    <div class="day-detail">Node class, recursive traversal, max depth. LeetCode Easy #94, #104.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 57</div>
+    <div class="day-topic">Binary search trees: find, insert</div>
+    <div class="day-detail">BST property, search, insert, delete. LeetCode Easy #700, #701.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 58</div>
+    <div class="day-topic">BFS &amp; DFS on trees</div>
+    <div class="day-detail">Queue-based BFS (level-order), stack-based DFS. LeetCode #102.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 59</div>
+    <div class="day-topic">Stacks &amp; Queues</div>
+    <div class="day-detail">Stack (LIFO) and Queue (FIFO) implementations. Valid parentheses (LeetCode Easy #20).</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 60</div>
+    <div class="day-topic">Review + problem session</div>
+    <div class="day-detail">Re-solve tree, stack, recursion problems. Flashcards: tree traversals, recursion patterns.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 11 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 11</span>
+    <span class="week-title">LeetCode Bootcamp &amp; Project 4</span>
+    <span class="week-dates">Days 61–66</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-practice">LeetCode</span>
+    <span class="theme-pill theme-project">Project</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 61</div>
+    <div class="day-topic">LeetCode Easy sprint (part 1)</div>
+    <div class="day-detail">Solve 5 easy problems: Two Sum, Reverse Linked List, Valid Parentheses, Max Depth, FizzBuzz. Timed: 10 min each.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 62</div>
+    <div class="day-topic">LeetCode Easy sprint (part 2)</div>
+    <div class="day-detail">5 more: Merge Two Sorted Lists, Contains Duplicate, First Unique Char, Climbing Stairs, Best Time to Buy/Sell.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 63</div>
+    <div class="day-topic">LeetCode Medium intro</div>
+    <div class="day-detail">3 Mediums: 3Sum, Group Anagrams, Product of Array Except Self. Focus on patterns, not speed.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 64</div>
+    <div class="day-topic">Binary search &amp; sorting</div>
+    <div class="day-detail">Binary search implementation. Quick sort intuition. LeetCode Easy #704, #35.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 65</div>
+    <div class="day-topic">Dynamic programming intro</div>
+    <div class="day-detail">Fibonacci with memoization. Climbing Stairs. House Robber (Easy). Understand overlapping subproblems.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 66</div>
+    <div class="day-topic">Review + mock interview</div>
+    <div class="day-detail">Solve 2 problems out loud, explaining your thinking. Time yourself. Review weak spots from the week.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+</details>
+
+<!-- Week 12 -->
+<details class="week">
+<summary class="week-header">
+  <div class="week-header-left">
+    <span class="week-num">Week 12</span>
+    <span class="week-title">Portfolio Polish &amp; Final Project</span>
+    <span class="week-dates">Days 67–72</span>
+  </div>
+  <div class="week-theme">
+    <span class="theme-pill theme-project">Project</span>
+    <span class="theme-pill theme-git">Portfolio</span>
+  </div>
+</summary>
+<div class="day-grid">
+  <div class="day-card">
+    <div class="day-label">Day 67</div>
+    <div class="day-topic">Final Project kickoff: Full-stack app</div>
+    <div class="day-detail">Plan a full-stack app (e.g. personal notebook, expense tracker, recipe manager). Wireframe + tech stack decisions.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 68</div>
+    <div class="day-topic">Final Project: backend + database</div>
+    <div class="day-detail">Express.js API or Python Flask backend. SQLite DB. CRUD endpoints. Test with curl.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 69</div>
+    <div class="day-topic">Final Project: React frontend</div>
+    <div class="day-detail">React app that talks to your API. Forms to create/update. List view. Delete action. Styling.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 70</div>
+    <div class="day-topic">Final Project: polish &amp; deploy</div>
+    <div class="day-detail">Error handling, loading states, README. Deploy frontend to GitHub Pages or Vercel. List deployed URL in README.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 71</div>
+    <div class="day-topic">GitHub profile &amp; resume polish</div>
+    <div class="day-detail">Profile photo, bio, pinned repos (4 projects), clean READMEs. Draft a one-page resume. Include skills + projects.</div>
+    <span class="day-time">60 min</span>
+  </div>
+  <div class="day-card">
+    <div class="day-label">Day 72</div>
+    <div class="day-topic">Mock interview + next steps</div>
+    <div class="day-detail">30-min mock technical interview (2 LeetCode Easy/Medium). 15-min behavioral (STAR method). Plan next 30 days.</div>
+    <span class="day-time">60 min</span>
+  </div>
+</div>
+<div class="project-milestone">
+  <h4>Project 5: Full-Stack Application (Portfolio Centerpiece)</h4>
+  <p>Your capstone. A complete full-stack app with a React frontend, REST API backend, and SQL database. Demonstrates everything you've learned.</p>
+  <div class="checklist">
+    <span class="checklist-item">React frontend (components, state, API calls)</span>
+    <span class="checklist-item">Express.js or Flask backend with CRUD</span>
+    <span class="checklist-item">SQLite database with at least 2 tables</span>
+    <span class="checklist-item">Deployed and accessible via URL</span>
+    <span class="checklist-item">Comprehensive README on GitHub</span>
+    <span class="checklist-item">Pinned on GitHub profile</span>
+  </div>
+</div>
+</details>
+
+<!-- What You'll Have Achieved -->
+<div class="section-header" style="margin-top:48px">
+  <h2>What You'll Have After 90 Days</h2>
+</div>
+
+<div class="phase-grid">
+  <div class="phase-card">
+    <h3><span style="color:var(--green)">5</span> Portfolio Projects</h3>
+    <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px">
+      CLI to-do list, bookmark web app, weather dashboard, full-stack app, plus your GitHub profile itself.
+    </p>
+  </div>
+  <div class="phase-card">
+    <h3><span style="color:var(--accent)">30+</span> LeetCode Problems</h3>
+    <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px">
+      Easy and Medium. Enough for first co-op technical screens at most companies.
+    </p>
+  </div>
+  <div class="phase-card">
+    <h3><span style="color:var(--indigo)">6</span> Core Skills</h3>
+    <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px">
+      Python, Git, HTML/CSS, JavaScript/React, SQL, DSA — the full first-co-op stack.
+    </p>
+  </div>
+  <div class="phase-card">
+    <h3><span style="color:var(--amber)">1</span> Co-op Ready Resume</h3>
+    <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px">
+      Resume + GitHub profile + portfolio ready for WaterlooWorks applications.
+    </p>
+  </div>
+</div>
+
+<!-- Tips -->
+<div class="section-header" style="margin-top:48px">
+  <h2>Rules for Staying on Track</h2>
+</div>
+
+<div class="tips-grid">
+  <div class="tip-card">
+    <h4>Never skip two days</h4>
+    <p>One rest day per week is planned. If you miss a day, do it the next day. Two misses in a row breaks the habit.</p>
+  </div>
+  <div class="tip-card">
+    <h4>Type every example</h4>
+    <p>Reading code is not learning. Writing code is. Type every example yourself. Making mistakes is the point.</p>
+  </div>
+  <div class="tip-card">
+    <h4>Spaced repetition</h4>
+    <p>Use Anki or a notebook. Re-type yesterday's exercise from memory before starting today's new material. This is built into the daily formula.</p>
+  </div>
+  <div class="tip-card">
+    <h4>Google is your textbook</h4>
+    <p>Stuck on an error? Copy the error into Google. Stack Overflow is how real developers learn. Nobody memorizes everything.</p>
+  </div>
+  <div class="tip-card">
+    <h4>Finish before the project</h4>
+    <p>If you're ahead of schedule, start the next week's project early. Projects are where learning crystallizes — don't skip them.</p>
+  </div>
+  <div class="tip-card">
+    <h4>Talk to your code</h4>
+    <p>Explain your solution out loud before coding. Rubber-ducking catches 80% of bugs before they happen. Also trains you for interviews.</p>
+  </div>
+</div>
+
+<!-- Open questions -->
+<div class="section-header" style="margin-top:48px">
+  <h2>Common Questions</h2>
+</div>
+
+<div class="daily-flow">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div>
+      <h4 style="color:#fff;font-size:0.9rem;margin-bottom:4px">What if I fall behind?</h4>
+      <p style="color:var(--text-dim);font-size:0.82rem;line-height:1.5">Shorten or skip the Review block for 2-3 days to catch up on new material. Never skip two days in a row — consistency matters more than speed.</p>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:0.9rem;margin-bottom:4px">Should I customize for CS, SE, or CE?</h4>
+      <p style="color:var(--text-dim);font-size:0.82rem;line-height:1.5"><strong>CS students:</strong> Follow exactly. You have the most free time in first year. <strong>SE students:</strong> Do this before arriving — you'll have zero time during 1A/1B. <strong>CE students:</strong> Do this before arriving. Your co-op starts earliest.</p>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:0.9rem;margin-bottom:4px">What comes after these 90 days?</h4>
+      <p style="color:var(--text-dim);font-size:0.82rem;line-height:1.5">Continue with LeetCode Medium problems (full-time during 1A/1B). Build one more project using a new tool (Docker, TypeScript, or a backend framework). Maintain your daily 30-min code habit.</p>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:0.9rem;margin-bottom:4px">I'm already in 1A and haven't started!</h4>
+      <p style="color:var(--text-dim);font-size:0.82rem;line-height:1.5">Start week 1 today. Cut projects from 5 to 3 (drop Bookmark App and Weather Dashboard; keep CLI Todo + the Final Project). Focus on Python, Git, and 20 LeetCode problems before 1B starts.</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Designed for University of Waterloo first-year co-op preparation &middot; Based on official UW Co-operative Education data &middot; Last updated May 2026
+</div>
+
+</div>
+
+</body>
+</html>
