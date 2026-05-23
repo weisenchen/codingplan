@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — Linux CLI: Navigating the Filesystem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-code: #0d1117;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-muted: #484f58;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --radius: 8px;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+#deck {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.slide {
+  display: none;
+  width: min(96vw, 1280px);
+  height: min(calc(100vh - 40px), 720px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 48px 56px;
+  position: relative;
+  overflow-y: auto;
+  aspect-ratio: 16 / 9;
+}
+.slide.active { display: flex; flex-direction: column; }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Typography */
+h1 { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 700; line-height: 1.2; margin-bottom: 12px; color: #fff; }
+h2 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 600; line-height: 1.3; margin-bottom: 10px; color: #fff; }
+h3 { font-size: clamp(1rem, 1.4vw, 1.15rem); font-weight: 600; margin-bottom: 8px; color: var(--accent); }
+p, li { font-size: clamp(0.85rem, 1.1vw, 1rem); color: var(--text-dim); line-height: 1.65; }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--bg-code);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--green);
+  border: 1px solid var(--border);
+}
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 8px 0;
+  color: var(--text);
+}
+pre code { background: none; border: none; padding: 0; color: var(--text); font-size: inherit; }
+pre .cmd { color: var(--green); }
+pre .arg { color: var(--orange); }
+pre .comment { color: var(--text-muted); font-style: italic; }
+pre .output { color: var(--text-dim); }
+
+/* List styling */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+ol li::marker { color: var(--accent); font-weight: 600; }
+ul li::marker { color: var(--text-muted); }
+
+/* Tags */
+.tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+.tag.green { background: rgba(63,185,80,0.12); color: var(--green); }
+.tag.blue { background: rgba(88,166,255,0.12); color: var(--accent); }
+.tag.orange { background: rgba(210,153,34,0.12); color: var(--orange); }
+.tag.purple { background: rgba(188,140,255,0.12); color: var(--purple); }
+
+/* Title slide */
+.title-slide { justify-content: center; align-items: flex-start; }
+.title-slide .eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.title-slide h1 { font-size: clamp(2.2rem, 4vw, 3.2rem); margin-bottom: 12px; }
+.title-slide .subtitle {
+  font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+  color: var(--text-dim);
+  max-width: 640px;
+  margin-bottom: 24px;
+}
+.title-slide .meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.title-slide .stats { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+.title-slide .stat { font-size: 0.78rem; color: var(--text-muted); }
+
+/* Step card */
+.step-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+.step-card .step-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.step-card .step-text { font-size: 0.88rem; color: var(--text-dim); margin-top: 2px; }
+
+/* Exercise box */
+.exercise-box {
+  background: rgba(210,153,34,0.06);
+  border: 1px solid rgba(210,153,34,0.2);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 10px 0;
+}
+.exercise-box h4 { color: var(--orange); font-size: 0.85rem; margin-bottom: 6px; }
+.exercise-box p, .exercise-box li { font-size: 0.85rem; }
+
+/* Hint reveal */
+.hint { margin-top: 8px; }
+.hint summary { cursor: pointer; color: var(--accent); font-size: 0.8rem; font-weight: 500; }
+
+/* Command table */
+.cmd-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 10px 0; }
+.cmd-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+}
+.cmd-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+.cmd-table tr:hover td { background: rgba(88,166,255,0.03); }
+.cmd-table code { font-size: 0.78rem; }
+
+/* Progress */
+.progress {
+  position: absolute;
+  bottom: 14px;
+  right: 24px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+.progress-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--border);
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+/* Section break */
+.section-break {
+  justify-content: center; align-items: center; text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+}
+.section-break h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); color: #fff; }
+.section-break p { color: var(--text-dim); margin-top: 8px; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 28px 20px; aspect-ratio: auto; height: calc(100vh - 40px); }
+  h1 { font-size: 1.4rem; }
+  .title-slide h1 { font-size: 1.6rem; }
+  pre { font-size: 0.7rem; padding: 10px 12px; }
+  .cmd-table { font-size: 0.72rem; }
+  .cmd-table th, .cmd-table td { padding: 5px 8px; }
+}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- SLIDE 1: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="eyebrow">90-Day Co-op Prep · Phase I · Week 1</div>
+  <h1>Day 2: Linux CLI —<br>Navigating the Filesystem</h1>
+  <p class="subtitle">Learn to move around your computer like a pro. The command line is the single most important tool in a developer's toolkit.</p>
+  <div class="meta">60 min · 0 commands → 8 commands mastered</div>
+  <div class="stats">
+    <span class="stat"><span style="color:var(--green)">▸</span> 8 commands</span>
+    <span class="stat"><span style="color:var(--accent)">▸</span> Folder structure</span>
+    <span class="stat"><span style="color:var(--orange)">▸</span> Hands-on practice</span>
+  </div>
+  <div class="progress">1 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:7.7%"></div></div>
+</section>
+
+<!-- SLIDE 2: Prerequisites -->
+<section class="slide" data-slide="1">
+  <h2>Before You Start</h2>
+  <p style="margin-bottom:14px;color:var(--text-dim)">You should already know the basics from Day 1.</p>
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+      <span style="color:var(--green);font-size:1.1rem;">✓</span>
+      <span style="color:var(--text-dim);font-size:0.88rem;">Can open a terminal window</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+      <span style="color:var(--green);font-size:1.1rem;">✓</span>
+      <span style="color:var(--text-dim);font-size:0.88rem;">Know what <code>pwd</code>, <code>ls</code>, <code>cd</code> do</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+      <span style="color:var(--green);font-size:1.1rem;">✓</span>
+      <span style="color:var(--text-dim);font-size:0.88rem;">Understand file vs folder (directory)</span>
+    </div>
+  </div>
+  <div class="progress">2 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:15.4%"></div></div>
+</section>
+
+<!-- SLIDE 3: Learning Objectives -->
+<section class="slide" data-slide="2">
+  <h2>What You'll Learn Today</h2>
+  <p style="color:var(--text-dim);margin-bottom:16px">By the end of this session, you will be able to:</p>
+  <div style="display:flex;flex-direction:column;gap:10px;flex:1">
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border-left:3px solid var(--green);">
+      <span style="font-size:1rem;flex-shrink:0;">1</span>
+      <div><strong style="color:#fff;">Create</strong> directories and files from the command line</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);">
+      <span style="font-size:1rem;flex-shrink:0;">2</span>
+      <div><strong style="color:#fff;">Copy, move, and delete</strong> files and folders</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border-left:3px solid var(--orange);">
+      <span style="font-size:1rem;flex-shrink:0;">3</span>
+      <div><strong style="color:#fff;">View file contents</strong> without opening an editor</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border-left:3px solid var(--purple);">
+      <span style="font-size:1rem;flex-shrink:0;">4</span>
+      <div><strong style="color:#fff;">Organize</strong> a project folder structure for the full 12-week plan</div>
+    </div>
+  </div>
+  <div class="progress">3 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:23.1%"></div></div>
+</section>
+
+<!-- SLIDE 4: Section break - The Commands -->
+<section class="slide section-break" data-slide="3">
+  <h2>The Eight Commands</h2>
+  <p>mkdir · touch · cp · mv · rm · cat · less · tree</p>
+  <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+    <span class="tag green">Filesystem</span>
+    <span class="tag blue">Navigation</span>
+    <span class="tag orange">File Ops</span>
+  </div>
+  <div class="progress">4 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:30.8%"></div></div>
+</section>
+
+<!-- SLIDE 5: Command Reference Table -->
+<section class="slide" data-slide="4">
+  <h2>Command Reference</h2>
+  <p style="color:var(--text-dim);margin-bottom:10px">Here's every command you'll practice today. Bookmark this slide — you'll use these every day for the rest of the plan.</p>
+  <div style="overflow-y:auto;flex:1">
+    <table class="cmd-table">
+      <thead>
+        <tr><th style="width:16%">Command</th><th style="width:28%">What it does</th><th>Try it yourself</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>mkdir foo</code></td><td>Create a directory named "foo"</td><td><code>mkdir projects</code></td></tr>
+        <tr><td><code>touch f.txt</code></td><td>Create an empty file</td><td><code>touch notes.txt</code></td></tr>
+        <tr><td><code>cp a b</code></td><td>Copy "a" to "b"</td><td><code>cp notes.txt backup.txt</code></td></tr>
+        <tr><td><code>mv a b</code></td><td>Move or rename "a" to "b"</td><td><code>mv notes.txt day2-notes.txt</code></td></tr>
+        <tr><td><code>rm f.txt</code></td><td>Delete a file (⚠️ permanent!)</td><td><code>rm backup.txt</code></td></tr>
+        <tr><td><code>cat f.txt</code></td><td>Print file content to terminal</td><td><code>cat notes.txt</code></td></tr>
+        <tr><td><code>less f.txt</code></td><td>Scroll through long files (q to quit)</td><td><code>less /etc/passwd</code></td></tr>
+        <tr><td><code>tree</code></td><td>Show folder structure as a tree</td><td><code>tree projects</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="progress">5 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:38.5%"></div></div>
+</section>
+
+<!-- SLIDE 6: Concept - The File Tree Mental Model -->
+<section class="slide" data-slide="5">
+  <h2>Mental Model: The File Tree</h2>
+  <p style="color:var(--text-dim);margin-bottom:10px">Everything in Linux is a file. Folders are just special files that contain other files. Visualize the filesystem as an upside-down tree:</p>
+  <pre><span class="comment"># Your filesystem looks something like this:</span>
+/
+├── home/
+│   └── wei/          <span class="comment">← your home directory (~)</span>
+│       ├── projects/
+│       ├── Documents/
+│       └── downloads/
+├── etc/
+├── usr/
+└── tmp/</pre>
+  <p style="color:var(--text-dim);font-size:0.82rem;margin-top:6px">💡 <code>~</code> is shorthand for your home directory (here: <code>/home/wei</code>). <code>/</code> is the root — the very top.</p>
+  <div class="progress">6 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:46.2%"></div></div>
+</section>
+
+<!-- SLIDE 7: Walkthrough - Setup the folder structure -->
+<section class="slide" data-slide="6">
+  <h2>Walkthrough: Build Your 12-Week Folder Structure</h2>
+  <p style="color:var(--text-dim);margin-bottom:10px">Open your terminal and type along. Each step builds on the last.</p>
+  <div class="step-card">
+    <div class="step-num">Step 1</div>
+    <div class="step-text">Go to your home directory and create a <code>coop-prep</code> folder:</div>
+    <pre>cd ~
+mkdir coop-prep
+ls                     <span class="comment"># you should see coop-prep/</span></pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 2</div>
+    <div class="step-text">Inside it, create one folder per phase:</div>
+    <pre>cd coop-prep
+mkdir phase-1-python phase-2-web phase-3-oop phase-4-dsa
+ls</pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 3</div>
+    <div class="step-text">Create week subfolders inside each phase:</div>
+    <pre>mkdir phase-1-python/week-1 phase-1-python/week-2 phase-1-python/week-3
+mkdir phase-2-web/week-4 phase-2-web/week-5 phase-2-web/week-6
+tree</pre>
+  </div>
+  <div class="progress">7 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:53.8%"></div></div>
+</section>
+
+<!-- SLIDE 8: Walkthrough cont'd -->
+<section class="slide" data-slide="7">
+  <h2>Walkthrough: Create, Copy, Move, Delete</h2>
+  <p style="color:var(--text-dim);margin-bottom:10px">Now practice the core file operations on real files.</p>
+  <div class="step-card">
+    <div class="step-num">Step 4</div>
+    <div class="step-text">Create a README for week-1 using <code>touch</code>:</div>
+    <pre>cd ~/coop-prep/phase-1-python/week-1
+touch README.md
+ls                     <span class="comment"># verify README.md exists</span></pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 5</div>
+    <div class="step-text">Write something into it with <code>echo</code>, then view it:</div>
+    <pre>echo "# Week 1: Computer Basics & Python" > README.md
+cat README.md</pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 6</div>
+    <div class="step-text">Copy the README to week-2, then rename:</div>
+    <pre>cp README.md ../week-2/
+mv ../week-2/README.md ../week-2/README-WEEK2.md
+ls ../week-2/</pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 7</div>
+    <div class="step-text">Create a scratch file, then delete it:</div>
+    <pre>touch scratch.txt
+rm scratch.txt
+ls                     <span class="comment"># scratch.txt should be gone</span></pre>
+  </div>
+  <div class="progress">8 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:61.5%"></div></div>
+</section>
+
+<!-- SLIDE 9: Walkthrough - Viewing files -->
+<section class="slide" data-slide="8">
+  <h2>Walkthrough: Viewing File Contents</h2>
+  <p style="color:var(--text-dim);margin-bottom:10px">Not all files are small. Learn to peek inside without opening an editor.</p>
+  <div class="step-card">
+    <div class="step-num">Step 8</div>
+    <div class="step-text">Use <code>cat</code> for short files — prints everything at once:</div>
+    <pre>cat ~/coop-prep/phase-1-python/week-1/README.md</pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 9</div>
+    <div class="step-text">Use <code>less</code> for long files — scroll line by line. Press <code>q</code> to quit:</div>
+    <pre>less /etc/passwd          <span class="comment"># scroll with ↑↓ or PageUp/PageDown, q to quit</span></pre>
+  </div>
+  <div class="step-card">
+    <div class="step-num">Step 10</div>
+    <div class="step-text">See your full folder tree with <code>tree</code>:</div>
+    <pre>tree ~/coop-prep</pre>
+  </div>
+  <p style="color:var(--text-dim);font-size:0.82rem;margin-top:8px">💡 Pro tip: <code>cat</code> is for short files; <code>less</code> is for long files or logs. Get in the habit of <code>less</code>.</p>
+  <div class="progress">9 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:69.2%"></div></div>
+</section>
+
+<!-- SLIDE 10: Section break - Practice -->
+<section class="slide section-break" data-slide="9">
+  <h2>Now It's Your Turn</h2>
+  <p>Three exercises. Try each one before looking at the hint.</p>
+  <div class="progress">10 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:76.9%"></div></div>
+</section>
+
+<!-- SLIDE 11: Exercise 1 -->
+<section class="slide" data-slide="10">
+  <h2>Exercise 1: Organize Your Downloads</h2>
+  <div class="exercise-box">
+    <h4>📝 Task</h4>
+    <p>Create a folder structure to organize downloaded materials for this course:</p>
+    <pre>coop-prep/
+├── downloads/
+│   ├── videos/
+│   ├── code-samples/
+│   └── references/</pre>
+    <p style="margin-top:6px">Use <code>mkdir -p</code> to create all three subfolders in one command. Then verify with <code>tree</code>.</p>
+  </div>
+  <details class="hint">
+    <summary>Need a hint?</summary>
+    <pre>mkdir -p ~/coop-prep/downloads/{videos,code-samples,references}
+tree ~/coop-prep/downloads</pre>
+    <p style="font-size:0.8rem;color:var(--text-dim)">💡 <code>-p</code> creates parent directories if needed. <code>{a,b,c}</code> is brace expansion — creates all three at once.</p>
+  </details>
+  <div class="progress">11 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:84.6%"></div></div>
+</section>
+
+<!-- SLIDE 12: Exercise 2 & 3 -->
+<section class="slide" data-slide="11">
+  <h2>Exercise 2: Journal with Timestamps</h2>
+  <div class="exercise-box">
+    <h4>📝 Task</h4>
+    <p>Create a daily journal file for today:</p>
+    <pre>cd ~/coop-prep
+touch journal-2026-05-23.txt     <span class="comment"># use today's date</span>
+echo "Day 2: learned Linux CLI" > journal-2026-05-23.txt
+cat journal-2026-05-23.txt</pre>
+    <p>Now <strong>rename</strong> the journal file to <code>day2-journal.txt</code>, then copy it into the week-1 folder.</p>
+  </div>
+  <details class="hint">
+    <summary>Need a hint?</summary>
+    <pre>mv journal-2026-05-23.txt day2-journal.txt
+cp day2-journal.txt ~/coop-prep/phase-1-python/week-1/</pre>
+  </details>
+  <hr style="border-color:var(--border);margin:12px 0;">
+  <h2>Exercise 3: Clean Up</h2>
+  <div class="exercise-box">
+    <h4>📝 Task</h4>
+    <p>Go to your home directory, create a folder called <code>temp-stuff</code>, put two empty files in it, then delete the entire folder and its contents.</p>
+  </div>
+  <details class="hint">
+    <summary>Need a hint?</summary>
+    <pre>cd ~
+mkdir temp-stuff
+touch temp-stuff/a.txt temp-stuff/b.txt
+rm -rf temp-stuff       <span class="comment"># ⚠️ -rf is powerful — always double-check before hitting Enter!</span></pre>
+  </details>
+  <div class="progress">12 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:92.3%"></div></div>
+</section>
+
+<!-- SLIDE 13: Summary -->
+<section class="slide" data-slide="12">
+  <h2>Today's Takeaways</h2>
+  <p style="color:var(--text-dim);margin-bottom:16px">Write these down — you'll use them every day for the next 12 weeks.</p>
+  <div style="display:flex;flex-direction:column;gap:10px;flex:1">
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
+      <span style="color:var(--green);font-size:1.2rem;">1</span>
+      <div>
+        <strong style="color:#fff;">mkdir + touch</strong> = create folders and files
+        <div style="color:var(--text-dim);font-size:0.8rem;margin-top:2px"><code>mkdir projects</code> · <code>touch README.md</code></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
+      <span style="color:var(--accent);font-size:1.2rem;">2</span>
+      <div>
+        <strong style="color:#fff;">cp + mv</strong> = copy and move/rename
+        <div style="color:var(--text-dim);font-size:0.8rem;margin-top:2px"><code>cp a.txt b.txt</code> · <code>mv old.txt new.txt</code></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
+      <span style="color:var(--orange);font-size:1.2rem;">3</span>
+      <div>
+        <strong style="color:#fff;">rm is permanent</strong> — there's no trash can in the terminal
+        <div style="color:var(--text-dim);font-size:0.8rem;margin-top:2px">Always double-check before <code>rm</code> or <code>rm -rf</code></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
+      <span style="color:var(--purple);font-size:1.2rem;">4</span>
+      <div>
+        <strong style="color:#fff;">cat + less + tree</strong> = look before you leap
+        <div style="color:var(--text-dim);font-size:0.8rem;margin-top:2px"><code>cat</code> for short, <code>less</code> for long, <code>tree</code> for structure</div>
+      </div>
+    </div>
+  </div>
+  <p style="color:var(--text-dim);margin-top:12px;font-size:0.82rem;font-style:italic;">Tomorrow: Install Python and write your first script. See you at Day 3!</p>
+  <div class="progress">13 / 13</div>
+  <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+</section>
+
+</div><!-- /deck -->
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  function showSlide(idx) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[idx].classList.add('active');
+    current = idx;
+    location.hash = '#' + (idx + 1);
+
+    // Update progress numbers in the visible slide
+    slides[idx].querySelectorAll('.progress').forEach(el => {
+      el.textContent = (idx + 1) + ' / ' + total;
+    });
+    const fill = slides[idx].querySelector('.progress-fill');
+    if (fill) fill.style.width = ((idx + 1) / total * 100) + '%';
+  }
+
+  function nextSlide() { if (current < total - 1) showSlide(current + 1); }
+  function prevSlide() { if (current > 0) showSlide(current - 1); }
+
+  // Keyboard nav
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prevSlide();
+    } else if (e.key === 'f') {
+      if (!document.fullscreenElement) document.body.requestFullscreen().catch(()=>{});
+      else document.exitFullscreen().catch(()=>{});
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    }
+  });
+
+  // Swipe support for mobile
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) nextSlide(); else prevSlide();
+    }
+  });
+
+  // Restore from URL hash
+  const hash = parseInt(location.hash.replace('#', ''), 10);
+  if (hash && hash <= total) showSlide(hash - 1);
+  else showSlide(0);
+})();
+</script>
+</body>
+</html>
