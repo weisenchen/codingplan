@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 4 — Python: Strings, Numbers, Input</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --slide-bg: #161b22;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --accent-glow: rgba(88,166,255,0.15);
+  --code-bg: #1c2128;
+  --code-text: #c9d1d9;
+  --keyword: #ff7b72;
+  --string: #a5d6ff;
+  --number: #79c0ff;
+  --comment: #8b949e;
+  --border: #30363d;
+  --success: #3fb950;
+  --warning: #d29922;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: var(--font-sans); color: var(--text); }
+
+/* Deck container */
+#deck { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+/* Slide */
+.slide {
+  display: none;
+  width: 96vw; max-width: 1280px;
+  height: 54vw; max-height: 720px;
+  background: var(--slide-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 48px 56px;
+  position: relative;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.slide.active { display: flex; }
+
+/* Progress */
+.progress {
+  position: absolute;
+  bottom: 16px; right: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+/* Scrollbar */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Typography */
+h1 { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 12px; }
+h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 16px; color: var(--accent); }
+h3 { font-size: 22px; font-weight: 600; margin-bottom: 10px; }
+p, li { font-size: 18px; line-height: 1.6; color: var(--text); }
+p { margin-bottom: 12px; }
+ul, ol { padding-left: 24px; margin-bottom: 14px; }
+li { margin-bottom: 6px; }
+strong { color: #fff; font-weight: 600; }
+code { font-family: var(--font-mono); font-size: 15px; background: var(--code-bg); padding: 2px 7px; border-radius: 4px; color: var(--string); }
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 10px 0 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.55;
+  tab-size: 4;
+}
+pre code { background: none; padding: 0; font-size: 15px; }
+.kw { color: var(--keyword); }
+.st { color: var(--string); }
+.nm { color: #79c0ff; }
+.cm { color: var(--comment); font-style: italic; }
+.fn { color: #d2a8ff; }
+.dg { color: #ffa657; }
+
+/* Layout helpers */
+.flex { display: flex; gap: 24px; flex: 1; }
+.col { flex: 1; min-width: 0; }
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.card {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+.card p { font-size: 16px; margin-bottom: 4px; }
+.card .label { font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+
+/* Checklist */
+.checklist { list-style: none; padding: 0; }
+.checklist li { padding-left: 28px; position: relative; }
+.checklist li::before { content: '☐'; position: absolute; left: 0; color: var(--text-dim); font-size: 18px; }
+.checklist li.done::before { content: '✓'; color: var(--success); }
+
+/* Exercise boxes */
+.exercise {
+  background: linear-gradient(135deg, rgba(63,185,80,0.08), rgba(63,185,80,0.02));
+  border: 1px solid rgba(63,185,80,0.3);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 12px 0;
+}
+.exercise .ex-num { font-family: var(--font-mono); font-size: 13px; color: var(--success); font-weight: 600; margin-bottom: 4px; }
+.exercise p { margin-bottom: 4px; font-size: 16px; }
+
+/* Hints */
+.hint { display: none; margin-top: 10px; padding: 12px 16px; background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); border-radius: 6px; }
+.hint.show { display: block; }
+.hint p { font-size: 15px; color: var(--warning); }
+
+/* Section break */
+.slide.section-break { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, var(--accent-dim), #0d1117); }
+.slide.section-break h2 { font-size: 48px; color: #fff; margin-bottom: 8px; }
+.slide.section-break p { color: rgba(255,255,255,0.7); font-size: 20px; }
+
+/* Title slide */
+.title-slide { justify-content: center; }
+.title-slide h1 { font-size: 52px; margin-bottom: 16px; }
+.title-slide .subtitle { font-size: 22px; color: var(--text-dim); margin-bottom: 8px; }
+.title-slide .meta { font-family: var(--font-mono); font-size: 15px; color: var(--text-dim); }
+
+/* Speaker notes */
+.speaker-note { display: none; position: absolute; bottom: 48px; left: 56px; right: 56px; padding: 12px 16px; background: rgba(210,153,34,0.08); border-left: 3px solid var(--warning); border-radius: 4px; }
+.speaker-note p { font-size: 14px; color: var(--warning); }
+.show-notes .speaker-note { display: block; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { width: 100vw; height: 100vh; max-width: none; max-height: none; border-radius: 0; border: none; padding: 28px 20px; }
+  .flex { flex-direction: column; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 24px; }
+  .title-slide h1 { font-size: 32px; }
+  p, li { font-size: 16px; }
+  pre { font-size: 13px; padding: 12px 14px; }
+  code { font-size: 13px; }
+}
+
+/* Print */
+@media print {
+  .slide { display: block !important; page-break-after: always; height: auto; border: none; box-shadow: none; }
+  .progress { display: none; }
+  body { background: white; }
+  .slide { background: white; color: #111; }
+  h2 { color: #1f6feb; }
+  code { background: #f0f0f0; }
+  pre { background: #f6f8fa; border-color: #d0d7de; }
+  .kw { color: #cf222e; } .st { color: #0a3069; } .nm { color: #0550ae; } .cm { color: #656d76; }
+}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- ============================================================ -->
+<!-- SLIDE 0: TITLE -->
+<!-- ============================================================ -->
+<section class="slide title-slide active" data-slide="0">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <span class="tag">Week 1 · Phase I</span>
+    <h1>Python: Strings, Numbers,&nbsp;Input</h1>
+    <p class="subtitle">String concatenation &bull; f-strings &bull; type conversion &bull; user input</p>
+    <p class="meta" style="margin-top:24px;">Day 4 &mdash; 90-Day Co-op Prep Plan</p>
+    <p class="meta">~60 minutes &bull; Build a name-greeting script</p>
+  </div>
+  <div class="progress"><span class="cur">1</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: OVERVIEW -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="1">
+  <span class="tag">Overview</span>
+  <h2>What You'll Learn Today</h2>
+  <div class="flex" style="margin-top:8px;">
+    <div class="col">
+      <div class="card">
+        <div class="label">📖 Concepts</div>
+        <p>String concatenation with <code>+</code></p>
+        <p>Formatted strings (<code>f"..."</code>)</p>
+        <p>Type conversion: <code>int()</code>, <code>float()</code>, <code>str()</code></p>
+        <p>User input with <code>input()</code></p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="label">🛠️ Build</div>
+        <p>A name-greeting script that asks for your name and age, then prints a personalized message.</p>
+      </div>
+      <div class="card">
+        <div class="label">🎯 Learning Objectives</div>
+        <p>1. Combine strings with <code>+</code> and f-strings</p>
+        <p>2. Convert between <code>str</code>, <code>int</code>, and <code>float</code></p>
+        <p>3. Read and use user input</p>
+        <p>4. Build a complete interactive script</p>
+      </div>
+    </div>
+  </div>
+  <div class="progress"><span class="cur">2</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: STRING CONCATENATION -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="2">
+  <span class="tag">Concept</span>
+  <h2>String Concatenation</h2>
+  <p>You can join strings together using the <code>+</code> operator. This is called <strong>concatenation</strong>.</p>
+
+  <pre><code><span class="cm"># Joining strings with +</span>
+first = <span class="st">"Ada"</span>
+last  = <span class="st">"Lovelace"</span>
+full  = first + <span class="st">" "</span> + last
+<span class="fn">print</span>(full)   <span class="cm"># → Ada Lovelace</span>
+
+<span class="cm"># You can concatenate any number of strings</span>
+msg = <span class="st">"Hello"</span> + <span class="st">", "</span> + <span class="st">"world"</span> + <span class="st">"!"</span>
+<span class="fn">print</span>(msg)     <span class="cm"># → Hello, world!</span></code></pre>
+
+  <div class="card">
+    <p><strong>⚠️ Gotcha:</strong> You <em>cannot</em> concatenate a string with a number directly — Python will raise a <code>TypeError</code>. You must convert first (more on that soon).</p>
+  </div>
+
+  <aside class="speaker-note"><p>Demo: show what happens when you try "hello" + 42 — TypeError expected.</p></aside>
+  <div class="progress"><span class="cur">3</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: F-STRINGS -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="3">
+  <span class="tag">Concept</span>
+  <h2>F-Strings (Formatted Strings)</h2>
+  <p>f-strings are the modern, cleaner way to embed variables inside strings. Prefix the string with <code>f</code> and use <code>{}</code> as placeholders.</p>
+
+  <pre><code>name = <span class="st">"Ada"</span>
+age  = <span class="dg">29</span>
+
+<span class="cm"># Old way (hard to read)</span>
+msg1 = <span class="st">"My name is "</span> + name + <span class="st">" and I am "</span> + <span class="fn">str</span>(age) + <span class="st">" years old."</span>
+
+<span class="cm"># F-string way (much cleaner!)</span>
+msg2 = <span class="st">f"My name is {name} and I am {age} years old."</span>
+<span class="fn">print</span>(msg2)</code></pre>
+
+  <p>F-strings automatically convert values to strings — no manual <code>str()</code> needed inside the braces.</p>
+
+  <div class="card">
+    <p>💡 You can even put <strong>expressions</strong> inside <code>{}</code>: <code>f"{2 + 2}"</code> → <code>"4"</code></p>
+  </div>
+
+  <aside class="speaker-note"><p>F-strings were introduced in Python 3.6. They're the recommended way to format strings in modern Python.</p></aside>
+  <div class="progress"><span class="cur">4</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: TYPE CONVERSION -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="4">
+  <span class="tag">Concept</span>
+  <h2>Type Conversion</h2>
+  <p>Python has three main built-in functions for converting between types:</p>
+
+  <div class="flex" style="margin-top:8px;">
+    <div class="col">
+      <div class="card">
+        <div class="label"><code>str()</code></div>
+        <p>Converts to string</p>
+        <pre style="margin:6px 0 0;"><code><span class="fn">str</span>(<span class="dg">42</span>)    <span class="cm"># → "42"</span>
+<span class="fn">str</span>(<span class="dg">3.14</span>)  <span class="cm"># → "3.14"</span></code></pre>
+      </div>
+      <div class="card">
+        <div class="label"><code>int()</code></div>
+        <p>Converts to integer</p>
+        <pre style="margin:6px 0 0;"><code><span class="fn">int</span>(<span class="st">"42"</span>)  <span class="cm"># → 42</span>
+<span class="fn">int</span>(<span class="dg">3.9</span>)  <span class="cm"># → 3  (truncates!)</span></code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="label"><code>float()</code></div>
+        <p>Converts to decimal</p>
+        <pre style="margin:6px 0 0;"><code><span class="fn">float</span>(<span class="st">"3.14"</span>)  <span class="cm"># → 3.14</span>
+<span class="fn">float</span>(<span class="dg">42</span>)     <span class="cm"># → 42.0</span></code></pre>
+      </div>
+      <div class="card">
+        <p><strong>⚠️ Common error:</strong> <code>int("hello")</code> raises <code>ValueError</code> — the string must contain a valid number.</p>
+      </div>
+    </div>
+  </div>
+  <div class="progress"><span class="cur">5</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: USER INPUT -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="5">
+  <span class="tag">Concept</span>
+  <h2>Reading Input with <code>input()</code></h2>
+  <p>The <code>input()</code> function reads a line of text from the user. It <strong>always returns a string</strong>.</p>
+
+  <pre><code><span class="cm"># Simple input</span>
+name = <span class="fn">input</span>(<span class="st">"What is your name? "</span>)
+<span class="fn">print</span>(<span class="st">f"Hello, {name}!"</span>)
+
+<span class="cm"># Input + type conversion</span>
+age_str = <span class="fn">input</span>(<span class="st">"How old are you? "</span>)
+age     = <span class="fn">int</span>(age_str)           <span class="cm"># convert string → int</span>
+next_year = age + <span class="dg">1</span>
+<span class="fn">print</span>(<span class="st">f"Next year you'll be {next_year}."</span>)</code></pre>
+
+  <div class="card">
+    <p>💡 <strong>Pro tip:</strong> You can wrap <code>input()</code> directly in a conversion function:</p>
+    <pre style="margin:6px 0 0;"><code>age = <span class="fn">int</span>(<span class="fn">input</span>(<span class="st">"Age: "</span>))   <span class="cm"># read + convert in one line</span></code></pre>
+  </div>
+
+  <aside class="speaker-note"><p>The prompt string is optional but always a good idea so the user knows what to type.</p></aside>
+  <div class="progress"><span class="cur">6</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: SECTION BREAK — WALKTHROUGH -->
+<!-- ============================================================ -->
+<section class="slide section-break" data-slide="6">
+  <h2>🧑‍💻 Let's Build It</h2>
+  <p>Name-Greeting Script — Step by Step</p>
+  <div class="progress"><span class="cur">7</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: WALKTHROUGH -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="7">
+  <span class="tag">Walkthrough</span>
+  <h2>Building a Name-Greeting Script</h2>
+  <p>Open a new file called <code>greeting.py</code> and follow along:</p>
+
+  <pre><code><span class="cm"># Step 1: Ask for the user's name</span>
+name = <span class="fn">input</span>(<span class="st">"What is your name? "</span>)
+
+<span class="cm"># Step 2: Ask for their age (convert to int)</span>
+age = <span class="fn">int</span>(<span class="fn">input</span>(<span class="st">"How old are you? "</span>))
+
+<span class="cm"># Step 3: Ask where they're from</span>
+city = <span class="fn">input</span>(<span class="st">"Which city are you from? "</span>)
+
+<span class="cm"># Step 4: Build a greeting with f-strings</span>
+<span class="fn">print</span>(<span class="st">f"Hello, {name}! You are {age} years old."</span>)
+<span class="fn">print</span>(<span class="st">f"You're from {city} — that's awesome!"</span>)
+
+<span class="cm"># Step 5: Do a little math</span>
+years_to_30 = <span class="dg">30</span> - age
+<span class="fn">print</span>(<span class="st">f"You'll be 30 in {years_to_30} years!"</span>)</code></pre>
+
+  <p><strong>Expected output:</strong></p>
+  <pre style="background:#0d1117;border:1px solid #21262d;"><code>What is your name? <span class="st">Alice</span>
+How old are you? <span class="dg">22</span>
+Which city are you from? <span class="st">Toronto</span>
+Hello, Alice! You are 22 years old.
+You're from Toronto — that's awesome!
+You'll be 30 in 8 years!</code></pre>
+
+  <div class="progress"><span class="cur">8</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: EXERCISES -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="8">
+  <span class="tag">Practice</span>
+  <h2>Exercises</h2>
+  <p>Try these on your own. Click the hint button if you get stuck.</p>
+
+  <div class="exercise">
+    <div class="ex-num">Exercise 1 — Temperature Converter</div>
+    <p>Ask the user for a temperature in Celsius (<code>float</code>), convert to Fahrenheit using the formula <code>F = C * 9/5 + 32</code>, and print the result.</p>
+    <div class="hint" id="hint1">
+      <p><strong>Hint:</strong> <code>c = float(input("Celsius: "))</code> then <code>f = c * 9/5 + 32</code> and print both values with an f-string.</p>
+    </div>
+    <button class="hint-btn" onclick="toggleHint('hint1')" style="background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent);padding:6px 14px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:13px;margin-top:6px;">Show Hint</button>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-num">Exercise 2 — Calculator</div>
+    <p>Ask for two numbers. Print their sum, difference, product, and quotient. Use <code>int()</code> or <code>float()</code>.</p>
+    <div class="hint" id="hint2">
+      <p><strong>Hint:</strong> Read <code>a = int(input("First: "))</code> and <code>b = int(input("Second: "))</code>. Then compute <code>a + b</code>, <code>a - b</code>, <code>a * b</code>, <code>a / b</code>.</p>
+    </div>
+    <button class="hint-btn" onclick="toggleHint('hint2')" style="background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent);padding:6px 14px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:13px;margin-top:6px;">Show Hint</button>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-num">Exercise 3 — Mad Libs (Bonus)</div>
+    <p>Ask the user for a noun, a verb, an adjective, and a place. Use them to build a silly sentence using an f-string.</p>
+    <div class="hint" id="hint3">
+      <p><strong>Hint:</strong> <code>f"The {adj} {noun} {verb} at the {place}."</code></p>
+    </div>
+    <button class="hint-btn" onclick="toggleHint('hint3')" style="background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent);padding:6px 14px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:13px;margin-top:6px;">Show Hint</button>
+  </div>
+
+  <aside class="speaker-note"><p>Encourage learners to run each exercise and verify the output. Bonus exercise is for those who finish early.</p></aside>
+  <div class="progress"><span class="cur">9</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: SUMMARY -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="9">
+  <span class="tag">Recap</span>
+  <h2>Key Takeaways</h2>
+
+  <div class="flex" style="margin-top:12px;flex:1;align-items:center;">
+    <div class="col">
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <p>1️⃣ Use <strong><code>+</code></strong> to concatenate strings, but remember — strings + numbers = <code>TypeError</code>.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <p>2️⃣ Use <strong><code>f"..."</code></strong> with <code>{}</code> placeholders for clean, readable string formatting.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <p>3️⃣ Convert types with <strong><code>int()</code></strong>, <strong><code>float()</code></strong>, and <strong><code>str()</code></strong> — <code>input()</code> always returns a string!</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <p>4️⃣ <strong><code>input()</code></strong> lets your scripts talk to the user. Combine with type conversion for numeric input.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress"><span class="cur">10</span> / <span class="total">11</span></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: NEXT STEPS / CLOSING -->
+<!-- ============================================================ -->
+<section class="slide" data-slide="10">
+  <span class="tag">Next Up</span>
+  <h2>Tomorrow: Control Flow</h2>
+  <p style="font-size:20px;margin-bottom:20px;">Day 5 introduces <strong>if/elif/else</strong> and <strong>logical operators</strong> — the building blocks of program logic.</p>
+
+  <div class="card">
+    <div class="label">📌 Milestones Ahead</div>
+    <p><strong>Project 1</strong> (Week 3) — CLI Todo List</p>
+    <p><strong>Project 2</strong> (Week 6) — Bookmark Saver</p>
+    <p><strong>Project 3</strong> (Week 8) — Weather Dashboard</p>
+    <p><strong>Project 5</strong> (Week 12) — Full-Stack App</p>
+  </div>
+
+  <div class="card" style="border-color:var(--success);margin-top:14px;">
+    <div class="label">✅ Today's Checklist</div>
+    <ul class="checklist" style="margin:6px 0 0;">
+      <li class="done">Understand string concatenation and f-strings</li>
+      <li class="done">Practice type conversion between str, int, float</li>
+      <li class="done">Read user input with input()</li>
+      <li class="done">Build the name-greeting script</li>
+      <li class="done">Complete at least 2 of 3 exercises</li>
+    </ul>
+  </div>
+
+  <p style="margin-top:16px;color:var(--text-dim);font-size:15px;">Keep coding — every day compounds! 🚀</p>
+
+  <div class="progress"><span class="cur">11</span> / <span class="total">11</span></div>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  // Init progress counters
+  document.querySelectorAll('.total').forEach(el => el.textContent = total);
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    // Update current indicators
+    document.querySelectorAll('.cur').forEach(el => el.textContent = idx + 1);
+    // Update URL hash
+    window.location.hash = idx;
+    current = idx;
+  }
+
+  // Navigate
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.body.requestFullscreen(); else document.exitFullscreen(); }
+    else if (e.key === 'n') { document.querySelector('.slide.active').classList.toggle('show-notes'); }
+    else if (e.key === 'Home') { showSlide(0); }
+    else if (e.key === 'End') { showSlide(total - 1); }
+  });
+
+  // Touch / swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+  });
+
+  // Click to advance (click left half = prev, right half = next)
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.hint-btn') || e.target.closest('button')) return;
+    const rect = document.querySelector('.slide.active').getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x < rect.width * 0.25) { prev(); }
+    else if (x > rect.width * 0.75) { next(); }
+  });
+
+  // Restore from hash
+  const hashIdx = parseInt(window.location.hash.slice(1), 10);
+  if (!isNaN(hashIdx) && hashIdx >= 0 && hashIdx < total) {
+    showSlide(hashIdx);
+  } else {
+    showSlide(0);
+  }
+})();
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('show');
+}
+</script>
+</body>
+</html>
