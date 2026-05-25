@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 5 &mdash; Python: if/else &amp; for Loops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d28;
+  --bg-code: #13161f;
+  --text: #e1e4ed;
+  --text-muted: #8b91a3;
+  --accent: #7c9cff;
+  --accent-dim: #4a6acf;
+  --green: #5cd98a;
+  --orange: #f0a54a;
+  --pink: #f07178;
+  --cyan: #5ccfe6;
+  --border: #262a38;
+  --title-font: 'Literata', Georgia, serif;
+  --body-font: 'Literata', Georgia, serif;
+  --code-font: 'JetBrains Mono', 'Fira Code', monospace;
+  --slide-w: 960px;
+  --slide-h: 540px;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #080a10;
+  color: var(--text);
+  font-family: var(--body-font);
+  font-size: 18px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw; height: 100vh;
+}
+#deck {
+  position: relative;
+  width: var(--slide-w); height: var(--slide-h);
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 1px var(--border), 0 20px 60px rgba(0,0,0,.6);
+}
+
+/* -- slides -- */
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 40px 52px 44px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .32s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1; pointer-events: auto;
+  z-index: 2;
+}
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* -- progress bar -- */
+.progress {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: var(--border); z-index: 10;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width .35s ease;
+  width: 0%;
+}
+.slide-counter {
+  position: absolute;
+  bottom: 10px; right: 20px;
+  font-family: var(--code-font);
+  font-size: 12px;
+  color: var(--text-muted);
+  z-index: 11;
+}
+
+/* -- typography -- */
+h1 {
+  font-family: var(--title-font);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+h2 {
+  font-family: var(--title-font);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+h3 {
+  font-family: var(--title-font);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+p { margin-bottom: 12px; }
+.subtitle {
+  font-size: 20px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.date {
+  font-family: var(--code-font);
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* -- code -- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-family: var(--code-font);
+  font-size: 15px;
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 10px 0 14px;
+  position: relative;
+}
+code { font-family: var(--code-font); font-size: .9em; }
+pre .hl { color: var(--accent); }
+pre .kw { color: var(--pink); font-weight: 600; }
+pre .fn { color: var(--cyan); }
+pre .str { color: var(--green); }
+pre .cm { color: var(--text-muted); font-style: italic; }
+pre .num { color: var(--orange); }
+pre .op { color: var(--text); }
+
+/* -- lists -- */
+ul, ol { padding-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 5px; }
+ul li::marker { color: var(--accent); }
+
+/* -- cards -- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 8px 0 14px;
+}
+.card-row {
+  display: flex; gap: 14px;
+  margin: 6px 0 12px;
+}
+.card-row .card { flex: 1; margin: 0; }
+.card .label {
+  font-family: var(--code-font);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+/* -- special slides -- */
+.title-slide { justify-content: center; text-align: center; align-items: center; }
+.title-slide h1 { font-size: 50px; margin-bottom: 8px; }
+.title-slide .subtitle { font-size: 22px; }
+.section-break {
+  justify-content: center; align-items: center; text-align: center;
+  background: linear-gradient(135deg, #1a1d28 0%, #0f1117 100%);
+}
+.section-break h2 { font-size: 40px; color: var(--text); }
+.section-break p { color: var(--text-muted); font-size: 18px; }
+
+.recap-slide { justify-content: center; }
+.recap-slide .takeaway {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 0;
+  font-size: 19px;
+  border-bottom: 1px solid var(--border);
+}
+.recap-slide .takeaway:last-child { border: none; }
+.recap-slide .num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--code-font);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* -- exercise -- */
+.exercise-box {
+  background: #1a1f2e;
+  border: 1px solid var(--accent-dim);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0 14px;
+}
+.exercise-box .task {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.hint-box {
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 15px;
+}
+.hint-box .label { font-family: var(--code-font); font-size: 11px; text-transform: uppercase; color: var(--orange); letter-spacing: .05em; margin-bottom: 4px; }
+
+/* -- two column -- */
+.two-col {
+  display: flex; gap: 24px; flex: 1;
+  min-height: 0;
+}
+.two-col > * { flex: 1; min-width: 0; }
+
+/* -- responsive -- */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px 40px; font-size: 16px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 24px; }
+  .title-slide h1 { font-size: 36px; }
+  .two-col { flex-direction: column; gap: 8px; }
+  .card-row { flex-direction: column; }
+}
+
+/* -- print -- */
+@media print {
+  body { background: #fff; }
+  #deck { box-shadow: none; border: 1px solid #ccc; }
+  .slide { opacity: 1 !important; position: relative !important; break-after: page; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<div id="deck">
+
+<!-- ===== SLIDE 0: TITLE ===== -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>Python: if/else &amp; for Loops</h1>
+  <p class="subtitle">Conditionals, Comparison Operators,<br><code>range()</code>, and FizzBuzz</p>
+  <p class="date" style="margin-top:20px;">Day 5 &middot; Week 1 &middot; Phase I</p>
+  <p class="date">90-Day Co-op Prep Plan</p>
+  <p class="date" style="color:var(--text-muted);font-size:13px;">May 25, 2026 &middot; ~60 minutes</p>
+  <aside style="display:none;" class="notes">Welcome. Today we learn how to make Python programs that make decisions and repeat work — the foundation of any real script.</aside>
+</section>
+
+<!-- ===== SLIDE 1: LEARNING OBJECTIVES ===== -->
+<section class="slide" data-slide="1">
+  <h2>What You'll Learn Today</h2>
+  <p>By the end of this session, you'll be able to:</p>
+  <ul style="margin-top:8px;">
+    <li>Write <strong>if/elif/else</strong> conditionals to branch code</li>
+    <li>Use <strong>comparison operators</strong> (<code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>)</li>
+    <li>Build <strong>for loops</strong> with <code>range()</code></li>
+    <li>Loop over lists and strings</li>
+    <li>Solve <strong>FizzBuzz</strong> &mdash; the classic coding challenge</li>
+  </ul>
+  <div class="card" style="margin-top:16px;">
+    <span class="label">⏱ Time Estimate</span>
+    <p style="margin:0;font-size:15px;">Concept: 20 min &middot; Walkthrough: 20 min &middot; Exercises: 20 min</p>
+  </div>
+  <aside style="display:none;" class="notes">Learning objectives slide. Give learners a roadmap before diving in.</aside>
+</section>
+
+<!-- ===== SLIDE 2: PREREQUISITES ===== -->
+<section class="slide" data-slide="2">
+  <h2>Prerequisites</h2>
+  <p>Before starting, you should be comfortable with:</p>
+  <ul>
+    <li>Running Python scripts from the terminal</li>
+    <li>Variables and basic data types (<code>int</code>, <code>str</code>, <code>bool</code>, <code>list</code>)</li>
+    <li><code>print()</code> and <code>input()</code> functions</li>
+    <li>Python's indentation rules (4 spaces)</li>
+  </ul>
+  <div class="card" style="margin-top:12px;">
+    <span class="label">Need a refresher?</span>
+    <p style="margin:4px 0 0;font-size:15px;">Review Day 1 (Python setup), Day 2 (variables &amp; types), Day 3 (lists &amp; strings), and Day 4 (functions).</p>
+  </div>
+  <aside style="display:none;" class="notes">Quick check: if anyone can't run python3 and print hello, they need to go back to Day 1.</aside>
+</section>
+
+<!-- ===== SLIDE 3: SECTION BREAK ===== -->
+<section class="slide section-break" data-slide="3">
+  <h2>&#x1F4A1; Conditionals</h2>
+  <p>Making decisions in code</p>
+  <aside style="display:none;" class="notes">Section break. Transition from setup to if/else.</aside>
+</section>
+
+<!-- ===== SLIDE 4: BOOLEAN EXPRESSIONS ===== -->
+<section class="slide" data-slide="4">
+  <h2>Boolean Expressions</h2>
+  <p>Every conditional starts with a <strong>boolean expression</strong> &mdash; something that's either <code>True</code> or <code>False</code>.</p>
+  <div class="two-col">
+    <div>
+      <h3>Comparison Operators</h3>
+      <table style="width:100%;border-collapse:collapse;font-family:var(--code-font);font-size:14px;">
+        <tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--pink);">==</td><td style="padding:4px 8px;border-bottom:1px solid var(--border);">equals</td></tr>
+        <tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--pink);">!=</td><td style="padding:4px 8px;border-bottom:1px solid var(--border);">not equal</td></tr>
+        <tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--pink);">&lt;</td><td style="padding:4px 8px;border-bottom:1px solid var(--border);">less than</td></tr>
+        <tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--pink);">&gt;</td><td style="padding:4px 8px;border-bottom:1px solid var(--border);">greater than</td></tr>
+        <tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--pink);">&lt;=</td><td style="padding:4px 8px;border-bottom:1px solid var(--border);">less or equal</td></tr>
+        <tr><td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--pink);">&gt;=</td><td style="padding:4px 8px;border-bottom:1px solid var(--border);">greater or equal</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Examples</h3>
+      <pre style="font-size:13px;margin:0;"><span class="kw">print</span>(5 == 5)      <span class="cm"># True</span>
+<span class="kw">print</span>(5 != 3)      <span class="cm"># True</span>
+<span class="kw">print</span>(3 &lt; 5)       <span class="cm"># True</span>
+<span class="kw">print</span>(10 &gt; 20)     <span class="cm"># False</span>
+<span class="kw">print</span>(7 &lt;= 7)      <span class="cm"># True</span>
+
+age = 18
+<span class="kw">print</span>(age &gt;= 18)   <span class="cm"># True</span></pre>
+    </div>
+  </div>
+  <div class="card" style="margin-top:4px;">
+    <span class="label">&#x26A0; Watch Out</span>
+    <p style="margin:2px 0 0;font-size:15px;"><code>=</code> is <strong>assignment</strong> (set a variable). <code>==</code> is <strong>comparison</strong> (check equality). Mixing them up is the #1 beginner bug.</p>
+  </div>
+  <aside style="display:none;" class="notes">One of the most important slides. Learners need to internalize that == compares values and = assigns them. Show the difference with a live demo if time allows.</aside>
+</section>
+
+<!-- ===== SLIDE 5: if/elif/else ===== -->
+<section class="slide" data-slide="5">
+  <h2>if / elif / else</h2>
+  <p>The backbone of decision-making in Python:</p>
+  <div class="two-col">
+    <pre style="font-size:13px;"><span class="kw">score</span> = 85
+
+<span class="kw">if</span> score &gt;= 90:
+    <span class="kw">print</span>(<span class="str">"A"</span>)
+<span class="kw">elif</span> score &gt;= 80:
+    <span class="kw">print</span>(<span class="str">"B"</span>)
+<span class="kw">elif</span> score &gt;= 70:
+    <span class="kw">print</span>(<span class="str">"C"</span>)
+<span class="kw">else</span>:
+    <span class="kw">print</span>(<span class="str">"F"</span>)
+<span class="cm"># Prints: B</span></pre>
+    <div>
+      <div class="card" style="margin:0 0 10px;">
+        <span class="label">Rules</span>
+        <ul style="font-size:14px;margin:4px 0 0;padding-left:16px;">
+          <li><code>if</code> is required first</li>
+          <li>Zero or more <code>elif</code></li>
+          <li><code>else</code> at most once, at the end</li>
+          <li>Colon <code>:</code> after each condition</li>
+          <li>Body is <strong>indented</strong> (4 spaces)</li>
+          <li>First true branch runs; rest skipped</li>
+        </ul>
+      </div>
+      <div class="card" style="margin:0;">
+        <span class="label">Truthiness</span>
+        <p style="margin:4px 0 0;font-size:14px;">Values like <code>0</code>, <code>""</code>, <code>None</code>, <code>[]</code> are <strong>falsy</strong> &mdash; they evaluate to <code>False</code> in an <code>if</code> condition. Everything else is truthy.</p>
+      </div>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">The grade example is familiar to everyone. First-only-match is critical — learners often think all matching branches run. Contrast with a chain of if-statements (no elif) to show the difference.</aside>
+</section>
+
+<!-- ===== SLIDE 6: COMBINING CONDITIONS ===== -->
+<section class="slide" data-slide="6">
+  <h2>Combining Conditions</h2>
+  <p>Use <code>and</code>, <code>or</code>, and <code>not</code> to build complex logic:</p>
+  <div class="two-col">
+    <pre style="font-size:13px;"><span class="cm"># Both must be True</span>
+temp = 75
+sunny = <span class="kw">True</span>
+<span class="kw">if</span> temp &gt; 70 <span class="kw">and</span> sunny:
+    <span class="kw">print</span>(<span class="str">"Let's go outside!"</span>)
+
+<span class="cm"># At least one True</span>
+<span class="kw">if</span> has_key <span class="kw">or</span> knows_code:
+    <span class="kw">print</span>(<span class="str">"Door opens"</span>)
+
+<span class="cm"># Negation</span>
+<span class="kw">if</span> <span class="kw">not</span> logged_in:
+    <span class="kw">print</span>(<span class="str">"Please log in"</span>)</pre>
+    <div>
+      <div class="card" style="margin:0;">
+        <span class="label">Operator Precedence</span>
+        <p style="margin:4px 0 0;font-size:14px;">When in doubt, use <strong>parentheses</strong> to make order explicit:</p>
+        <pre style="font-size:12px;margin:8px 0 0;"><span class="kw">if</span> (age &gt;= 18 <span class="kw">and</span> has_id) <span class="kw">or</span> parent_ok:
+    <span class="kw">print</span>(<span class="str">"Allowed"</span>)</pre>
+      </div>
+      <div class="card" style="margin:10px 0 0;">
+        <span class="label">Short-Circuit</span>
+        <p style="margin:4px 0 0;font-size:14px;">Python stops evaluating <code>and</code>/<code>or</code> as soon as it knows the result. This can prevent errors:</p>
+        <pre style="font-size:12px;margin:8px 0 0;"><span class="kw">if</span> items <span class="kw">and</span> items[0] &gt; 0:
+    <span class="kw">print</span>(<span class="str">"First item positive"</span>)</pre>
+      </div>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">Short-circuit evaluation is a superpower — it protects you from IndexError on empty lists. Demonstrate what happens without the 'items and' guard.</aside>
+</section>
+
+<!-- ===== SLIDE 7: SECTION BREAK ===== -->
+<section class="slide section-break" data-slide="7">
+  <h2>&#x1F501; for Loops</h2>
+  <p>Doing things repeatedly</p>
+  <aside style="display:none;" class="notes">Section break. Transition from conditionals to loops.</aside>
+</section>
+
+<!-- ===== SLIDE 8: for Loops with range() ===== -->
+<section class="slide" data-slide="8">
+  <h2><code>for</code> Loops with <code>range()</code></h2>
+  <p>Repeat an action a fixed number of times:</p>
+  <div class="two-col">
+    <pre style="font-size:13px;"><span class="cm"># range(stop): 0 to stop-1</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(5):
+    <span class="kw">print</span>(i)
+<span class="cm"># Prints: 0 1 2 3 4</span>
+
+<span class="cm"># range(start, stop)</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(2, 6):
+    <span class="kw">print</span>(i)
+<span class="cm"># Prints: 2 3 4 5</span>
+
+<span class="cm"># range(start, stop, step)</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(0, 10, 2):
+    <span class="kw">print</span>(i)
+<span class="cm"># Prints: 0 2 4 6 8</span></pre>
+    <div>
+      <div class="card" style="margin:0;">
+        <span class="label"><code>range()</code> Signatures</span>
+        <table style="width:100%;border-collapse:collapse;font-family:var(--code-font);font-size:13px;margin-top:4px;">
+          <tr><td style="padding:3px 6px;border-bottom:1px solid var(--border);color:var(--cyan);">range(stop)</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);">0 &rarr; stop-1</td></tr>
+          <tr><td style="padding:3px 6px;border-bottom:1px solid var(--border);color:var(--cyan);">range(start, stop)</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);">start &rarr; stop-1</td></tr>
+          <tr><td style="padding:3px 6px;border-bottom:1px solid var(--border);color:var(--cyan);">range(start, stop, step)</td><td style="padding:3px 6px;border-bottom:1px solid var(--border);">start &rarr; stop-1, by step</td></tr>
+        </table>
+      </div>
+      <div class="card" style="margin:10px 0 0;">
+        <span class="label">&#x26A0; Off-by-One</span>
+        <p style="margin:4px 0 0;font-size:14px;"><code>range(n)</code> produces <code>n</code> values, <strong>0 through n-1</strong>.</p>
+        <pre style="font-size:12px;margin:6px 0 0;"><span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(3):
+    <span class="kw">print</span>(i)  <span class="cm"># 0, 1, 2 &mdash; NOT 3!</span></pre>
+      </div>
+    </div>
+  </div>
+  <aside style="display:none;">Three forms of range(). The off-by-one error is THE most common loop bug — emphasize it hard.</aside>
+</section>
+
+<!-- ===== SLIDE 9: Looping Over Lists & Strings ===== -->
+<section class="slide" data-slide="9">
+  <h2>Looping Over Lists &amp; Strings</h2>
+  <p>for loops work with any <strong>iterable</strong> object:</p>
+  <div class="two-col">
+    <pre style="font-size:13px;"><span class="cm"># Over a list</span>
+fruits = [<span class="str">"apple"</span>, <span class="str">"banana"</span>, <span class="str">"cherry"</span>]
+<span class="kw">for</span> fruit <span class="kw">in</span> fruits:
+    <span class="kw">print</span>(fruit)
+
+<span class="cm"># Over a string (characters)</span>
+<span class="kw">for</span> ch <span class="kw">in</span> <span class="str">"hello"</span>:
+    <span class="kw">print</span>(ch)
+<span class="cm"># Prints: h e l l o</span>
+
+<span class="cm"># Using enumerate for index</span>
+<span class="kw">for</span> i, fruit <span class="kw">in</span> <span class="kw">enumerate</span>(fruits):
+    <span class="kw">print</span>(f<span class="str">"{i}: {fruit}"</span>)</pre>
+    <div>
+      <div class="card" style="margin:0;">
+        <span class="label"><code>enumerate()</code></span>
+        <p style="margin:4px 0 0;font-size:14px;">Need the index <em>and</em> the element? Use <code>enumerate()</code>. It yields <code>(index, value)</code> tuples.</p>
+        <pre style="font-size:12px;margin:6px 0 0;"><span class="cm"># Manual way (awkward):</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(<span class="kw">len</span>(items)):
+    <span class="kw">print</span>(items[i])
+
+<span class="cm"># Pythonic way:</span>
+<span class="kw">for</span> i, item <span class="kw">in</span> <span class="kw">enumerate</span>(items):
+    <span class="kw">print</span>(item)</pre>
+      </div>
+      <div class="card" style="margin:10px 0 0;">
+        <span class="label">&#x26A0; Don't Modify While Looping</span>
+        <p style="margin:4px 0 0;font-size:14px;">Don't add/remove items from a list while looping over it. Build a <strong>new list</strong> instead.</p>
+      </div>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">enumerate is a key Python idiom. Show both the manual range(len()) way and the Pythonic enumerate way so they see why enumerate is preferred.</aside>
+</section>
+
+<!-- ===== SLIDE 10: NESTED LOOPS ===== -->
+<section class="slide" data-slide="10">
+  <h2>Nested Loops &amp; The Inner Loop Pattern</h2>
+  <p>Put a loop inside another loop for grids, tables, and multiplication tables:</p>
+  <pre style="font-size:14px;"><span class="cm"># Multiplication table (1 to 3)</span>
+<span class="kw">for</span> row <span class="kw">in</span> <span class="kw">range</span>(1, 4):
+    line = <span class="str">""</span>
+    <span class="kw">for</span> col <span class="kw">in</span> <span class="kw">range</span>(1, 4):
+        line += f<span class="str">"{row*col:3}"</span>
+    <span class="kw">print</span>(line)
+<span class="cm"># Output:</span>
+<span class="cm">#   1  2  3</span>
+<span class="cm">#   2  4  6</span>
+<span class="cm">#   3  6  9</span></pre>
+  <div class="card-row">
+    <div class="card">
+      <span class="label">Outer Loop</span>
+      <p style="margin:4px 0 0;font-size:15px;">Runs once per row. The inner loop runs completely for <em>each</em> outer iteration.</p>
+    </div>
+    <div class="card">
+      <span class="label">Inner Loop</span>
+      <p style="margin:4px 0 0;font-size:15px;">Completes all its iterations before the outer loop advances.</p>
+    </div>
+    <div class="card">
+      <span class="label">Complexity</span>
+      <p style="margin:4px 0 0;font-size:15px;">N iterations × M iterations = N &times; M total steps.</p>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">Nested loops are tough for beginners. The multiplication table is the most intuitive example. Walk through it step by step on the whiteboard.</aside>
+</section>
+
+<!-- ===== SLIDE 11: FIZZBUZZ WALKTHROUGH ===== -->
+<section class="slide" data-slide="11">
+  <h2>FizzBuzz Walkthrough</h2>
+  <p>The classic coding interview warm-up:</p>
+  <pre style="font-size:14px;"><span class="cm"># Print 1 to 100. Multiples of 3: "Fizz"</span>
+<span class="cm"># Multiples of 5: "Buzz". Both: "FizzBuzz"</span>
+
+<span class="kw">for</span> n <span class="kw">in</span> <span class="kw">range</span>(1, 101):
+    <span class="kw">if</span> n % 3 == 0 <span class="kw">and</span> n % 5 == 0:
+        <span class="kw">print</span>(<span class="str">"FizzBuzz"</span>)
+    <span class="kw">elif</span> n % 3 == 0:
+        <span class="kw">print</span>(<span class="str">"Fizz"</span>)
+    <span class="kw">elif</span> n % 5 == 0:
+        <span class="kw">print</span>(<span class="str">"Buzz"</span>)
+    <span class="kw">else</span>:
+        <span class="kw">print</span>(n)</pre>
+  <div class="card-row">
+    <div class="card">
+      <span class="label">Why FizzBuzz?</span>
+      <p style="margin:4px 0 0;font-size:14px;">Tests if you can combine if/else, loops, and the modulo operator (<code>%</code>) into a working program. Surprisingly many interviewees can't!</p>
+    </div>
+    <div class="card">
+      <span class="label">Key Insight</span>
+      <p style="margin:4px 0 0;font-size:14px;">Check the <strong>most specific</strong> condition first (both 3 AND 5). If you check 3 first, <code>n=15</code> prints "Fizz" instead of "FizzBuzz".</p>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">Walk through n=1..20 manually on the whiteboard. Show what happens if you swap the order — that's where most bugs come from. The modulo operator % gives remainder — n % 3 == 0 means divisible by 3.</aside>
+</section>
+
+<!-- ===== SLIDE 12: PRACTICE EXERCISES ===== -->
+<section class="slide" data-slide="12">
+  <h2>Practice Exercises</h2>
+  <p>Spend ~20 minutes on these. Try each one before looking at hints.</p>
+
+  <div class="exercise-box">
+    <div class="task">Exercise 1: Even or Odd</div>
+    <p style="font-size:15px;">Write a program that asks for a number and prints whether it's even or odd.</p>
+    <div class="hint-box">
+      <div class="label">Hint</div>
+      <p style="margin:4px 0 0;font-size:14px;">Use <code>input()</code>, <code>int()</code>, and <code>% 2</code>. A number is even if <code>n % 2 == 0</code>.</p>
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <div class="task">Exercise 2: Sum of 1 to N</div>
+    <p style="font-size:15px;">Ask for a number N. Use a for loop to compute the sum of 1 + 2 + ... + N. Print the result.</p>
+    <div class="hint-box">
+      <div class="label">Hint</div>
+      <p style="margin:4px 0 0;font-size:14px;">Initialize a variable <code>total = 0</code> before the loop, then add each number.</p>
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <div class="task">Exercise 3: FizzBuzz (your turn!)</div>
+    <p style="font-size:15px;">Write FizzBuzz from scratch, but this time only go from 1 to 30. Make sure "FizzBuzz" appears on 15 and 30.</p>
+    <div class="hint-box">
+      <div class="label">Hint</div>
+      <p style="margin:4px 0 0;font-size:14px;">Use <code>range(1, 31)</code> and check the 15 case first. Test with a few values manually to confirm.</p>
+    </div>
+  </div>
+
+  <aside style="display:none;" class="notes">Give learners 5-7 minutes per exercise. The exercises progressively build — Even/Odd introduces the pattern, Sum adds loop accumulation, FizzBuzz combines everything.</aside>
+</section>
+
+<!-- ===== SLIDE 13: SOLUTION SLIDE ===== -->
+<section class="slide" data-slide="13">
+  <h2>Solutions (Try First!)</h2>
+  <div class="two-col">
+    <pre style="font-size:12px;"><span class="cm"># Ex 1: Even or Odd</span>
+num = <span class="kw">int</span>(<span class="kw">input</span>(<span class="str">"Enter a number: "</span>))
+<span class="kw">if</span> num % 2 == 0:
+    <span class="kw">print</span>(f<span class="str">"{num} is even"</span>)
+<span class="kw">else</span>:
+    <span class="kw">print</span>(f<span class="str">"{num} is odd"</span>)
+
+<span class="cm"># Ex 2: Sum of 1 to N</span>
+n = <span class="kw">int</span>(<span class="kw">input</span>(<span class="str">"Enter N: "</span>))
+total = 0
+<span class="kw">for</span> i <span class="kw">in</span> <span class="kw">range</span>(1, n + 1):
+    total += i
+<span class="kw">print</span>(f<span class="str">"Sum = {total}"</span>)</pre>
+    <pre style="font-size:12px;"><span class="cm"># Ex 3: FizzBuzz (1 to 30)</span>
+<span class="kw">for</span> n <span class="kw">in</span> <span class="kw">range</span>(1, 31):
+    <span class="kw">if</span> n % 15 == 0:
+        <span class="kw">print</span>(<span class="str">"FizzBuzz"</span>)
+    <span class="kw">elif</span> n % 3 == 0:
+        <span class="kw">print</span>(<span class="str">"Fizz"</span>)
+    <span class="kw">elif</span> n % 5 == 0:
+        <span class="kw">print</span>(<span class="str">"Buzz"</span>)
+    <span class="kw">else</span>:
+        <span class="kw">print</span>(n)
+
+<span class="cm"># Alternative using % 15:</span>
+<span class="cm"># n % 15 == 0 is the same as</span>
+<span class="cm"># n % 3 == 0 and n % 5 == 0</span></pre>
+  </div>
+  <p style="font-size:14px;color:var(--text-muted);">Only check after you've tried each exercise for at least 5 minutes!</p>
+  <aside style="display:none;" class="notes">Solutions slide. Emphasize that the n % 15 trick is a faster way to check both conditions.</aside>
+</section>
+
+<!-- ===== SLIDE 14: SUMMARY ===== -->
+<section class="slide recap-slide" data-slide="14">
+  <h2>Key Takeaways</h2>
+  <div style="margin-top:12px;">
+    <div class="takeaway">
+      <div class="num">1</div>
+      <span><strong>if/elif/else</strong> lets code make decisions. First true branch wins — order matters! Use <code>==</code> for comparison, never <code>=</code>.</span>
+    </div>
+    <div class="takeaway">
+      <div class="num">2</div>
+      <span><strong>for loops</strong> iterate over sequences. <code>range(n)</code> gives 0 to n-1. Combine with <code>enumerate()</code> to get indices.</span>
+    </div>
+    <div class="takeaway">
+      <div class="num">3</div>
+      <span><strong>FizzBuzz</strong> combines everything: loops + conditionals + modulo. Check the most specific case first (both conditions) before individual ones.</span>
+    </div>
+    <div class="takeaway">
+      <div class="num">4</div>
+      <span><strong>Milestone preview:</strong> Conditionals and loops go into Project 1 (CLI Todo List) after Week 3 &mdash; you'll use them to navigate menus and process tasks.</span>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">Recap. Ask each learner to write down the three key takeaways. Mention the milestone to keep motivation up.</aside>
+</section>
+
+<!-- ===== SLIDE 15: NEXT STEPS ===== -->
+<section class="slide" data-slide="15">
+  <h2>Next Steps</h2>
+  <div class="card" style="margin-bottom:14px;">
+    <span class="label">&#x1F4DA; Before Next Session</span>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:16px;">
+      <li>Solve FizzBuzz from memory — no peeking!</li>
+      <li>Write a program that prints all even numbers from 1 to 50</li>
+      <li>Write a "guess the number" game (pick a number, loop until guessed)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <span class="label">&#x1F3AF; Coming Up</span>
+    <p style="margin:6px 0 0;font-size:16px;"><strong>Day 6:</strong> Python &mdash; while loops, break, continue. You'll learn how to loop until a condition is met — perfect for interactive programs.</p>
+  </div>
+  <div class="card" style="margin-top:10px;">
+    <span class="label">&#x1F4A1; Real-World Project</span>
+    <p style="margin:6px 0 0;font-size:16px;">After Week 3, you'll build <strong>Project 1: CLI Todo List</strong> &mdash; an interactive command-line app with if/else for menu navigation and loops for listing/filtering tasks.</p>
+  </div>
+  <p style="font-size:14px;color:var(--text-muted);margin-top:14px;">Day 5 complete &mdash; you can now write programs that think and repeat!</p>
+  <aside style="display:none;" class="notes">Homework slide. Encourage them to practice FizzBuzz until it's automatic — it shows up in almost every first-round interview.</aside>
+</section>
+
+<!-- ===== PROGRESS ===== -->
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="slide-counter"><span id="slideNum">1</span> / <span id="slideTotal">16</span></div>
+</div>
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  document.getElementById('slideTotal').textContent = total;
+  var current = 0;
+
+  function showSlide(idx) {
+    slides.forEach(function(s, i) {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    document.getElementById('slideNum').textContent = idx + 1;
+    document.getElementById('progressBar').style.width = ((idx + 1) / total * 100) + '%';
+    location.hash = idx;
+  }
+
+  function next() { showSlide(Math.min(current + 1, total - 1)); }
+  function prev() { showSlide(Math.max(current - 1, 0)); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : document.getElementById('deck').requestFullscreen(); }
+    if (e.key === 'n' || e.key === 'N') {
+      var notes = slides[current].querySelector('.notes');
+      var el = document.querySelector('.speaker-notes');
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'speaker-notes';
+        el.style.cssText = 'position:fixed;bottom:56px;right:20px;width:280px;max-height:180px;background:#1a1d28;border:1px solid var(--accent-dim);border-radius:8px;padding:12px 16px;font-size:13px;font-family:var(--body-font);z-index:100;overflow-y:auto;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.5);';
+        document.body.appendChild(el);
+      }
+      if (notes) {
+        el.textContent = notes.textContent;
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+    if (e.key === 'Escape') {
+      var sn = document.querySelector('.speaker-notes');
+      if (sn) sn.style.display = 'none';
+      if (document.fullscreenElement) document.exitFullscreen();
+    }
+  });
+
+  // Restore from hash
+  var hash = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(hash) && hash >= 0 && hash < total) showSlide(hash);
+  else showSlide(0);
+
+  // Touch swipe support
+  var startX = 0;
+  document.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive: true});
+  document.addEventListener('touchend', function(e) {
+    var diff = e.changedTouches[0].clientX - startX;
+    if (Math.abs(diff) > 50) { if (diff < 0) next(); else prev(); }
+  }, {passive: true});
+})();
+</script>
+
+</body>
+</html>
