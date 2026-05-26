@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 &mdash; Review + Flashcard Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d28;
+  --bg-code: #13161f;
+  --text: #e1e4ed;
+  --text-muted: #8b91a3;
+  --accent: #7c9cff;
+  --accent-dim: #4a6acf;
+  --green: #5cd98a;
+  --orange: #f0a54a;
+  --pink: #f07178;
+  --cyan: #5ccfe6;
+  --yellow: #eed473;
+  --border: #262a38;
+  --title-font: 'Literata', Georgia, serif;
+  --body-font: 'Literata', Georgia, serif;
+  --code-font: 'JetBrains Mono', 'Fira Code', monospace;
+  --slide-w: 960px;
+  --slide-h: 540px;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #080a10;
+  color: var(--text);
+  font-family: var(--body-font);
+  font-size: 18px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw; height: 100vh;
+}
+#deck {
+  position: relative;
+  width: var(--slide-w); height: var(--slide-h);
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 1px var(--border), 0 20px 60px rgba(0,0,0,.6);
+}
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 40px 52px 44px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .32s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1; pointer-events: auto;
+  z-index: 2;
+}
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* -- progress -- */
+.progress {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: var(--border); z-index: 10;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width .35s ease;
+  width: 0%;
+}
+.slide-counter {
+  position: absolute;
+  bottom: 10px; right: 20px;
+  font-family: var(--code-font);
+  font-size: 12px;
+  color: var(--text-muted);
+  z-index: 11;
+}
+
+/* -- typography -- */
+h1 {
+  font-family: var(--title-font);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+h2 {
+  font-family: var(--title-font);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+h3 {
+  font-family: var(--title-font);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+p { margin-bottom: 12px; }
+.subtitle {
+  font-size: 20px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.date {
+  font-family: var(--code-font);
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* -- code -- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-family: var(--code-font);
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 10px 0 14px;
+}
+code { font-family: var(--code-font); font-size: .9em; }
+pre .hl { color: var(--accent); }
+pre .kw { color: var(--pink); font-weight: 600; }
+pre .fn { color: var(--cyan); }
+pre .str { color: var(--green); }
+pre .cm { color: var(--text-muted); font-style: italic; }
+pre .num { color: var(--orange); }
+pre .op { color: var(--text); }
+pre .bu { color: var(--yellow); font-weight: 500; }  /* bash built-ins */
+
+/* -- lists -- */
+ul, ol { padding-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 5px; }
+ul li::marker { color: var(--accent); }
+
+/* -- cards -- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 8px 0 14px;
+}
+.card-row {
+  display: flex; gap: 14px;
+  margin: 6px 0 12px;
+}
+.card-row .card { flex: 1; margin: 0; }
+.card .label {
+  font-family: var(--code-font);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+/* -- flashcard style -- */
+.flashcard {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-dim);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 10px 0 14px;
+  text-align: center;
+  font-size: 19px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .2s, border-color .2s;
+}
+.flashcard:hover {
+  border-color: var(--accent);
+  background: #222739;
+}
+.flashcard .term {
+  font-family: var(--code-font);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+.flashcard .def {
+  display: block;
+  color: var(--text-muted);
+  font-size: 17px;
+  margin-top: 4px;
+}
+.flashcard .hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 10px;
+  font-style: italic;
+}
+.flashcard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.flashcard-grid .card {
+  text-align: center;
+  padding: 12px 10px;
+  margin: 0;
+}
+.flashcard-grid .card code {
+  font-size: 20px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.flashcard-grid .card .desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* -- special slides -- */
+.title-slide { justify-content: center; text-align: center; align-items: center; }
+.title-slide h1 { font-size: 50px; margin-bottom: 8px; }
+.title-slide .subtitle { font-size: 22px; }
+.section-break {
+  justify-content: center; align-items: center; text-align: center;
+  background: linear-gradient(135deg, #1a1d28 0%, #0f1117 100%);
+}
+.section-break h2 { font-size: 40px; color: var(--text); }
+.section-break p { color: var(--text-muted); font-size: 18px; }
+
+.recap-slide { justify-content: center; }
+.recap-slide .takeaway {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 0;
+  font-size: 19px;
+  border-bottom: 1px solid var(--border);
+}
+.recap-slide .takeaway:last-child { border: none; }
+.recap-slide .num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--code-font);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* -- two column -- */
+.two-col {
+  display: flex; gap: 24px; flex: 1;
+  min-height: 0;
+}
+.two-col > * { flex: 1; min-width: 0; }
+
+/* -- milestone box -- */
+.milestone-box {
+  background: linear-gradient(135deg, #1a2240, #1a1d28);
+  border: 1px solid var(--accent-dim);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin: 10px 0 14px;
+}
+.milestone-box .badge {
+  display: inline-block;
+  background: var(--accent-dim);
+  color: #fff;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-family: var(--code-font);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 8px;
+}
+
+/* -- responsive -- */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px 40px; font-size: 16px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 24px; }
+  .title-slide h1 { font-size: 36px; }
+  .two-col { flex-direction: column; gap: 8px; }
+  .card-row { flex-direction: column; }
+  .flashcard-grid { grid-template-columns: 1fr; }
+}
+
+/* -- print -- */
+@media print {
+  body { background: #fff; }
+  #deck { box-shadow: none; border: 1px solid #ccc; }
+  .slide { opacity: 1 !important; position: relative !important; break-after: page; }
+}
+
+/* -- exercise box -- */
+.exercise-box {
+  background: #1a1f2e;
+  border: 1px solid var(--accent-dim);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0 14px;
+}
+.exercise-box .task {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.hint-box {
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 15px;
+}
+.hint-box .label {
+  font-family: var(--code-font);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--orange);
+  letter-spacing: .05em;
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<div id="deck">
+
+<!-- ===== SLIDE 0: TITLE ===== -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>Review + Flashcard Day</h1>
+  <p class="subtitle">Re-type every script from Days 1&ndash;5 &middot; Build your flashcard deck &middot; Milestone: CLI Greeter</p>
+  <p class="date" style="margin-top:20px;">Day 6 &middot; Week 2 &middot; Phase I</p>
+  <p class="date">90-Day Co-op Prep Plan</p>
+  <p class="date" style="color:var(--text-muted);font-size:13px;">May 26, 2026 &middot; ~60 minutes</p>
+  <aside style="display:none;" class="notes">Welcome to Review Day. No new concepts today — just reinforcement through recall. The most effective way to learn is to retrieve, not re-read.</aside>
+</section>
+
+<!-- ===== SLIDE 1: LEARNING OBJECTIVES ===== -->
+<section class="slide" data-slide="1">
+  <h2>What You'll Achieve Today</h2>
+  <p>By the end of this session, you'll have:</p>
+  <ul style="margin-top:8px;">
+    <li><strong>Re-typed</strong> every script from Days 1&ndash;5 from memory</li>
+    <li>Built a <strong>flashcard deck</strong> of 15+ Linux commands &amp; Python keywords</li>
+    <li>Created your <strong>CLI Greeter</strong> &mdash; a milestone project</li>
+    <li>Identified gaps in your knowledge (and filled them)</li>
+  </ul>
+  <div class="card" style="margin-top:14px;">
+    <span class="label">&#x1F4A1; Why Review?</span>
+    <p style="margin:4px 0 0;font-size:16px;">Spaced repetition is the most effective study method. Re-typing code from memory builds procedural memory &mdash; the same skill you'll use in interviews and on the job.</p>
+  </div>
+  <aside style="display:none;" class="notes">Emphasize that this is the most productive kind of practice. Looking at code and thinking "I know this" is passive. Typing it from scratch is active — and that's what builds real skill.</aside>
+</section>
+
+<!-- ===== SLIDE 2: SECTION BREAK — RE-TYPE SCRIPTS ===== -->
+<section class="slide section-break" data-slide="2">
+  <h2>&#x1F4DD; Re-Type Every Script</h2>
+  <p>Days 1&ndash;5 &mdash; from memory, no peeking</p>
+  <aside style="display:none;" class="notes">This is the core exercise of today. Each script should be written from scratch in a new file.</aside>
+</section>
+
+<!-- ===== SLIDE 3: SCRIPT 1 — BASH BASICS ===== -->
+<section class="slide" data-slide="3">
+  <h2>&#x1F4BB; Script 1: Bash Basics (Day 1)</h2>
+  <p>Write a bash script that prints system info. No peeking &mdash; type it from memory:</p>
+  <pre><span class="bu">#!/bin/bash</span>
+<span class="cm"># System info script (Day 1)</span>
+<span class="bu">echo</span> <span class="str">"Hello, \$USER!"</span>
+<span class="bu">echo</span> <span class="str">"Date: \$(date)"</span>
+<span class="bu">echo</span> <span class="str">"Uptime: \$(uptime -p)"</span>
+<span class="bu">echo</span> <span class="str">"Disk usage:"</span>
+df -h | grep <span class="str">'^/'</span> | awk <span class="str">'{print \$1, \$5}'</span></pre>
+  <div class="card">
+    <span class="label">&#x1F3AF; Recall Checklist</span>
+    <p style="margin:4px 0 0;font-size:15px;">&#x2705; Shebang line &nbsp; &#x2705; Variables (<code>$USER</code>) &nbsp; &#x2705; Command substitution (<code>$(date)</code>) &nbsp; &#x2705; <code>echo</code>, <code>df</code>, <code>grep</code>, <code>awk</code></p>
+  </div>
+  <aside style="display:none;" class="notes">Learners should open a blank file, write the script, save it, chmod +x it, and run it. If they can't get through it without looking, that's a flag they should review Day 1.</aside>
+</section>
+
+<!-- ===== SLIDE 4: SCRIPT 2 — FILESYSTEM NAVIGATION ===== -->
+<section class="slide" data-slide="4">
+  <h2>&#x1F4C1; Script 2: Filesystem Explorer (Day 2)</h2>
+  <p>Write a script that explores directories and reports their contents:</p>
+  <pre><span class="bu">#!/bin/bash</span>
+<span class="cm"># Filesystem explorer (Day 2)</span>
+target=<span class="str">"\${1:-.}"</span>
+<span class="bu">echo</span> <span class="str">"Exploring: \$target"</span>
+<span class="bu">echo</span> <span class="str">"--- Directories ---"</span>
+ls -d <span class="str">"\$target"</span>/*/
+<span class="bu">echo</span> <span class="str">"--- Files ---"</span>
+ls -l <span class="str">"\$target"</span> | grep <span class="str">'^-'</span> | awk <span class="str">'{print \$NF, \$5}'</span>
+<span class="bu">echo</span> <span class="str">"--- Sizes ---"</span>
+du -sh <span class="str">"\$target"</span>/*/ 2&gt;/dev/null | sort -rh | head -5</pre>
+  <div class="card">
+    <span class="label">&#x1F3AF; Key Commands to Recall</span>
+    <p style="margin:4px 0 0;font-size:15px;"><code>ls</code>, <code>cd</code>, <code>pwd</code>, <code>mkdir -p</code>, <code>touch</code>, <code>cp -r</code>, <code>mv</code>, <code>rm -rf</code>, <code>du -sh</code>, <code>sort -rh</code>, pipes (<code>|</code>), redirection (<code>&gt;</code>, <code>&gt;&gt;</code>)</p>
+  </div>
+  <aside style="display:none;" class="notes">Test: can they navigate /tmp, create nested dirs, move files between them, and clean up? If not, that's the gap to fix.</aside>
+</section>
+
+<!-- ===== SLIDE 5: SCRIPT 3 — PYTHON FIRST SCRIPT ===== -->
+<section class="slide" data-slide="5">
+  <h2>&#x1F40D; Script 3: Python Hello &amp; venv (Day 3)</h2>
+  <p>Write a Python script and set up a virtual environment. Recall every step:</p>
+  <div class="two-col">
+    <div>
+      <h3>Part A: The script</h3>
+      <pre><span class="cm">#!/usr/bin/env python3</span>
+<span class="cm"># Hello Python (Day 3)</span>
+<span class="fn">print</span>(<span class="str">"Hello, Co-op Prep!"</span>)
+name = <span class="fn">input</span>(<span class="str">"What's your name? "</span>)
+<span class="fn">print</span>(<span class="str">f"Nice to meet you, {name}!"</span>)</pre>
+    </div>
+    <div>
+      <h3>Part B: venv setup</h3>
+      <pre>$ python3 -m venv venv
+$ <span class="bu">source</span> venv/bin/activate
+(venv) $ python hello.py
+Hello, Co-op Prep!
+(venv) $ deactivate</pre>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">Make sure they also recall: what is a venv? Why use one? Can they create, activate, install a package, and deactivate?</aside>
+</section>
+
+<!-- ===== SLIDE 6: SCRIPT 4 — STRINGS, NUMBERS, INPUT ===== -->
+<section class="slide" data-slide="6">
+  <h2>&#x1F522; Script 4: Strings, Numbers &amp; Input (Day 4)</h2>
+  <p>Write a program that takes two numbers and performs calculations:</p>
+  <pre><span class="cm">#!/usr/bin/env python3</span>
+<span class="cm"># Calculator (Day 4)</span>
+a = <span class="bu">float</span>(<span class="fn">input</span>(<span class="str">"First number: "</span>))
+b = <span class="bu">float</span>(<span class="fn">input</span>(<span class="str">"Second number: "</span>))
+<span class="fn">print</span>(<span class="str">f"Sum:      {a + b}"</span>)
+<span class="fn">print</span>(<span class="str">f"Diff:     {a - b}"</span>)
+<span class="fn">print</span>(<span class="str">f"Product:  {a * b}"</span>)
+<span class="fn">print</span>(<span class="str">f"Quotient: {a / b:.2f}"</span>)
+
+<span class="cm"># Bonus — string methods</span>
+text = <span class="str">"  hello, CO-OP prep!  "</span>
+<span class="fn">print</span>(text.strip().<span class="fn">title</span>())     <span class="cm"># "Hello, Co-Op Prep!"</span>
+<span class="fn">print</span>(<span class="str">"$"</span>.join(text.split()))  <span class="cm"># "hello,$CO-OP$prep!"</span></pre>
+  <div class="card">
+    <span class="label">&#x1F3AF; Concepts to Confirm</span>
+    <p style="margin:4px 0 0;font-size:15px;">Types: <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code> &middot; f-strings &middot; <code>.strip()</code>, <code>.split()</code>, <code>.join()</code>, <code>.title()</code> &middot; <code>input()</code> returns a string &middot; <code>type()</code></p>
+  </div>
+  <aside style="display:none;" class="notes">The string methods section is often forgotten. The key insight: input() always returns a string, so you need int() or float() to convert.</aside>
+</section>
+
+<!-- ===== SLIDE 7: SCRIPT 5 — IF/ELSE & FOR LOOPS ===== -->
+<section class="slide" data-slide="7">
+  <h2>&#x1F504; Script 5: Conditionals &amp; Loops (Day 5)</h2>
+  <p>Write FizzBuzz from memory &mdash; the ultimate Day 5 capstone:</p>
+  <pre><span class="cm">#!/usr/bin/env python3</span>
+<span class="cm"># FizzBuzz (Day 5)</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="num">101</span>):
+    <span class="kw">if</span> i % <span class="num">15</span> == <span class="num">0</span>:
+        <span class="fn">print</span>(<span class="str">"FizzBuzz"</span>)
+    <span class="kw">elif</span> i % <span class="num">3</span> == <span class="num">0</span>:
+        <span class="fn">print</span>(<span class="str">"Fizz"</span>)
+    <span class="kw">elif</span> i % <span class="num">5</span> == <span class="num">0</span>:
+        <span class="fn">print</span>(<span class="str">"Buzz"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(i)</pre>
+  <div class="card-row">
+    <div class="card">
+      <span class="label">&#x1F3AF; Keywords</span>
+      <p style="margin:4px 0 0;font-size:15px;"><code>if</code>, <code>elif</code>, <code>else</code>, <code>for</code>, <code>in</code>, <code>range()</code>, <code>==</code>, <code>!=</code>, <code>%</code> (modulo)</p>
+    </div>
+    <div class="card">
+      <span class="label">&#x26A0;&#xFE0F; Common Mistake</span>
+      <p style="margin:4px 0 0;font-size:15px;">Order matters! Check divisibility by <strong>15</strong> (both 3 <em>and</em> 5) first, <em>before</em> checking 3 or 5 individually.</p>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">FizzBuzz from memory is the gold standard for Day 5 recall. If the learner can write it without looking in under 3 minutes, they've internalized conditionals and loops.</aside>
+</section>
+
+<!-- ===== SLIDE 8: SECTION BREAK — FLASHCARD DECK ===== -->
+<section class="slide section-break" data-slide="8">
+  <h2>&#x1F3B4; Build Your Flashcard Deck</h2>
+  <p>Linux commands + Python keywords &mdash; active recall cards</p>
+  <aside style="display:none;" class="notes">Create a physical or digital deck. The act of making the card is itself a learning event.</aside>
+</section>
+
+<!-- ===== SLIDE 9: LINUX COMMAND FLASHCARDS ===== -->
+<section class="slide" data-slide="9">
+  <h2>&#x1F4BB; Linux Commands &mdash; Card Deck</h2>
+  <p>Make a flashcard for each command. Cover the definition, then check:</p>
+  <div class="flashcard-grid">
+    <div class="card"><code>pwd</code><div class="desc">Print working directory</div></div>
+    <div class="card"><code>ls -la</code><div class="desc">List all files with details</div></div>
+    <div class="card"><code>cd ~</code><div class="desc">Go to home directory</div></div>
+    <div class="card"><code>mkdir -p</code><div class="desc">Create nested directories</div></div>
+    <div class="card"><code>cp -r</code><div class="desc">Copy recursively</div></div>
+    <div class="card"><code>mv</code><div class="desc">Move or rename a file</div></div>
+    <div class="card"><code>rm -rf</code><div class="desc">Remove recursively (danger!)</div></div>
+    <div class="card"><code>chmod +x</code><div class="desc">Make file executable</div></div>
+    <div class="card"><code>grep</code><div class="desc">Search text with patterns</div></div>
+    <div class="card"><code>|</code> (pipe)<div class="desc">Chain command output to input</div></div>
+    <div class="card"><code>&gt;</code> / <code>&gt;&gt;</code><div class="desc">Redirect / append output</div></div>
+    <div class="card"><code>du -sh</code><div class="desc">Show total size of a directory</div></div>
+    <div class="card"><code>sort -rh</code><div class="desc">Sort reversed, human-readable</div></div>
+    <div class="card"><code>head / tail</code><div class="desc">First / last N lines</div></div>
+    <div class="card"><code>find . -name</code><div class="desc">Find files by name</div></div>
+    <div class="card"><code>wget / curl</code><div class="desc">Download from URL</div></div>
+  </div>
+  <p style="font-size:14px;color:var(--text-muted);">&#x1F4A1; For each card, say the command, then check the definition. Next round: flip it — say the definition, guess the command.</p>
+  <aside style="display:none;" class="notes">Start with 12-16 cards. Add more each week as you learn new commands. The key is regular review — 5 minutes daily is more effective than 60 minutes weekly.</aside>
+</section>
+
+<!-- ===== SLIDE 10: PYTHON KEYWORD FLASHCARDS ===== -->
+<section class="slide" data-slide="10">
+  <h2>&#x1F40D; Python Keywords &mdash; Card Deck</h2>
+  <p>Flashcards for every Python keyword and concept from Days 3&ndash;5:</p>
+  <div class="flashcard-grid">
+    <div class="card"><code>print()</code><div class="desc">Output to console</div></div>
+    <div class="card"><code>input()</code><div class="desc">Read string from user</div></div>
+    <div class="card"><code>int() / float()</code><div class="desc">Convert to integer / float</div></div>
+    <div class="card"><code>str()</code><div class="desc">Convert to string</div></div>
+    <div class="card"><code>f"...{var}..."</code><div class="desc">f-string: formatted string literal</div></div>
+    <div class="card"><code>if / elif / else</code><div class="desc">Conditional branching</div></div>
+    <div class="card"><code>for x in y:</code><div class="desc">Loop over a sequence</div></div>
+    <div class="card"><code>range(n)</code><div class="desc">Generate 0..n-1 sequence</div></div>
+    <div class="card"><code>== / !=</code><div class="desc">Equality / inequality comparison</div></div>
+    <div class="card"><code>&lt; / &gt; / &lt;= / &gt;=</code><div class="desc">Comparison operators</div></div>
+    <div class="card"><code>%</code> (modulo)<div class="desc">Remainder after division</div></div>
+    <div class="card"><code>.strip()</code><div class="desc">Remove leading/trailing whitespace</div></div>
+    <div class="card"><code>.split()</code><div class="desc">Split string into list</div></div>
+    <div class="card"><code>.join()</code><div class="desc">Join list into string</div></div>
+    <div class="card"><code>type()</code><div class="desc">Get type of a value</div></div>
+    <div class="card"><code>venv</code><div class="desc">Isolated Python environment</div></div>
+  </div>
+  <aside style="display:none;" class="notes">Python keywords: learner should also know the difference between = (assignment) and == (comparison), and understand that range() is 0-indexed.</aside>
+</section>
+
+<!-- ===== SLIDE 11: HOW TO STUDY WITH FLASHCARDS ===== -->
+<section class="slide" data-slide="11">
+  <h2>&#x1F4DA; How to Use Your Deck Effectively</h2>
+  <div class="two-col">
+    <div>
+      <h3>The Leitner Method</h3>
+      <ol style="padding-left:20px;">
+        <li>Go through all cards once</li>
+        <li><strong>Correct</strong> &rarr; move to box 2 (review every 2 days)</li>
+        <li><strong>Wrong</strong> &rarr; keep in box 1 (review daily)</li>
+        <li>Mastered &rarr; box 3 (review weekly)</li>
+      </ol>
+      <div class="card" style="margin-top:10px;">
+        <span class="label">&#x1F4C6; Today's Goal</span>
+        <p style="margin:4px 0 0;font-size:14px;">Go through all 32 cards. Get at least 20 into box 2 (i.e., you can recall them correctly). For the 12 you miss, write them out 3 times each.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Active Recall Rules</h3>
+      <ul>
+        <li>Say the answer <strong>out loud</strong> before flipping</li>
+        <li>Write the command from memory</li>
+        <li>If you hesitate &gt;5s, mark it wrong</li>
+        <li>Mix the deck &mdash; don't memorize order</li>
+      </ul>
+      <div class="card" style="margin-top:10px;">
+        <span class="label">&#x26A0;&#xFE0F; Pitfall</span>
+        <p style="margin:4px 0 0;font-size:14px;">Don't just <em>look at</em> the cards. Reading is passive. You must <strong>retrieve</strong> &mdash; cover the answer and force your brain to recall.</p>
+      </div>
+    </div>
+  </div>
+  <aside style="display:none;" class="notes">The Leitner system is simple but powerful. If the learner has Anki or another digital tool, great — otherwise paper cards with 3 labeled boxes works perfectly.</aside>
+</section>
+
+<!-- ===== SLIDE 12: SECTION BREAK — MILESTONE ===== -->
+<section class="slide section-break" data-slide="12">
+  <h2>&#x1F3C1; Milestone: CLI Greeter</h2>
+  <p>Your first mini-project &mdash; combine everything you've learned</p>
+  <aside style="display:none;" class="notes">This milestone pulls together bash scripting, Python, conditionals, loops, and user input into one cohesive project.</aside>
+</section>
+
+<!-- ===== SLIDE 13: CLI GREETER SPEC ===== -->
+<section class="slide" data-slide="13">
+  <h2>&#x1F4CB; CLI Greeter &mdash; Specification</h2>
+  <p>Build a greeting program that:</p>
+  <div class="milestone-box">
+    <div class="badge">&#x1F3C6; Milestone: CLI Greeter</div>
+    <ol style="padding-left:20px;margin:6px 0 0;">
+      <li>Ask for the user's <strong>name</strong></li>
+      <li>Ask for their <strong>age</strong></li>
+      <li>Print a <strong>personalized greeting</strong></li>
+      <li>Tell them what <strong>birth year</strong> they were born in</li>
+      <li>If they're &ge; 18, print a <strong>special adult message</strong></li>
+      <li>Offer to repeat the greeting <strong>3 times</strong> (loop)</li>
+    </ol>
+  </div>
+  <div class="card">
+    <span class="label">&#x1F3AF; Concepts Covered</span>
+    <p style="margin:4px 0 0;font-size:15px;"><code>input()</code> &middot; <code>int()</code> conversion &middot; <code>f-strings</code> &middot; <code>if/else</code> &middot; <code>for</code> loops &middot; <code>range()</code> &middot; script execution with <code>python3</code></p>
+  </div>
+  <aside style="display:none;" class="notes">This is everything from Days 3-5 in one script. It should feel like a natural integration exercise, not a test.</aside>
+</section>
+
+<!-- ===== SLIDE 14: CLI GREETER SOLUTION ===== -->
+<section class="slide" data-slide="14">
+  <h2>&#x1F4AC; CLI Greeter &mdash; Solution</h2>
+  <p>Write this from memory first. Then compare:</p>
+  <pre><span class="cm">#!/usr/bin/env python3</span>
+<span class="cm"># CLI Greeter — Milestone Project (Day 6)</span>
+
+name = <span class="fn">input</span>(<span class="str">"What's your name? "</span>)
+age = <span class="bu">int</span>(<span class="fn">input</span>(<span class="str">"How old are you? "</span>))
+birth_year = <span class="num">2026</span> - age
+
+<span class="fn">print</span>(<span class="str">f"Hello, <span class="hl">{name}</span>! You were born in <span class="hl">{birth_year}</span>."</span>)
+
+<span class="kw">if</span> age &gt;= <span class="num">18</span>:
+    <span class="fn">print</span>(<span class="str">"You're an adult &mdash; time to own your learning!"</span>)
+<span class="kw">else</span>:
+    remaining = <span class="num">18</span> - age
+    <span class="fn">print</span>(<span class="str">f"<span class="hl">{remaining}</span> more years until adulthood &mdash; start building now!"</span>)
+
+<span class="fn">print</span>(<span class="str">"Let me repeat that for you:"</span>)
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">3</span>):
+    <span class="fn">print</span>(<span class="str">f"  <span class="hl">{i+1}</span>. Welcome, <span class="hl">{name}</span>!"</span>)</pre>
+  <p style="font-size:14px;color:var(--text-muted);">&#x1F4A1; Run it: <code>python3 greeter.py</code></p>
+  <aside style="display:none;" class="notes">The key design decisions: int() wrapping input(), the if/else branching on age, and the for loop with range(3). Each piece was covered in a previous day.</aside>
+</section>
+
+<!-- ===== SLIDE 15: CLI GREETER — EXTENSIONS ===== -->
+<section class="slide" data-slide="15">
+  <h2>&#x1F52D; CLI Greeter &mdash; Extend It</h2>
+  <p>Once the basic version works, add one of these challenges:</p>
+  <div class="card-row">
+    <div class="card">
+      <span class="label">&#x1F4C8; Easy</span>
+      <p style="margin:6px 0 0;font-size:15px;">Also print the user's <strong>zodiac sign</strong> based on their birth month (ask for month as a second input). Use if/elif.</p>
+    </div>
+    <div class="card">
+      <span class="label">&#x2699;&#xFE0F; Medium</span>
+      <p style="margin:6px 0 0;font-size:15px;">Keep asking "Want another greeting? (y/n)" until the user says "n" &mdash; use a <code>while True</code> loop with <code>break</code>.</p>
+    </div>
+    <div class="card">
+      <span class="label">&#x1F4AA; Hard</span>
+      <p style="margin:6px 0 0;font-size:15px;">Write a <strong>bash wrapper</strong> script that activates a venv, runs the Python greeter, then deactivates. Chain two scripts together.</p>
+    </div>
+  </div>
+  <div class="hint-box">
+    <div class="label">&#x1F4A1; Hint</div>
+    <p style="font-size:15px;">For the bash wrapper: create <code>greet.sh</code> that sets up the venv, runs <code>python3 greeter.py</code>, then calls <code>deactivate</code>. This combines Day 2 (bash scripts) + Day 3 (venv) + Days 4-5 (Python).</p>
+  </div>
+  <aside style="display:none;" class="notes">These extensions give the learner room to grow. The hard version is especially valuable because it connects bash and Python — a real-world skill.</aside>
+</section>
+
+<!-- ===== SLIDE 16: SECTION BREAK — GAP CHECK ===== -->
+<section class="slide section-break" data-slide="16">
+  <h2>&#x1F50D; Knowledge Gap Check</h2>
+  <p>Be honest with yourself &mdash; where did you struggle?</p>
+  <aside style="display:none;" class="notes">This is a self-assessment slide. The learner should identify 1-2 weak areas and commit to reviewing them.</aside>
+</section>
+
+<!-- ===== SLIDE 17: GAP IDENTIFICATION ===== -->
+<section class="slide" data-slide="17">
+  <h2>&#x1F50D; Where Are Your Gaps?</h2>
+  <p>Rate yourself on each area. Anything &le; 3/5 needs review:</p>
+  <div class="two-col">
+    <div>
+      <h3>Linux CLI (Days 1-2)</h3>
+      <ul>
+        <li>Filesystem navigation: <code>pwd</code>, <code>ls</code>, <code>cd</code></li>
+        <li>Creating &amp; removing: <code>mkdir</code>, <code>rm</code>, <code>cp</code>, <code>mv</code></li>
+        <li>Pipes &amp; redirection: <code>|</code>, <code>&gt;</code>, <code>&gt;&gt;</code></li>
+        <li>Searching: <code>grep</code>, <code>find</code></li>
+        <li>Permissions: <code>chmod</code></li>
+        <li>Bash scripts: <code>#!/bin/bash</code>, variables, <code>echo</code></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Python (Days 3-5)</h3>
+      <ul>
+        <li>Virtual environments: create, activate, deactivate</li>
+        <li>Variables &amp; types: <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code></li>
+        <li>User input: <code>input()</code>, type conversion</li>
+        <li>String methods: <code>.strip()</code>, <code>.split()</code>, <code>.join()</code></li>
+        <li>Conditionals: <code>if</code>, <code>elif</code>, <code>else</code></li>
+        <li>Loops: <code>for</code>, <code>range()</code></li>
+        <li>FizzBuzz from memory</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <span class="label">&#x1F4A1; Action Plan</span>
+    <p style="margin:4px 0 0;font-size:15px;">For any area &le; 3/5: re-read that day's deck, re-type every script 3 times from memory, then make 5 extra flashcards for the concepts you missed.</p>
+  </div>
+  <aside style="display:none;" class="notes">Self-assessment is critical. The learner should identify 1-3 specific weaknesses and plan to address them before Day 7.</aside>
+</section>
+
+<!-- ===== SLIDE 18: SUMMARY ===== -->
+<section class="slide recap-slide" data-slide="18">
+  <h2 style="text-align:center;margin-bottom:20px;">&#x1F4AD; Key Takeaways</h2>
+  <div class="takeaway">
+    <div class="num">1</div>
+    <span><strong>Active recall beats passive reading.</strong> Re-typing scripts from memory builds real skill. Code is a physical act &mdash; your fingers need to learn it too.</span>
+  </div>
+  <div class="takeaway">
+    <div class="num">2</div>
+    <span><strong>Flashcards make knowledge stick.</strong> Linux commands + Python keywords are the vocabulary of programming. Five minutes of flashcards daily compounds into fluency.</span>
+  </div>
+  <div class="takeaway">
+    <div class="num">3</div>
+    <span><strong>Milestones turn exercises into projects.</strong> The CLI Greeter is your first integrated project &mdash; bash + Python + logic. Every week builds toward Project 1 (CLI Todo List).</span>
+  </div>
+  <div class="takeaway">
+    <div class="num">4</div>
+    <span><strong>Gaps are data, not failure.</strong> Finding what you don't know is the whole point of review day. Fix one gap today and it won't slow you down tomorrow.</span>
+  </div>
+  <aside style="display:none;" class="notes">The key insight: review days are not a break — they're when learning actually consolidates. The 20 most important minutes of the week are the ones spent reviewing.</aside>
+</section>
+
+<!-- ===== SLIDE 19: NEXT STEPS ===== -->
+<section class="slide" data-slide="19">
+  <h2>&#x1F3ED; What's Ahead</h2>
+  <div class="card" style="margin-bottom:14px;">
+    <span class="label">&#x1F4DA; Next Session — Day 7</span>
+    <p style="margin:6px 0 0;font-size:16px;"><strong>Python: while loops, break, continue.</strong> Learn to loop until a condition is met &mdash; the foundation of interactive programs. You'll build a number-guessing game.</p>
+  </div>
+  <div class="card">
+    <span class="label">&#x1F3AF; Upcoming Milestones</span>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:15px;">
+      <li><strong>After Week 3:</strong> Project 1 &mdash; CLI Todo List (menu-based task manager)</li>
+      <li><strong>After Week 6:</strong> Project 2 &mdash; Bookmark Saver (persistent storage)</li>
+      <li><strong>After Week 8:</strong> Project 3 &mdash; Weather Dashboard (API integration)</li>
+      <li><strong>After Week 12:</strong> Project 5 &mdash; Full-Stack App</li>
+    </ul>
+  </div>
+  <div class="card" style="margin-top:10px;">
+    <span class="label">&#x1F4C5; Daily Habit</span>
+    <p style="margin:6px 0 0;font-size:15px;">Run through your flashcard deck for <strong>5 minutes every morning</strong> before starting the day's new content. This alone doubles retention.</p>
+  </div>
+  <p style="font-size:14px;color:var(--text-muted);margin-top:14px;">Day 6 complete &mdash; you've solidified everything from Week 1. On to Week 2!</p>
+  <aside style="display:none;" class="notes">Looking ahead: Day 7 introduces while loops, which is the last fundamental control flow concept before we start building real interactive programs.</aside>
+</section>
+
+<!-- ===== PROGRESS ===== -->
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="slide-counter"><span id="slideNum">1</span> / <span id="slideTotal">20</span></div>
+</div>
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  document.getElementById('slideTotal').textContent = total;
+  var current = 0;
+
+  function showSlide(idx) {
+    slides.forEach(function(s, i) {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    document.getElementById('slideNum').textContent = idx + 1;
+    document.getElementById('progressBar').style.width = ((idx + 1) / total * 100) + '%';
+    location.hash = idx;
+  }
+
+  function next() { showSlide(Math.min(current + 1, total - 1)); }
+  function prev() { showSlide(Math.max(current - 1, 0)); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.fullscreenElement ? document.exitFullscreen() : document.getElementById('deck').requestFullscreen(); }
+    if (e.key === 'n' || e.key === 'N') {
+      var notes = slides[current].querySelector('.notes');
+      var el = document.querySelector('.speaker-notes');
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'speaker-notes';
+        el.style.cssText = 'position:fixed;bottom:56px;right:20px;width:280px;max-height:180px;background:#1a1d28;border:1px solid var(--accent-dim);border-radius:8px;padding:12px 16px;font-size:13px;font-family:var(--body-font);z-index:100;overflow-y:auto;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.5);';
+        document.body.appendChild(el);
+      }
+      if (notes) {
+        el.textContent = notes.textContent;
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+    if (e.key === 'Escape') {
+      var sn = document.querySelector('.speaker-notes');
+      if (sn) sn.style.display = 'none';
+      if (document.fullscreenElement) document.exitFullscreen();
+    }
+  });
+
+  // Restore from hash
+  var hash = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(hash) && hash >= 0 && hash < total) showSlide(hash);
+  else showSlide(0);
+
+  // Touch swipe support
+  var startX = 0;
+  document.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive: true});
+  document.addEventListener('touchend', function(e) {
+    var diff = e.changedTouches[0].clientX - startX;
+    if (Math.abs(diff) > 50) { if (diff < 0) next(); else prev(); }
+  }, {passive: true});
+})();
+</script>
+
+</body>
+</html>
