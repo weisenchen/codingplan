@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 7 — Python Lists: create, index, slice, append</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --slide-bg: #161b22;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --code-bg: #1c2128;
+    --border: #30363d;
+    --highlight: #d2a8ff;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    --slide-w: 1280px;
+    --slide-h: 720px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  #stage {
+    position: relative;
+    width: min(100vw, calc(100vh * 16/9));
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 64px;
+    background: var(--slide-bg);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease;
+    text-align: center;
+  }
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  .slide.left { text-align: left; align-items: flex-start; }
+
+  /* Title slide */
+  .slide-title h1 {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent), var(--highlight));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .slide-title .subtitle {
+    font-size: 22px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .slide-title .meta {
+    margin-top: 32px;
+    font-size: 16px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+  }
+  .slide-title .meta span { padding: 4px 12px; background: var(--code-bg); border-radius: 6px; border: 1px solid var(--border); }
+
+  /* Headings */
+  h2 {
+    font-size: 36px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  h3 {
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--accent2);
+  }
+  p, li {
+    font-size: 20px;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 90%;
+  }
+  ul, ol { max-width: 90%; padding-left: 24px; }
+  li { margin-bottom: 8px; }
+
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 17px;
+    line-height: 1.55;
+    text-align: left;
+    overflow-x: auto;
+    max-width: 100%;
+    width: 100%;
+    margin: 12px 0;
+  }
+  code { font-family: var(--mono); }
+  .kw { color: #ff7b72; }
+  .fn { color: #d2a8ff; }
+  .str { color: #a5d6ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .op { color: #ffa657; }
+  .hl { background: rgba(88,166,255,0.15); display: inline-block; width: 100%; border-left: 3px solid var(--accent); padding-left: 8px; }
+
+  /* Progress bar */
+  #progress {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    z-index: 100;
+  }
+  #progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--highlight));
+    transition: width 0.3s ease;
+  }
+  #counter {
+    position: absolute;
+    bottom: 12px;
+    right: 20px;
+    font-size: 14px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    z-index: 100;
+    background: rgba(13,17,23,0.8);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* Grid / columns */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 100%;
+  }
+  .col { text-align: left; }
+  .col p { font-size: 18px; }
+  .col pre { font-size: 15px; padding: 12px 16px; }
+
+  /* Boxes */
+  .tip-box {
+    background: rgba(63,185,80,0.1);
+    border: 1px solid var(--accent2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    text-align: left;
+    max-width: 100%;
+    width: 100%;
+  }
+  .tip-box p { font-size: 18px; }
+  .tip-box strong { color: var(--accent2); }
+
+  .exercise-box {
+    background: rgba(210,168,255,0.08);
+    border: 1px solid var(--highlight);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 12px 0;
+    text-align: left;
+    max-width: 100%;
+    width: 100%;
+  }
+  .exercise-box h4 { color: var(--highlight); font-size: 20px; margin-bottom: 8px; }
+
+  /* Hint / solution reveal */
+  .reveal-btn {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 16px;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: background 0.2s;
+  }
+  .reveal-btn:hover { background: rgba(88,166,255,0.15); }
+  .solution { display: none; margin-top: 12px; }
+  .solution.show { display: block; }
+
+  /* Speaker notes toggle */
+  #notes-panel {
+    display: none;
+    position: fixed;
+    top: 0; right: 0;
+    width: 340px;
+    height: 100vh;
+    background: #1c2128;
+    border-left: 1px solid var(--border);
+    padding: 24px;
+    overflow-y: auto;
+    z-index: 200;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  #notes-panel.open { display: block; }
+  #notes-panel h3 { font-size: 16px; color: var(--accent2); margin-bottom: 12px; }
+  .notes-content { color: var(--text-dim); }
+
+  /* Footer timestamp */
+  #footer {
+    position: absolute;
+    bottom: 40px;
+    left: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+    z-index: 100;
+    opacity: 0.6;
+  }
+
+  /* Section break */
+  .section-break {
+    background: linear-gradient(135deg, #0d1117 0%, #1c2128 100%);
+  }
+  .section-break h2 {
+    font-size: 48px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .big-number {
+    font-size: 72px;
+    font-weight: 800;
+    color: var(--accent);
+    opacity: 0.2;
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    font-family: var(--mono);
+  }
+
+  /* Mobile */
+  @media (max-width: 700px) {
+    .slide { padding: 24px 20px; }
+    .slide-title h1 { font-size: 32px; }
+    h2 { font-size: 26px; }
+    p, li { font-size: 16px; }
+    pre { font-size: 14px; padding: 12px; }
+    .cols { grid-template-columns: 1fr; gap: 12px; }
+    #notes-panel { width: 100vw; }
+  }
+
+  /* Print */
+  @media print {
+    body { background: white; }
+    .slide { position: relative; opacity: 1; visibility: visible; page-break-after: always; }
+    #progress, #counter, #notes-panel { display: none !important; }
+    .slide { background: white; color: #1a1a1a; }
+    .slide-title h1 { -webkit-text-fill-color: #1a1a1a; }
+    h2 { color: #2563eb; }
+    pre { background: #f5f5f5; border-color: #ddd; }
+    .tip-box { background: #f0fdf4; }
+    .exercise-box { background: #faf5ff; }
+    #footer { color: #999; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="stage">
+
+<!-- SLIDE 0: Title -->
+<section class="slide slide-title active" data-slide="0">
+  <div class="big-number">1</div>
+  <h1>Python Lists</h1>
+  <p class="subtitle">Create, Index, Slice, Append &mdash; Build a Shopping List App</p>
+  <div class="meta">
+    <span>Day 7</span>
+    <span>Week 2</span>
+    <span>Phase I: Python</span>
+    <span>60 min</span>
+  </div>
+  <aside class="notes">Welcome to Day 7. Today we cover Python lists — the Swiss Army knife of data structures. By the end, everyone will build a shopping list app from scratch.</aside>
+</section>
+
+<!-- SLIDE 1: Prerequisites -->
+<section class="slide left" data-slide="1">
+  <div class="big-number">2</div>
+  <h2>Prerequisites</h2>
+  <p>Before today, you should be comfortable with:</p>
+  <ul>
+    <li>✅ Variables &amp; <code>print()</code></li>
+    <li>✅ <code>input()</code> for user input</li>
+    <li>✅ Basic <code>if</code>/<code>else</code> conditionals</li>
+    <li>✅ <code>while</code> loops (we used them Day 6)</li>
+  </ul>
+  <p style="margin-top:20px;font-size:18px;color:var(--text-dim);">If any of these feel shaky, review Day 4–6 first.</p>
+  <aside class="notes">Quick check-in: ask if anyone struggled with while loops. Day 6 covered loops — today we put them to use with lists.</aside>
+</section>
+
+<!-- SLIDE 2: Learning Objectives -->
+<section class="slide left" data-slide="2">
+  <div class="big-number">3</div>
+  <h2>Learning Objectives</h2>
+  <p>By the end of this session, you'll be able to:</p>
+  <ul>
+    <li>📦 <strong>Create</strong> a list with literal <code>[]</code> syntax</li>
+    <li>🔢 <strong>Index</strong> into a list (0-based) and understand negative indices</li>
+    <li>✂️ <strong>Slice</strong> sublists with <code>[start:end]</code></li>
+    <li>➕ <strong>Append &amp; Pop</strong> — add and remove items dynamically</li>
+    <li>📏 Measure list size with <code>len()</code></li>
+    <li>🛒 <strong>Build</strong> a complete shopping list app</li>
+  </ul>
+  <aside class="notes">Six objectives, one session. The shopping list app ties it all together — a real, useful program by the end.</aside>
+</section>
+
+<!-- SLIDE 3: What is a list? -->
+<section class="slide left" data-slide="3">
+  <div class="big-number">4</div>
+  <h2>What is a List?</h2>
+  <p>A <strong>list</strong> is an ordered, mutable collection of items. Think of it like a row of lockers — each locker has a number (index) and holds a value.</p>
+  <div class="cols" style="margin-top:16px;">
+    <div class="col">
+      <pre><span class="kw">fruits</span> = [<span class="str">"apple"</span>, <span class="str">"banana"</span>, <span class="str">"cherry"</span>]
+       <span class="cm"># index:   0        1         2</span></pre>
+    </div>
+    <div class="col">
+      <pre><span class="kw">mixed</span> = [<span class="num">42</span>, <span class="str">"hello"</span>, <span class="num">3.14</span>, <span class="kw">True</span>]
+       <span class="cm"># Lists hold ANY type — even mixed</span></pre>
+    </div>
+  </div>
+  <div class="tip-box">
+    <p><strong>💡 Key idea:</strong> Lists keep things in <em>order</em>. The first item stays at position 0 unless you change it. Unlike a set or dict, order is preserved.</p>
+  </div>
+  <aside class="notes">The locker analogy matters — many learners confuse list indices with "the Nth item" (1-based). Emphasize that computer scientists start counting at 0.</aside>
+</section>
+
+<!-- SLIDE 4: Indexing -->
+<section class="slide left" data-slide="4">
+  <div class="big-number">5</div>
+  <h2>Indexing — 0-Based Access</h2>
+  <p>Grab any item by its position number (index). Python uses <strong>0-based indexing</strong>.</p>
+  <pre><span class="kw">colors</span> = [<span class="str">"red"</span>, <span class="str">"green"</span>, <span class="str">"blue"</span>, <span class="str">"yellow"</span>]
+       <span class="cm"># index:   0       1        2        3</span>
+
+print(<span class="kw">colors</span>[<span class="num">0</span>])  <span class="cm"># → red</span>
+print(<span class="kw">colors</span>[<span class="num">2</span>])  <span class="cm"># → blue</span></pre>
+  <h3 style="margin-top:16px;">Negative Indexing</h3>
+  <p>Count from the end with negative numbers:</p>
+  <pre>print(<span class="kw">colors</span>[<span class="op">-</span><span class="num">1</span>])  <span class="cm"># → yellow  (last item)</span>
+print(<span class="kw">colors</span>[<span class="op">-</span><span class="num">2</span>])  <span class="cm"># → blue    (second from last)</span></pre>
+  <div class="tip-box">
+    <p><strong>⚠️ Gotcha:</strong> <code>colors[4]</code> raises <code>IndexError</code> — index out of range!</p>
+  </div>
+  <aside class="notes">Negative indexing is a Python superpower. Most languages don't have it. Show that -1 is always the last item, regardless of list length.</aside>
+</section>
+
+<!-- SLIDE 5: Slicing -->
+<section class="slide left" data-slide="5">
+  <div class="big-number">6</div>
+  <h2>Slicing — <code>[start:end]</code></h2>
+  <p>Extract a <em>sublist</em> (a "slice") using the colon syntax. Think: <strong>"start at A, go up to (but not including) B."</strong></p>
+  <pre><span class="kw">nums</span> = [<span class="num">10</span>, <span class="num">20</span>, <span class="num">30</span>, <span class="num">40</span>, <span class="num">50</span>]
+
+print(<span class="kw">nums</span>[<span class="num">1</span>:<span class="num">4</span>])  <span class="cm"># → [20, 30, 40]   (index 1,2,3 — NOT 4)</span>
+print(<span class="kw">nums</span>[:<span class="num">3</span>])   <span class="cm"># → [10, 20, 30]   (start defaults to 0)</span>
+print(<span class="kw">nums</span>[<span class="num">2</span>:])    <span class="cm"># → [30, 40, 50]   (end defaults to end)</span>
+print(<span class="kw">nums</span>[::<span class="op">-</span><span class="num">1</span>])  <span class="cm"># → [50, 40, 30, 20, 10]  (reverse!)</span></pre>
+  <div class="tip-box">
+    <p><strong>📐 Visual:</strong> <code>[start:end]</code> is like a fence — start is the first post <em>included</em>, end is the first post <em>excluded</em>. Slice <code>[1:4]</code> includes posts 1, 2, 3.</p>
+  </div>
+  <aside class="notes">The "up to but not including" rule is the #1 confusion point. Draw the fencepost analogy on a whiteboard if you have one. Show that slicing never raises IndexError — out-of-bounds slices just return what's available.</aside>
+</section>
+
+<!-- SLIDE 6: append / pop / len -->
+<section class="slide left" data-slide="6">
+  <div class="big-number">7</div>
+  <h2>Growing &amp; Shrinking Lists</h2>
+  <div class="cols">
+    <div class="col">
+      <h3><code>.append()</code></h3>
+      <p>Add one item to the <em>end</em>:</p>
+      <pre><span class="kw">tasks</span> = []
+<span class="kw">tasks</span>.append(<span class="str">"study"</span>)
+<span class="kw">tasks</span>.append(<span class="str">"code"</span>)
+print(<span class="kw">tasks</span>)  <span class="cm"># → ['study', 'code']</span></pre>
+    </div>
+    <div class="col">
+      <h3><code>.pop()</code></h3>
+      <p>Remove &amp; return the <em>last</em> item (or at an index):</p>
+      <pre><span class="kw">tasks</span> = [<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>]
+last = <span class="kw">tasks</span>.pop()  <span class="cm"># → 'c'</span>
+print(<span class="kw">tasks</span>)        <span class="cm"># → ['a', 'b']</span></pre>
+    </div>
+  </div>
+  <h3><code>len()</code> — How many items?</h3>
+  <pre>print(<span class="kw">len</span>(<span class="kw">tasks</span>))  <span class="cm"># → 2</span></pre>
+  <div class="tip-box">
+    <p><strong>🧠 Memory trick:</strong> <code>len()</code> works on <em>anything</em> that holds items — lists, strings, tuples, dictionaries. It's Python's universal size tool.</p>
+  </div>
+  <aside class="notes">append and pop are the two most common list-mutating methods. They form a stack (LIFO) when used together. Mention that pop(index) also works but is less common.</aside>
+</section>
+
+<!-- SLIDE 7: Walkthrough — Shopping List App -->
+<section class="slide left section-break" data-slide="7">
+  <div class="big-number">8</div>
+  <h2>🛒 Walkthrough: Shopping List App</h2>
+  <p style="margin-top:12px;font-size:22px;color:var(--text);">Let's build a program that lets us add, view, remove, and search items — <br>all using lists.</p>
+  <p style="margin-top:8px;font-size:18px;color:var(--text-dim);">Type each step. Expected output shown after each block.</p>
+  <aside class="notes">This is the hands-on part. Encourage everyone to open their editor and type along. Pause after each step.</aside>
+</section>
+
+<!-- SLIDE 8: Walkthrough step 1 -->
+<section class="slide left" data-slide="8">
+  <div class="big-number">9</div>
+  <h2>Step 1: Create the List &amp; Show Menu</h2>
+  <pre><span class="cm"># shopping.py — start here</span>
+shopping_list = []
+
+<span class="kw">while</span> <span class="kw">True</span>:
+    print(<span class="str">"\n=== SHOPPING LIST ==="</span>)
+    print(<span class="str">"1. Add item"</span>)
+    print(<span class="str">"2. Show list"</span>)
+    print(<span class="str">"3. Remove last item"</span>)
+    print(<span class="str">"4. Quit"</span>)
+
+    choice = input(<span class="str">"Choose (1-4): "</span>)</pre>
+  <p>✅ <strong>Expected:</strong> Menu prints, waits for input. No error.</p>
+  <aside class="notes">We start with an empty list and a while True loop — the same pattern from Day 6's number guesser. The menu gives users a clear interface.</aside>
+</section>
+
+<!-- SLIDE 9: Walkthrough step 2 -->
+<section class="slide left" data-slide="9">
+  <div class="big-number">10</div>
+  <h2>Step 2: Add &amp; Show Items</h2>
+  <pre>    <span class="kw">if</span> choice == <span class="str">"1"</span>:
+        item = input(<span class="str">"Item to add: "</span>)
+        shopping_list.append(item)
+        print(<span class="str">f"'{item}' added!"</span>)
+
+    <span class="kw">elif</span> choice == <span class="str">"2"</span>:
+        <span class="kw">if</span> <span class="kw">len</span>(shopping_list) == <span class="num">0</span>:
+            print(<span class="str">"List is empty."</span>)
+        <span class="kw">else</span>:
+            <span class="kw">for</span> i, item <span class="kw">in</span> <span class="kw">enumerate</span>(shopping_list):
+                print(<span class="str">f"{i+1}. {item}"</span>)</pre>
+  <p>✅ <strong>Expected:</strong> Add "milk" → prints "'milk' added!". Show list → "1. milk".</p>
+  <aside class="notes">enumerate gives us both index and value. We use i+1 so the display is 1-based for users, even though the list is 0-based internally. This is a common pattern.</aside>
+</section>
+
+<!-- SLIDE 10: Walkthrough step 3 -->
+<section class="slide left" data-slide="10">
+  <div class="big-number">11</div>
+  <h2>Step 3: Remove, Quit &amp; Search</h2>
+  <pre>    <span class="kw">elif</span> choice == <span class="str">"3"</span>:        <span class="cm"># Remove last</span>
+        <span class="kw">if</span> shopping_list:
+            removed = shopping_list.pop()
+            print(<span class="str">f"Removed '{removed}'"</span>)
+        <span class="kw">else</span>:
+            print(<span class="str">"Nothing to remove!"</span>)
+
+    <span class="kw">elif</span> choice == <span class="str">"4"</span>:
+        print(<span class="str">"Goodbye!"</span>)
+        <span class="kw">break</span>
+
+    <span class="kw">else</span>:
+        print(<span class="str">"Invalid choice, try again."</span>)</span></pre>
+  <p>✅ <strong>Expected:</strong> Full program runs. Add items, view them, pop the last one, quit.</p>
+  <aside class="notes">Note the guard: pop() on an empty list raises IndexError. We check 'if shopping_list:' first — empty lists are falsy in Python. The break keyword exits the while loop.</aside>
+</section>
+
+<!-- SLIDE 11: Walkthrough step 4 — Bonus -->
+<section class="slide left" data-slide="11">
+  <div class="big-number">12</div>
+  <h2>🎯 Bonus: Search with Slicing</h2>
+  <p>After choice handling, add a search feature using <code>in</code> and slicing:</p>
+  <pre>    <span class="kw">elif</span> choice == <span class="str">"5"</span>:        <span class="cm"># Search (bonus option)</span>
+        query = input(<span class="str">"Search for: "</span>).lower()
+        results = [item <span class="kw">for</span> item <span class="kw">in</span> shopping_list
+                   <span class="kw">if</span> query <span class="kw">in</span> item.lower()]
+        <span class="kw">if</span> results:
+            print(<span class="str">"Found:"</span>, results)
+        <span class="kw">else</span>:
+            print(<span class="str">"No matches."</span>)</pre>
+  <p>This uses a <strong>list comprehension</strong> — we cover that formally in Week 3, but see if you can read it now!</p>
+  <aside class="notes">List comprehensions are a preview of Week 3. If learners look confused, just say "it's a concise way to build a filtered list — we'll study them soon."</aside>
+</section>
+
+<!-- SLIDE 12: Exercise -->
+<section class="slide left" data-slide="12">
+  <div class="big-number">13</div>
+  <h2>✏️ Practice Exercises</h2>
+  <p>Try these on your own (15 min). Hints available below.</p>
+
+  <div class="exercise-box">
+    <h4>1. Todo List Manager</h4>
+    <p>Instead of a shopping list, build a todo list. Add options: mark item as done (pop by index), show count of pending items, show top 3 items (slice).</p>
+  </div>
+
+  <div class="exercise-box">
+    <h4>2. Number Stats</h4>
+    <p>Let the user enter numbers one at a time. After each entry, show: <code>len</code>, <code>min</code>, <code>max</code>, and the last 3 numbers (<code>list[-3:]</code>). Quit with "done".</p>
+  </div>
+
+  <div class="exercise-box">
+    <h4>3. Palindrome Checker</h4>
+    <p>Ask for a word. Reverse it with <code>[::-1]</code>. If the reversed word equals the original, it's a palindrome (e.g., "racecar").</p>
+  </div>
+
+  <button class="reveal-btn" onclick="this.nextElementSibling.classList.toggle('show')">🔍 Show Hints</button>
+  <div class="solution">
+    <p><strong>Hint 1:</strong> <code>list.pop(i)</code> removes at index i. Use <code>int(input())</code> to get the index from the user.</p>
+    <p><strong>Hint 2:</strong> Use <code>while True</code>, check <code>if num == "done": break</code>, then convert with <code>float()</code>. Store in a list.</p>
+    <p><strong>Hint 3:</strong> <code>word[::-1]</code> reverses a string (lists and strings both support slice). Compare with <code>==</code>.</p>
+  </div>
+  <aside class="notes">Give them 15 minutes of silent work time. Walk around and help. After time's up, quickly demo the palindrome checker as a group — it's the shortest exercise and shows the power of slicing.</aside>
+</section>
+
+<!-- SLIDE 13: Checkpoint -->
+<section class="slide left" data-slide="13">
+  <div class="big-number">14</div>
+  <h2>🧪 Quick Check</h2>
+  <p style="font-size:22px;color:var(--accent2);">What does this code print?</p>
+  <pre><span class="kw">nums</span> = [<span class="num">5</span>, <span class="num">10</span>, <span class="num">15</span>, <span class="num">20</span>, <span class="num">25</span>]
+print(<span class="kw">nums</span>[<span class="op">-</span><span class="num">2</span>])
+print(<span class="kw">nums</span>[<span class="num">1</span>:<span class="num">3</span>])
+print(<span class="kw">len</span>(<span class="kw">nums</span>))</pre>
+  <button class="reveal-btn" onclick="this.nextElementSibling.classList.toggle('show')">✅ Show Answer</button>
+  <div class="solution">
+    <pre><span class="num">20</span>
+[<span class="num">10</span>, <span class="num">15</span>]
+<span class="num">5</span></pre>
+    <p><strong>Explanation:</strong> <code>[-2]</code> = second from last (20). <code>[1:3]</code> = items at index 1 and 2 (10, 15). <code>len()</code> = 5 items total.</p>
+  </div>
+  <aside class="notes">Quick multiple-choice style check. If anyone got it wrong, re-explain the fencepost rule for slicing.</aside>
+</section>
+
+<!-- SLIDE 14: Summary -->
+<section class="slide left" data-slide="14">
+  <div class="big-number">15</div>
+  <h2>📝 Summary — 5 Key Takeaways</h2>
+  <ul>
+    <li><strong>Create:</strong> <code>my_list = [item1, item2]</code> or <code>[]</code> for empty</li>
+    <li><strong>Index:</strong> Zero-based <code>list[0]</code> for first; <code>list[-1]</code> for last</li>
+    <li><strong>Slice:</strong> <code>list[start:end]</code> — includes start, excludes end. Misses last item!</li>
+    <li><strong>Mutate:</strong> <code>.append(x)</code> adds at end, <code>.pop()</code> removes from end</li>
+    <li><strong>Measure:</strong> <code>len(list)</code> tells you how many items you have</li>
+  </ul>
+  <div class="tip-box" style="margin-top:20px;">
+    <p><strong>📌 For your toolbox:</strong> Lists are Python's most versatile data structure. Everything you learn from here — loops, functions, file I/O — builds on lists.</p>
+  </div>
+  <aside class="notes">Ask each person to share one thing they learned today aloud. Write the 5 takeaways on the board as they speak.</aside>
+</section>
+
+<!-- SLIDE 15: Next Steps -->
+<section class="slide left" data-slide="15">
+  <div class="big-number">16</div>
+  <h2>🔜 Next Up</h2>
+  <p><strong>Tomorrow (Day 8):</strong> Dictionaries — key-value pairs</p>
+  <p><strong>This week's milestone:</strong></p>
+  <ul>
+    <li>Day 6: Loops</li>
+    <li>Day 7: 📍 Lists ← <strong>You are here</strong></li>
+    <li>Day 8: Dictionaries</li>
+    <li>Day 9: Functions</li>
+    <li>Day 10: Review &amp; Mini-Project</li>
+  </ul>
+  <p style="margin-top:16px;"><strong>Coming projects:</strong></p>
+  <ul>
+    <li>Week 4: Project 1 — CLI Todo List</li>
+    <li>Week 7: Project 2 — Bookmark Saver</li>
+    <li>Week 9: Project 3 — Weather Dashboard</li>
+    <li>Week 12: Project 5 — Full-Stack App</li>
+  </ul>
+  <aside class="notes">Preview tomorrow: dictionaries are like lists but you use words instead of numbers as indices. The mini-project on Day 10 will combine loops, lists, and conditionals.</aside>
+</section>
+
+<!-- SLIDE 16: Q&A -->
+<section class="slide slide-title" data-slide="16">
+  <div class="big-number">17</div>
+  <h1>Questions?</h1>
+  <p class="subtitle" style="font-size:24px;margin-top:16px;">Try the exercises. Ask a buddy. Then ask me.</p>
+  <p style="margin-top:32px;font-size:18px;color:var(--text-dim);">Remember: <code>list[-1]</code> is always the last item 🎯</p>
+  <aside class="notes">Field questions. If no one asks: prompt with "What's the difference between list.pop() and list.remove()?" (pop uses index, remove uses value — we'll cover remove in a future session).</aside>
+</section>
+
+</div><!-- /stage -->
+
+<div id="progress"><div id="progress-bar"></div></div>
+<div id="counter">1 / 17</div>
+<div id="footer">Last updated: 2026-05-27 · 90-Day Co-op Prep</div>
+
+<div id="notes-panel">
+  <h3>📋 Speaker Notes</h3>
+  <div class="notes-content">Press <strong>N</strong> to toggle this panel.</div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const counter = document.getElementById('counter');
+  const bar = document.getElementById('progress-bar');
+  const notesPanel = document.getElementById('notes-panel');
+  let notesOpen = false;
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(idx, total - 1));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + total;
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    location.hash = 'slide-' + idx;
+    // Update notes
+    const aside = slides[idx].querySelector('aside');
+    if (aside) {
+      document.querySelector('.notes-content').innerHTML = aside.innerHTML;
+    } else {
+      document.querySelector('.notes-content').textContent = 'No speaker notes for this slide.';
+    }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    // Ignore if typing in an input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    switch (e.key) {
+      case 'ArrowRight':
+      case ' ':
+      case 'ArrowDown':
+        e.preventDefault();
+        showSlide(current + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        showSlide(current - 1);
+        break;
+      case 'f':
+      case 'F':
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+        break;
+      case 'n':
+      case 'N':
+        notesOpen = !notesOpen;
+        notesPanel.classList.toggle('open', notesOpen);
+        break;
+      case 'Escape':
+        if (notesOpen) { notesOpen = false; notesPanel.classList.remove('open'); }
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        break;
+    }
+  });
+
+  // Hash navigation
+  function hashSlide() {
+    const m = location.hash.match(/slide-(\d+)/);
+    if (m) {
+      const idx = parseInt(m[1], 10);
+      if (idx >= 0 && idx < total) showSlide(idx);
+    }
+  }
+  window.addEventListener('hashchange', hashSlide);
+  hashSlide();
+
+  // Touch / swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      showSlide(current + (diff > 0 ? 1 : -1));
+    }
+  });
+
+  // Click to advance (but only on empty areas, not buttons)
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.reveal-btn') || e.target.closest('#notes-panel') || e.target.closest('#footer') || e.target.closest('#counter') || e.target.closest('#progress')) return;
+    showSlide(current + 1);
+  });
+
+  // Keyboard: Home / End
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+    if (e.key === 'End') { e.preventDefault(); showSlide(total - 1); }
+  });
+
+  // Show first slide if no hash
+  if (!location.hash) showSlide(0);
+})();
+</script>
+</body>
+</html>
