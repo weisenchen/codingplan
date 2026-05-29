@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 9 — Functions: define, call, return</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #161822;
+  --accent: #7c5cfc;
+  --accent-dim: #4a3a8a;
+  --accent-glow: #9b7fff;
+  --text: #e2e4f0;
+  --text-dim: #8b8fa8;
+  --code-bg: #1c1e2e;
+  --code-text: #d4d6e6;
+  --keyword: #c792ea;
+  --string: #c3e88d;
+  --number: #f78c6c;
+  --comment: #676e95;
+  --function: #82aaff;
+  --border: #2a2d3e;
+  --success: #4ec9b0;
+  --warn: #ffcb6b;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-serif); overflow: hidden; }
+
+/* Slide container */
+#deck {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: min(100% - 40px, var(--slide-w));
+  height: min(100% - 40px, calc((100vw - 40px) * 9 / 16));
+  max-height: calc(100vh - 40px);
+  background: var(--slide-bg);
+  border-radius: 12px;
+  padding: 48px 56px;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  overflow-y: auto;
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+
+/* Typography */
+h1 { font-size: 42px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+h2 { font-size: 30px; font-weight: 600; line-height: 1.3; margin-bottom: 16px; color: var(--accent); }
+h3 { font-size: 22px; font-weight: 600; line-height: 1.3; margin-bottom: 10px; color: var(--accent-glow); }
+p, li { font-size: 20px; line-height: 1.6; color: var(--text-dim); }
+strong { color: var(--text); font-weight: 600; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Lists */
+ul, ol { margin-left: 24px; }
+li { margin-bottom: 6px; }
+
+/* Code */
+code, pre { font-family: var(--font-mono); font-size: 17px; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+code { color: var(--code-text); }
+pre code { background: none; padding: 0; border: none; }
+.kw { color: var(--keyword); }
+.fn { color: var(--function); }
+.st { color: var(--string); }
+.num { color: var(--number); }
+.cm { color: var(--comment); font-style: italic; }
+.success { color: var(--success); }
+
+/* Progress bar */
+#progress {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: var(--border); z-index: 100;
+}
+#progress-bar { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+
+/* Slide counter */
+#counter {
+  position: fixed; bottom: 14px; right: 20px;
+  font-family: var(--font-mono); font-size: 14px; color: var(--text-dim); z-index: 100;
+}
+
+/* Code highlight line */
+.hl-line { background: rgba(124, 92, 252, 0.15); display: inline-block; width: 100%; }
+
+/* Title slide */
+.title-slide { justify-content: center; align-items: center; text-align: center; }
+.title-slide h1 { font-size: 52px; margin-bottom: 12px; }
+.title-slide .subtitle { font-size: 22px; color: var(--accent-glow); margin-bottom: 24px; }
+.title-slide .meta { font-size: 18px; color: var(--text-dim); }
+
+/* Section break */
+.section-break { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #1a1640, #161822); }
+.section-break h2 { font-size: 38px; color: var(--text); margin-bottom: 8px; }
+.section-break p { font-size: 20px; color: var(--accent-glow); }
+
+/* Two columns */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
+.col { display: flex; flex-direction: column; }
+.col h3 { font-size: 20px; margin-bottom: 8px; }
+.col p, .col li { font-size: 17px; }
+
+/* Recap slide */
+.recap-slide { justify-content: center; }
+.recap-slide h2 { text-align: center; margin-bottom: 28px; }
+.recap-item { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+.recap-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 16px; flex-shrink: 0; }
+.recap-item p { font-size: 18px; margin: 0; }
+
+/* Scrollbar styling */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 28px 20px; border-radius: 0; width: 100%; height: 100%; max-height: 100%; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 16px; }
+  pre { font-size: 14px; padding: 12px 14px; }
+  .title-slide h1 { font-size: 32px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .recap-item p { font-size: 15px; }
+}
+
+/* Print */
+@media print {
+  body { background: #fff; }
+  .slide { position: static; opacity: 1; pointer-events: auto; page-break-after: always; border: 1px solid #ddd; box-shadow: none; background: #fff; color: #222; width: 100%; height: auto; min-height: 5in; }
+  #progress, #counter { display: none; }
+  h2 { color: #555; }
+  .text-dim, p, li { color: #444; }
+}
+
+/* Last updated */
+#footer {
+  position: fixed; bottom: 14px; left: 20px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); z-index: 100;
+}
+
+/* Exercise styling */
+.exercise-box {
+  border: 1px solid var(--accent-dim);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  background: rgba(124, 92, 252, 0.06);
+}
+.exercise-box h3 { font-size: 18px; margin-bottom: 6px; color: var(--accent-glow); }
+.exercise-box p, .exercise-box li { font-size: 17px; }
+
+.hint { color: var(--warn); font-family: var(--font-mono); font-size: 15px; margin-top: 8px; }
+
+/* Checkbox style for prerequisites */
+.checklist { list-style: none; margin-left: 0; }
+.checklist li::before { content: "☐ "; color: var(--accent-dim); font-size: 20px; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>Functions:<br>Define, Call, Return</h1>
+  <p class="subtitle">Day 9 — 90-Day Co-op Prep Plan</p>
+  <p class="meta">Week 2 · Phase I · Python</p>
+  <p class="meta" style="margin-top:20px;">⏱ 60 minutes</p>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>Today's Plan</h2>
+  <p style="margin-bottom:12px;">Learn why functions are the most important building block in Python — and how to use them to write clean, reusable code.</p>
+  <ul>
+    <li><strong>Why functions?</strong> — DRY, abstraction, composition</li>
+    <li><strong><code>def</code></strong> — the syntax for defining a function</li>
+    <li><strong>Parameters &amp; arguments</strong> — passing data in</li>
+    <li><strong><code>return</code></strong> — getting data out</li>
+    <li><strong>Scope</strong> — what lives inside vs outside</li>
+    <li><strong>Extract FizzBuzz</strong> — refactor a script into well-named functions</li>
+  </ul>
+  <p style="margin-top:12px;color:var(--accent-glow);">🎯 After this session you'll be able to define your own functions and use them to organize any Python script.</p>
+</section>
+
+<!-- SLIDE 2: Why Functions Matter -->
+<section class="slide" data-slide="2">
+  <h2>Why Functions?</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>Without functions</h3>
+      <pre><code><span class="cm"># 30 lines of copy-paste</span>
+print(<span class="st">"Hello, Alice!"</span>)
+print(<span class="st">"Hello, Bob!"</span>)
+print(<span class="st">"Hello, Charlie!"</span>)
+...
+print(<span class="st">"Hello, Diana!"</span>)</code></pre>
+      <p style="font-size:17px;">Change the greeting? Edit every line. Tedious, error-prone.</p>
+    </div>
+    <div class="col">
+      <h3>With functions</h3>
+      <pre><code><span class="kw">def</span> <span class="fn">greet</span>(name):
+    print(<span class="st">f"Hello, {name}!"</span>)
+
+greet(<span class="st">"Alice"</span>)
+greet(<span class="st">"Bob"</span>)
+greet(<span class="st">"Charlie"</span>)
+greet(<span class="st">"Diana"</span>)</code></pre>
+      <p style="font-size:17px;">Change one line → all calls update. <span class="success">DRY</span> — Don't Repeat Yourself.</p>
+    </div>
+  </div>
+  <p style="margin-top:12px;font-size:18px;"><strong>Key idea:</strong> A function packages a reusable block of logic. You <em>define</em> it once, <em>call</em> it many times.</p>
+</section>
+
+<!-- SLIDE 3: Section Break — def -->
+<section class="slide section-break" data-slide="3">
+  <h2><code>def</code> — Defining a Function</h2>
+  <p>Syntax, naming, and the body</p>
+</section>
+
+<!-- SLIDE 4: def syntax -->
+<section class="slide" data-slide="4">
+  <h2>Function Definition Syntax</h2>
+  <pre><code><span class="kw">def</span> <span class="fn">function_name</span>(parameter1, parameter2, ...):
+    <span class="cm"># body — indented 4 spaces</span>
+    <span class="kw">return</span> result</code></pre>
+  <p>The recipe:</p>
+  <ul>
+    <li><strong><code>def</code></strong> keyword tells Python you're defining a function</li>
+    <li><strong>Name</strong> — lowercase with underscores (<code>calculate_average</code>, <code>send_email</code>)</li>
+    <li><strong>Parentheses</strong> — list <em>parameters</em> (inputs) here; empty <code>()</code> means no inputs</li>
+    <li><strong>Colon</strong> — ends the header, body follows indented</li>
+    <li><strong>Body</strong> — the logic, indented consistently (4 spaces)</li>
+    <li><strong><code>return</code></strong> — sends a value back; no <code>return</code> → returns <code>None</code></li>
+  </ul>
+  <pre><code><span class="cm"># Simple example</span>
+<span class="kw">def</span> <span class="fn">double</span>(x):
+    <span class="kw">return</span> x * <span class="num">2</span>
+
+result = double(<span class="num">5</span>)   <span class="cm"># result = 10</span></code></pre>
+</section>
+
+<!-- SLIDE 5: Parameters & Arguments -->
+<section class="slide" data-slide="5">
+  <h2>Parameters vs Arguments</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>Parameter</h3>
+      <p>The variable in the <strong>definition</strong> (the placeholder).</p>
+      <pre><code><span class="kw">def</span> <span class="fn">square</span>(<mark style="background:var(--accent-dim);color:var(--text);padding:0 4px;border-radius:3px;font-style:normal;">n</mark>):
+    <span class="kw">return</span> <mark style="background:var(--accent-dim);color:var(--text);padding:0 4px;border-radius:3px;font-style:normal;">n</mark> ** <span class="num">2</span></code></pre>
+      <p style="font-size:17px;"><code>n</code> is the parameter — a local name that receives whatever value is passed in.</p>
+    </div>
+    <div class="col">
+      <h3>Argument</h3>
+      <p>The actual value you <strong>pass when calling</strong>.</p>
+      <pre><code>result = square(<mark style="background:var(--accent-dim);color:var(--text);padding:0 4px;border-radius:3px;font-style:normal;">7</mark>)</code></pre>
+      <p style="font-size:17px;"><code>7</code> is the argument — the real value that gets assigned to <code>n</code> inside the function.</p>
+    </div>
+  </div>
+  <p style="margin-top:8px;font-size:18px;"><strong>Analogy:</strong> Parameters are the <em>slots</em> in a vending machine; arguments are the <em>coins</em> you drop in.</p>
+</section>
+
+<!-- SLIDE 6: return -->
+<section class="slide" data-slide="6">
+  <h2><code>return</code> — Getting Data Out</h2>
+  <p>A function without <code>return</code> returns <code>None</code>. Use <code>return</code> to send a result back to the caller.</p>
+  <pre><code><span class="kw">def</span> <span class="fn">add</span>(a, b):
+    result = a + b
+    <span class="kw">return</span> result
+
+<span class="cm"># Without return — prints but gives nothing back</span>
+<span class="kw">def</span> <span class="fn">add_and_print</span>(a, b):
+    print(a + b)
+
+x = add(<span class="num">3</span>, <span class="num">4</span>)           <span class="cm"># x = 7</span>
+y = add_and_print(<span class="num">3</span>, <span class="num">4</span>)  <span class="cm"># prints 7, but y = None!</span></code></pre>
+  <p><strong>Key rule:</strong> <code>return</code> exits the function immediately. Anything after it doesn't run.</p>
+  <pre><code><span class="kw">def</span> <span class="fn">early_exit</span>(x):
+    <span class="kw">if</span> x &lt; <span class="num">0</span>:
+        <span class="kw">return</span> <span class="num">0</span>         <span class="cm"># early exit for negatives</span>
+    <span class="kw">return</span> x * <span class="num">2</span>        <span class="cm"># only runs if x >= 0</span></code></pre>
+</section>
+
+<!-- SLIDE 7: Scope -->
+<section class="slide" data-slide="7">
+  <h2>Scope — What's Inside Stays Inside</h2>
+  <div class="two-col">
+    <div class="col">
+      <pre><code><span class="cm"># Global scope</span>
+message = <span class="st">"Hello"</span>
+count = <span class="num">0</span>
+
+<span class="kw">def</span> <span class="fn">update</span>(name):
+    <span class="cm"># Local scope</span>
+    greeting = <span class="st">f"{message}, {name}!"</span> <span class="cm"># ❓ can read globals</span>
+    count += <span class="num">1</span>                      <span class="cm"># ❌ ERROR! can't modify</span>
+    <span class="kw">return</span> greeting</code></pre>
+    </div>
+    <div class="col">
+      <p style="font-size:17px;"><strong>Rules of thumb:</strong></p>
+      <ul>
+        <li>Variables defined <strong>inside</strong> a function live only there</li>
+        <li>Variables defined <strong>outside</strong> (global) can be <em>read</em> inside, but not reassigned (without <code>global</code>)</li>
+        <li>Parameters are local variables too</li>
+      </ul>
+      <pre style="margin-top:8px;"><code><span class="cm"># Fix: pass as parameter</span>
+<span class="kw">def</span> <span class="fn">update</span>(name, count):
+    greeting = <span class="st">f"Hello, {name}!"</span>
+    <span class="kw">return</span> greeting, count + <span class="num">1</span></code></pre>
+    </div>
+  </div>
+  <p style="margin-top:8px;font-size:17px;font-family:var(--font-mono);color:var(--comment);">💡 Pro tip: pass data in via parameters, pass results out via return. Avoid touching globals.</p>
+</section>
+
+<!-- SLIDE 8: Section Break — FizzBuzz -->
+<section class="slide section-break" data-slide="8">
+  <h2>Extract FizzBuzz into Functions</h2>
+  <p>Refactoring a script into clean, testable chunks</p>
+</section>
+
+<!-- SLIDE 9: FizzBuzz Walkthrough -->
+<section class="slide" data-slide="9">
+  <h2>Before: Flat FizzBuzz</h2>
+  <pre><code><span class="kw">for</span> n <span class="kw">in</span> range(<span class="num">1</span>, <span class="num">16</span>):
+    <span class="kw">if</span> n % <span class="num">15</span> == <span class="num">0</span>:
+        print(<span class="st">"FizzBuzz"</span>)
+    <span class="kw">elif</span> n % <span class="num">3</span> == <span class="num">0</span>:
+        print(<span class="st">"Fizz"</span>)
+    <span class="kw">elif</span> n % <span class="num">5</span> == <span class="num">0</span>:
+        print(<span class="st">"Buzz"</span>)
+    <span class="kw">else</span>:
+        print(n)</code></pre>
+  <p>Works fine — but the logic is mixed with the output. Can't test individual parts, can't reuse easily.</p>
+</section>
+
+<!-- SLIDE 10: FizzBuzz After -->
+<section class="slide" data-slide="10">
+  <h2>After: Functional FizzBuzz</h2>
+  <pre><code><span class="kw">def</span> <span class="fn">fizzbuzz_value</span>(n):
+    <span class="st">"""Return the FizzBuzz string for a single number."""</span>
+    <span class="kw">if</span> n % <span class="num">15</span> == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="st">"FizzBuzz"</span>
+    <span class="kw">if</span> n % <span class="num">3</span> == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="st">"Fizz"</span>
+    <span class="kw">if</span> n % <span class="num">5</span> == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="st">"Buzz"</span>
+    <span class="kw">return</span> str(n)
+
+<span class="kw">def</span> <span class="fn">fizzbuzz</span>(limit=<span class="num">15</span>):
+    <span class="st">"""Print FizzBuzz from 1 to limit."""</span>
+    <span class="kw">for</span> n <span class="kw">in</span> range(<span class="num">1</span>, limit + <span class="num">1</span>):
+        print(fizzbuzz_value(n))</code></pre>
+  <p><span class="success">✓</span> <code>fizzbuzz_value</code> is pure — test it in isolation.<br>
+  <span class="success">✓</span> <code>fizzbuzz</code> just orchestrates. Change the limit with one argument.<br>
+  <span class="success">✓</span> Each function has <strong>one responsibility</strong>.</p>
+</section>
+
+<!-- SLIDE 11: Exercise Slide -->
+<section class="slide" data-slide="11">
+  <h2>Practice Exercise</h2>
+  <div class="exercise-box">
+    <h3>Exercise 1: Temperature Converter</h3>
+    <p>Write two functions:</p>
+    <pre><code><span class="kw">def</span> <span class="fn">celsius_to_fahrenheit</span>(c):
+    <span class="cm"># Convert Celsius to Fahrenheit</span>
+    <span class="cm"># Formula: (c * 9/5) + 32</span>
+    <span class="kw">pass</span>
+
+<span class="kw">def</span> <span class="fn">fahrenheit_to_celsius</span>(f):
+    <span class="cm"># Convert Fahrenheit to Celsius</span>
+    <span class="cm"># Formula: (f - 32) * 5/9</span>
+    <span class="kw">pass</span></code></pre>
+    <p class="hint">💡 Hint: <code>celsius_to_fahrenheit(0)</code> → <code>32.0</code>, <code>fahrenheit_to_celsius(212)</code> → <code>100.0</code></p>
+  </div>
+  <div class="exercise-box">
+    <h3>Exercise 2: is_even</h3>
+    <p>Write a function <code>is_even(n)</code> that returns <code>True</code> if <code>n</code> is even, <code>False</code> otherwise. Then use it in a loop to print only even numbers from 1 to 20.</p>
+    <p class="hint">💡 Hint: <code>n % 2 == 0</code></p>
+  </div>
+</section>
+
+<!-- SLIDE 12: Recap -->
+<section class="slide recap-slide" data-slide="12">
+  <h2>Key Takeaways</h2>
+  <div class="recap-item">
+    <div class="recap-num">1</div>
+    <p><strong>Functions encapsulate logic</strong> — define once with <code>def</code>, call many times. DRY principle.</p>
+  </div>
+  <div class="recap-item">
+    <div class="recap-num">2</div>
+    <p><strong>Parameters in, return out</strong> — pass data via parameters, send results via <code>return</code>. Don't touch globals.</p>
+  </div>
+  <div class="recap-item">
+    <div class="recap-num">3</div>
+    <p><strong>Scope matters</strong> — variables inside a function are local. Read globals if needed, but prefer passing as parameters.</p>
+  </div>
+  <div class="recap-item">
+    <div class="recap-num">4</div>
+    <p><strong>Refactor into small functions</strong> — each function should do one thing well. Extract FizzBuzz into <code>fizzbuzz_value</code> + <code>fizzbuzz</code>.</p>
+  </div>
+</section>
+
+<!-- SLIDE 13: Next Steps -->
+<section class="slide" data-slide="13">
+  <h2>What's Next?</h2>
+  <p style="margin-bottom:16px;">You now know how to write functions. This is the foundation for everything ahead.</p>
+  <ul>
+    <li><strong>Tomorrow (Day 10):</strong> Data structures — lists &amp; dictionaries</li>
+    <li><span style="color:var(--comment);">Coming up this week:</span> Loops, string manipulation, file I/O</li>
+  </ul>
+  <div style="margin-top:20px;padding:16px;border:1px solid var(--border);border-radius:8px;">
+    <p style="font-size:17px;"><strong>📅 Milestone check-in</strong></p>
+    <p style="font-size:16px;">After <strong>Week 3</strong> → Project 1: CLI Todo List<br>
+    After <strong>Week 6</strong> → Project 2: Bookmark Saver<br>
+    After <strong>Week 8</strong> → Project 3: Weather Dashboard<br>
+    After <strong>Week 12</strong> → Project 5: Full-Stack App</p>
+    <p style="font-size:16px;margin-top:8px;color:var(--accent-glow);">Functions will be the backbone of every one of those projects!</p>
+  </div>
+  <p style="margin-top:20px;font-size:18px;color:var(--comment);">Practice today's exercises — muscle memory with function definitions is the single biggest predictor of coding speed.</p>
+</section>
+
+</div>
+
+<div id="progress"><div id="progress-bar"></div></div>
+<div id="counter">0 / 0</div>
+<div id="footer">Day 9 · Co-op Prep · Python Functions</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const counter = document.getElementById('counter');
+  const bar = document.getElementById('progress-bar');
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + total;
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = '' + (idx + 1);
+  }
+
+  function next() { showSlide(Math.min(current + 1, total - 1)); }
+  function prev() { showSlide(Math.max(current - 1, 0)); }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+  });
+
+  // Touch swipe
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) next(); else prev();
+    }
+  }, { passive: true });
+
+  // Hash init
+  const hash = parseInt(window.location.hash.slice(1), 10);
+  if (hash && hash >= 1 && hash <= total) showSlide(hash - 1);
+  else showSlide(0);
+})();
+</script>
+
+</body>
+</html>
