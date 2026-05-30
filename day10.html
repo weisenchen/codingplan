@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — Dictionaries: Key-Value Pairs</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #1a1d27;
+  --text: #e4e6ed;
+  --text-dim: #8b8fa3;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.25);
+  --code-bg: #131620;
+  --code-text: #cdd6f4;
+  --green: #a6e3a1;
+  --yellow: #f9e2af;
+  --orange: #fab387;
+  --red: #f38ba8;
+  --pink: #f5c2e7;
+  --cyan: #89dceb;
+  --border: #2a2d3a;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'Space Grotesk', var(--font-body);
+  --progress-h: 3px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:var(--font-body);color:var(--text);font-size:clamp(14px,1.2vw,20px)}
+a{color:var(--accent)}
+
+/* Deck container */
+#deck{
+  position:relative;
+  width:100vw;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Slide */
+.slide{
+  position:absolute;
+  width:min(96vw, calc(100vh * 16/9));
+  height:min(90vh, calc(100vw * 9/16));
+  background:var(--slide-bg);
+  border-radius:16px;
+  padding:clamp(24px,3.5vh,48px) clamp(28px,4vw,64px);
+  display:none;
+  flex-direction:column;
+  box-shadow:0 8px 40px rgba(0,0,0,0.4);
+  border:1px solid var(--border);
+  overflow-y:auto;
+}
+.slide.active{display:flex}
+.slide::-webkit-scrollbar{width:6px}
+.slide::-webkit-scrollbar-track{background:transparent}
+.slide::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Typography */
+h1{font-family:var(--font-display);font-size:clamp(1.6rem,3.2vw,3.2rem);font-weight:700;margin-bottom:0.4em}
+h2{font-family:var(--font-display);font-size:clamp(1.2rem,2.2vw,2.2rem);font-weight:600;margin-bottom:0.5em;color:var(--accent)}
+h3{font-size:clamp(1rem,1.6vw,1.4rem);font-weight:600;margin-bottom:0.4em}
+p,li{line-height:1.6;font-size:clamp(0.85rem,1.3vw,1.1rem);margin-bottom:0.5em}
+li{margin-bottom:0.3em}
+ul,ol{padding-left:1.4em;margin-bottom:0.8em}
+
+/* Code */
+pre{
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:clamp(10px,1.2vh,18px);
+  font-family:var(--font-mono);
+  font-size:clamp(0.7rem,1.1vw,0.95rem);
+  line-height:1.5;
+  overflow-x:auto;
+  margin:0.5em 0;
+  position:relative;
+}
+code{font-family:var(--font-mono)}
+pre .kw{color:var(--pink)}
+pre .fn{color:var(--cyan)}
+pre .str{color:var(--green)}
+pre .cm{color:var(--text-dim);font-style:italic}
+pre .num{color:var(--orange)}
+pre .op{color:var(--yellow)}
+pre .key{color:var(--accent)}
+pre .val{color:var(--green)}
+pre .hl{background:rgba(124,92,252,0.15);display:block;margin:0 -18px;padding:0 18px;border-left:3px solid var(--accent)}
+
+/* Title slide */
+.title-slide{justify-content:center;align-items:center;text-align:center}
+.title-slide h1{font-size:clamp(2rem,4vw,4rem);margin-bottom:0.2em}
+.title-slide .subtitle{font-size:clamp(1rem,1.6vw,1.6rem);color:var(--text-dim);margin-bottom:0.3em}
+.title-slide .meta{font-size:clamp(0.8rem,1.1vw,1.1rem);color:var(--accent)}
+.title-slide .badge{
+  display:inline-block;
+  background:var(--accent);
+  color:#fff;
+  padding:0.3em 1em;
+  border-radius:100px;
+  font-size:clamp(0.7rem,0.9vw,0.9rem);
+  font-weight:600;
+  margin-top:1.5em;
+}
+
+/* Section break */
+.section-break{justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,var(--accent),#3b1fad)}
+.section-break h2{color:#fff;font-size:clamp(1.8rem,3vw,3rem);margin-bottom:0.3em}
+.section-break p{color:rgba(255,255,255,0.8);font-size:clamp(0.9rem,1.3vw,1.3rem)}
+
+/* Two column layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.5vw,24px);flex:1}
+.two-col .col{display:flex;flex-direction:column}
+
+/* Progress bar */
+#progress{
+  position:fixed;
+  bottom:0;left:0;
+  height:var(--progress-h);
+  background:var(--accent);
+  transition:width 0.3s ease;
+  z-index:100;
+}
+#counter{
+  position:fixed;
+  bottom:8px;right:16px;
+  font-family:var(--font-mono);
+  font-size:0.75rem;
+  color:var(--text-dim);
+  z-index:100;
+}
+
+/* Responsive */
+@media(max-width:700px){
+  .slide{padding:16px 20px;width:98vw;height:auto;min-height:90vh;border-radius:12px}
+  .two-col{grid-template-columns:1fr}
+  pre{font-size:0.75rem}
+}
+
+/* Print */
+@media print{
+  body{overflow:visible;background:#fff}
+  .slide{position:static;display:flex!important;page-break-after:always;width:100%;height:100vh;border-radius:0;box-shadow:none;background:#fff;color:#000;border:none}
+  #progress,#counter{display:none}
+}
+
+/* Output block */
+.output{
+  background:rgba(0,0,0,0.3);
+  border:1px dashed var(--border);
+  border-radius:8px;
+  padding:8px 14px;
+  font-family:var(--font-mono);
+  font-size:clamp(0.65rem,0.95vw,0.85rem);
+  color:var(--green);
+  margin:0.3em 0;
+}
+.output::before{content:"▸ ";color:var(--text-dim)}
+
+/* Hint reveal */
+.hint-btn{
+  background:var(--border);
+  color:var(--text);
+  border:1px solid var(--text-dim);
+  border-radius:6px;
+  padding:6px 16px;
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:0.85rem;
+  margin-top:0.5em;
+}
+.hint-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hint-text{display:none;margin-top:0.5em;padding:10px;background:rgba(124,92,252,0.1);border-radius:8px;border-left:3px solid var(--accent);font-size:clamp(0.75rem,1vw,0.9rem)}
+
+/* Highlight box */
+.highlight{
+  background:linear-gradient(135deg,rgba(124,92,252,0.08),rgba(124,92,252,0.02));
+  border:1px solid rgba(124,92,252,0.2);
+  border-radius:10px;
+  padding:12px 18px;
+  margin:0.5em 0;
+}
+
+/* Checkbox list */
+.checklist{list-style:none;padding-left:0}
+.checklist li::before{content:"☐ ";color:var(--text-dim);margin-right:0.3em}
+.checklist li.done::before{content:"☑ ";color:var(--green)}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="deck">
+  <!-- SLIDE 0: Title -->
+  <section class="slide title-slide active" data-slide="0">
+    <div class="badge">90-Day Co-op Prep · Phase I · Week 2</div>
+    <h1>Dictionaries:<br>Key-Value Pairs</h1>
+    <div class="subtitle">The most versatile data structure in Python</div>
+    <div class="meta">Day 10 · 60 min · Saturday, May 30, 2026</div>
+  </section>
+
+  <!-- SLIDE 1: Overview -->
+  <section class="slide" data-slide="1">
+    <h2>📋 Today's Plan</h2>
+    <p><strong>Goal:</strong> Master Python dictionaries — creating, accessing, and manipulating key-value pairs.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>What we'll cover</h3>
+        <ul>
+          <li>Creating dicts with <code>{}</code> and <code>dict()</code></li>
+          <li>Keys, values, and lookup with <code>[]</code> vs <code>.get()</code></li>
+          <li>Iterating with <code>.items()</code>, <code>.keys()</code>, <code>.values()</code></li>
+          <li>Modifying, adding, and deleting entries</li>
+          <li>Nested dictionaries</li>
+          <li>📞 Phonebook lookup project</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Prerequisites</h3>
+        <ul class="checklist">
+          <li class="done">Variables &amp; basic data types</li>
+          <li class="done">Lists &amp; list operations</li>
+          <li class="done">Loops (<code>for</code>, <code>while</code>)</li>
+          <li class="done">Conditionals</li>
+        </ul>
+        <h3>Your milestones</h3>
+        <ul>
+          <li>📌 Project 1: CLI Todo List — after Week 3</li>
+          <li>📌 Project 2: Bookmark Saver — after Week 6</li>
+          <li>📌 Project 3: Weather Dashboard — after Week 8</li>
+          <li>📌 Project 5: Full-Stack App — after Week 12</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: What is a dictionary -->
+  <section class="slide" data-slide="2">
+    <h2>🔑 What's a Dictionary?</h2>
+    <p>A <strong>dict</strong> maps <em>unique keys</em> to <em>values</em>. Think of it like a real dictionary: you look up a word (key) and get its definition (value).</p>
+    <div class="two-col">
+      <div class="col">
+        <pre><span class="cm"># A simple phonebook</span>
+<span class="key">phonebook</span> = {
+    <span class="str">"Alice"</span>: <span class="str">"555-1234"</span>,
+    <span class="str">"Bob"</span>:   <span class="str">"555-5678"</span>,
+    <span class="str">"Eve"</span>:   <span class="str">"555-9012"</span>
+}
+
+<span class="cm"># Lookup by key</span>
+<span class="fn">print</span>(phonebook[<span class="str">"Alice"</span>])  <span class="cm"># 555-1234</span></pre>
+      </div>
+      <div class="col">
+        <div class="highlight">
+          <h3>Key properties</h3>
+          <ul>
+            <li>Keys are <strong>unique</strong> — no duplicates</li>
+            <li>Keys must be <strong>immutable</strong> (str, int, float, tuple)</li>
+            <li>Values can be <strong>anything</strong> (list, dict, int, etc.)</li>
+            <li>Dicts are <strong>mutable</strong> — you can change them</li>
+            <li>Order is <strong>preserved</strong> (Python 3.7+)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: Creating & Accessing -->
+  <section class="slide" data-slide="3">
+    <h2>🛠️ Creating &amp; Accessing Dicts</h2>
+    <div class="two-col">
+      <div class="col">
+        <pre><span class="cm"># Three ways to create</span>
+<span class="cm"># 1. Curly braces</span>
+a = {<span class="str">"name"</span>: <span class="str">"Alice"</span>, <span class="str">"age"</span>: 25}
+
+<span class="cm"># 2. dict() constructor</span>
+b = <span class="fn">dict</span>(name=<span class="str">"Bob"</span>, age=30)
+
+<span class="cm"># 3. From pairs</span>
+c = <span class="fn">dict</span>([
+    (<span class="str">"x"</span>, 10), (<span class="str">"y"</span>, 20)
+])</pre>
+      </div>
+      <div class="col">
+        <pre><span class="cm"># Accessing values</span>
+person = {<span class="str">"name"</span>: <span class="str">"Alice"</span>, <span class="str">"age"</span>: 25}
+
+<span class="cm"># Bracket lookup (raises KeyError if missing)</span>
+<span class="fn">print</span>(person[<span class="str">"name"</span>])  <span class="cm"># Alice</span>
+
+<span class="cm"># .get() — safe, returns None</span>
+<span class="fn">print</span>(person.<span class="fn">get</span>(<span class="str">"city"</span>))   <span class="cm"># None</span>
+
+<span class="cm"># .get() with default</span>
+<span class="fn">print</span>(person.<span class="fn">get</span>(<span class="str">"city"</span>, <span class="str">"Unknown"</span>))
+<span class="cm"># Unknown</span></pre>
+      </div>
+    </div>
+    <p style="margin-top:0.3em;color:var(--orange);font-size:0.85rem">⚠️ <code>[]</code> crashes on missing keys — <code>.get()</code> is safer for lookups!</p>
+  </section>
+
+  <!-- SLIDE 4: Modifying dicts -->
+  <section class="slide" data-slide="4">
+    <h2>✏️ Adding, Updating &amp; Deleting</h2>
+    <div class="two-col">
+      <div class="col">
+        <pre><span class="cm"># Start fresh</span>
+user = {<span class="str">"name"</span>: <span class="str">"Alice"</span>}
+
+<span class="cm"># Add a new key</span>
+user[<span class="str">"email"</span>] = <span class="str">"alice@dev.com"</span>
+
+<span class="cm"># Update existing</span>
+user[<span class="str">"name"</span>] = <span class="str">"A. Lice"</span>
+
+<span class="cm"># or use .update()</span>
+user.<span class="fn">update</span>({<span class="str">"role"</span>: <span class="str">"admin"</span>, <span class="str">"active"</span>: <span class="val">True</span>})
+
+<span class="fn">print</span>(user)
+<span class="cm"># {'name': 'A. Lice', 'email': 'alice@dev.com',</span>
+<span class="cm">#  'role': 'admin', 'active': True}</span></pre>
+      </div>
+      <div class="col">
+        <pre><span class="cm"># Deleting entries</span>
+user = {<span class="str">"a"</span>: 1, <span class="str">"b"</span>: 2, <span class="str">"c"</span>: 3}
+
+<span class="cm"># del — remove a key</span>
+<span class="kw">del</span> user[<span class="str">"a"</span>]
+
+<span class="cm"># .pop() — remove and get value</span>
+val = user.<span class="fn">pop</span>(<span class="str">"b"</span>)
+<span class="fn">print</span>(val)  <span class="cm"># 2</span>
+
+<span class="cm"># .popitem() — remove last inserted</span>
+key, val = user.<span class="fn">popitem</span>()
+<span class="fn">print</span>(key, val)  <span class="cm"># c 3</span>
+
+<span class="cm"># Clear everything</span>
+user.<span class="fn">clear</span>()
+<span class="fn">print</span>(user)  <span class="cm"># {}</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: Iteration -->
+  <section class="slide" data-slide="5">
+    <h2>🔁 Iterating Over Dictionaries</h2>
+    <p>Three ways to loop — choose the right one for the job.</p>
+    <div class="two-col">
+      <div class="col">
+        <pre><span class="cm"># .keys() — default</span>
+person = {<span class="str">"name"</span>: <span class="str">"Alice"</span>, <span class="str">"age"</span>: 25}
+
+<span class="kw">for</span> k <span class="kw">in</span> person:
+    <span class="fn">print</span>(k)
+<span class="cm"># name</span>
+<span class="cm"># age</span>
+
+<span class="cm"># .values() — just the values</span>
+<span class="kw">for</span> v <span class="kw">in</span> person.<span class="fn">values</span>():
+    <span class="fn">print</span>(v)
+<span class="cm"># Alice</span>
+<span class="cm"># 25</span></pre>
+      </div>
+      <div class="col">
+        <pre><span class="cm"># .items() — both!</span>
+person = {<span class="str">"name"</span>: <span class="str">"Alice"</span>, <span class="str">"age"</span>: 25}
+
+<span class="kw">for</span> k, v <span class="kw">in</span> person.<span class="fn">items</span>():
+    <span class="fn">print</span>(<span class="str">f"</span>{k}: {v}<span class="str">"</span>)
+<span class="cm"># name: Alice</span>
+<span class="cm"># age: 25</span></pre>
+        <div class="highlight">
+          <p><strong>💡 Pro tip:</strong> Use <code>.items()</code> when you need both — it's cleaner than indexing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: Section break — Phonebook Project -->
+  <section class="slide section-break" data-slide="6">
+    <h2>📞 Phonebook Lookup</h2>
+    <p>Build it step by step</p>
+  </section>
+
+  <!-- SLIDE 7: Phonebook walkthrough -->
+  <section class="slide" data-slide="7">
+    <h2>📞 Walkthrough: Phonebook Lookup</h2>
+    <p>Follow along — type each chunk into a <code>phonebook.py</code> file.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>Step 1: Build the phonebook</h3>
+        <pre><span class="cm"># phonebook.py</span>
+contacts = {
+    <span class="str">"Alice"</span>: <span class="str">"555-0198"</span>,
+    <span class="str">"Bob"</span>:   <span class="str">"555-0234"</span>,
+    <span class="str">"Eve"</span>:   <span class="str">"555-0456"</span>,
+    <span class="str">"Diana"</span>: <span class="str">"555-0789"</span>,
+}
+
+<span class="fn">print</span>(<span class="str">f"Phonebook has {len(contacts)} entries"</span>)</pre>
+        <div class="output">Phonebook has 4 entries</div>
+      </div>
+      <div class="col">
+        <h3>Step 2: Lookup by name</h3>
+        <pre>name = <span class="fn">input</span>(<span class="str">"Enter a name: "</span>)
+number = contacts.<span class="fn">get</span>(name)
+<span class="kw">if</span> number:
+    <span class="fn">print</span>(<span class="str">f"</span>{name}: {number}<span class="str">"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">f"</span>{name} not found<span class="str">"</span>)</pre>
+        <div class="output" style="color:var(--orange)">Enter a name: Bob<br>Bob: 555-0234</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: Phonebook walkthrough cont. -->
+  <section class="slide" data-slide="8">
+    <h2>📞 Walkthrough: Adding &amp; Listing</h2>
+    <div class="two-col">
+      <div class="col">
+        <h3>Step 3: Add a contact</h3>
+        <pre>new_name = <span class="fn">input</span>(<span class="str">"Name to add: "</span>)
+new_num  = <span class="fn">input</span>(<span class="str">"Phone number: "</span>)
+contacts[new_name] = new_num
+<span class="fn">print</span>(<span class="str">f"Added {new_name}!"</span>)
+<span class="fn">print</span>(<span class="str">f"Total: {len(contacts)} contacts"</span>)</pre>
+        <div class="output" style="color:var(--cyan)">Name to add: Frank<br>Phone number: 555-1111<br>Added Frank!<br>Total: 5 contacts</div>
+      </div>
+      <div class="col">
+        <h3>Step 4: List all contacts</h3>
+        <pre><span class="fn">print</span>(<span class="str">"\n--- All Contacts ---"</span>)
+<span class="kw">for</span> name, num <span class="kw">in</span> contacts.<span class="fn">items</span>():
+    <span class="fn">print</span>(<span class="str">f"  {name:8s} → {num}"</span>)</pre>
+        <div class="output">--- All Contacts ---<br>  Alice    → 555-0198<br>  Bob      → 555-0234<br>  Eve      → 555-0456<br>  Diana    → 555-0789<br>  Frank    → 555-1111</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: Nested dicts -->
+  <section class="slide" data-slide="9">
+    <h2>📦 Nested Dictionaries</h2>
+    <p>Values can be dicts themselves — perfect for structured data.</p>
+    <pre><span class="cm"># A richer phonebook with nested info</span>
+contacts = {
+    <span class="str">"Alice"</span>: {
+        <span class="str">"phone"</span>: <span class="str">"555-0198"</span>,
+        <span class="str">"email"</span>: <span class="str">"alice@dev.com"</span>,
+        <span class="str">"role"</span>:  <span class="str">"developer"</span>
+    },
+    <span class="str">"Bob"</span>: {
+        <span class="str">"phone"</span>: <span class="str">"555-0234"</span>,
+        <span class="str">"email"</span>: <span class="str">"bob@dev.com"</span>,
+        <span class="str">"role"</span>:  <span class="str">"designer"</span>
+    }
+}
+
+<span class="cm"># Access nested value</span>
+<span class="fn">print</span>(contacts[<span class="str">"Alice"</span>][<span class="str">"email"</span>])  <span class="cm"># alice@dev.com</span>
+
+<span class="cm"># List all developers</span>
+<span class="kw">for</span> name, info <span class="kw">in</span> contacts.<span class="fn">items</span>():
+    <span class="kw">if</span> info[<span class="str">"role"</span>] == <span class="str">"developer"</span>:
+        <span class="fn">print</span>(name)</pre>
+  </section>
+
+  <!-- SLIDE 10: Common patterns -->
+  <section class="slide" data-slide="10">
+    <h2>🧰 Dictionary Patterns</h2>
+    <div class="two-col">
+      <div class="col">
+        <h3>Counting frequencies</h3>
+        <pre>text = <span class="str">"apple banana apple cherry banana apple"</span>
+counts = {}
+<span class="kw">for</span> word <span class="kw">in</span> text.<span class="fn">split</span>():
+    counts[word] = counts.<span class="fn">get</span>(word, 0) + 1
+
+<span class="fn">print</span>(counts)
+<span class="cm"># {'apple': 3, 'banana': 2, 'cherry': 1}</span></pre>
+      </div>
+      <div class="col">
+        <h3>Checking membership</h3>
+        <pre>user = {<span class="str">"name"</span>: <span class="str">"Alice"</span>, <span class="str">"active"</span>: <span class="val">True</span>}
+
+<span class="kw">if</span> <span class="str">"email"</span> <span class="kw">in</span> user:
+    <span class="fn">print</span>(user[<span class="str">"email"</span>])
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">"No email set"</span>)</pre>
+        <h3>Merging dicts (3.9+)</h3>
+        <pre>d1 = {<span class="str">"a"</span>: 1, <span class="str">"b"</span>: 2}
+d2 = {<span class="str">"c"</span>: 3, <span class="str">"d"</span>: 4}
+merged = d1 | d2
+<span class="cm"># {'a': 1, 'b': 2, 'c': 3, 'd': 4}</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: Section break — Exercises -->
+  <section class="slide section-break" data-slide="11" style="background:linear-gradient(135deg,#e06c75,#be5046)">
+    <h2>💪 Practice Exercises</h2>
+    <p>Try these on your own</p>
+  </section>
+
+  <!-- SLIDE 12: Exercise 1 -->
+  <section class="slide" data-slide="12">
+    <h2>💪 Exercise 1: Grade Tracker</h2>
+    <p>Create a dict that stores student grades. Write a program that:</p>
+    <ol>
+      <li>Starts with <code>grades = {"Alice": 85, "Bob": 92, "Eve": 78}</code></li>
+      <li>Lets the user add a new student with their grade</li>
+      <li>Prints the class average (sum of values / count)</li>
+      <li>Prints the student with the highest grade</li>
+    </ol>
+    <button class="hint-btn" onclick="document.getElementById('hint1').style.display='block';this.style.display='none'">Show hint</button>
+    <div id="hint1" class="hint-text">
+      <strong>Hint:</strong> Use <code>grades.values()</code> to get all grades. <code>max(grades, key=grades.get)</code> finds the top student.
+    </div>
+  </section>
+
+  <!-- SLIDE 13: Exercise 1 solution -->
+  <section class="slide" data-slide="13">
+    <h2>✅ Solution: Grade Tracker</h2>
+    <pre><span class="cm"># grade_tracker.py</span>
+grades = {<span class="str">"Alice"</span>: 85, <span class="str">"Bob"</span>: 92, <span class="str">"Eve"</span>: 78}
+
+<span class="cm"># Add a student</span>
+name = <span class="fn">input</span>(<span class="str">"Student name: "</span>)
+score = <span class="fn">int</span>(<span class="fn">input</span>(<span class="str">"Grade: "</span>))
+grades[name] = score
+
+<span class="cm"># Class average</span>
+avg = <span class="fn">sum</span>(grades.<span class="fn">values</span>()) / <span class="fn">len</span>(grades)
+<span class="fn">print</span>(<span class="str">f"Class average: {avg:.1f}"</span>)
+
+<span class="cm"># Highest grade</span>
+top = <span class="fn">max</span>(grades, key=grades.<span class="fn">get</span>)
+<span class="fn">print</span>(<span class="str">f"Top student: {top} ({grades[top]})"</span>)</pre>
+    <div class="output">Student name: Diana<br>Grade: 95<br>Class average: 87.5<br>Top student: Diana (95)</div>
+  </section>
+
+  <!-- SLIDE 14: Exercise 2 -->
+  <section class="slide" data-slide="14">
+    <h2>💪 Exercise 2: Word Frequency Counter</h2>
+    <p>Write a program that reads a sentence and counts how many times each word appears.</p>
+    <ol>
+      <li>Ask the user for a sentence</li>
+      <li>Split it into words with <code>.split()</code></li>
+      <li>Use a dict to count occurrences</li>
+      <li>Print each word and its count, sorted by count (highest first)</li>
+    </ol>
+    <button class="hint-btn" onclick="document.getElementById('hint2').style.display='block';this.style.display='none'">Show hint</button>
+    <div id="hint2" class="hint-text">
+      <strong>Hint:</strong> <code>.get(word, 0) + 1</code> is the standard counting pattern. Use <code>sorted(counts.items(), key=lambda x: x[1], reverse=True)</code> to sort.
+    </div>
+  </section>
+
+  <!-- SLIDE 15: Exercise 2 solution -->
+  <section class="slide" data-slide="15">
+    <h2>✅ Solution: Word Frequency</h2>
+    <pre><span class="cm"># frequency.py</span>
+sentence = <span class="fn">input</span>(<span class="str">"Enter a sentence: "</span>)
+words = sentence.<span class="fn">lower</span>().<span class="fn">split</span>()
+
+counts = {}
+<span class="kw">for</span> word <span class="kw">in</span> words:
+    counts[word] = counts.<span class="fn">get</span>(word, 0) + 1
+
+<span class="cm"># Sort by frequency (highest first)</span>
+sorted_words = <span class="fn">sorted</span>(
+    counts.<span class="fn">items</span>(),
+    key=<span class="kw">lambda</span> x: x[1],
+    <span class="kw">reverse</span>=<span class="val">True</span>
+)
+
+<span class="kw">for</span> word, count <span class="kw">in</span> sorted_words:
+    <span class="fn">print</span>(<span class="str">f"  {word:12s} → {count}"</span>)</pre>
+    <div class="output">Enter a sentence: the cat and the dog and the bird<br>  the          → 3<br>  and          → 2<br>  cat          → 1<br>  dog          → 1<br>  bird         → 1</div>
+  </section>
+
+  <!-- SLIDE 16: Summary -->
+  <section class="slide" data-slide="16">
+    <h2>🎯 Key Takeaways</h2>
+    <div class="two-col">
+      <div class="col">
+        <div class="highlight">
+          <h3>You now know how to:</h3>
+          <ol>
+            <li>Create dicts with <code>{key: value}</code></li>
+            <li>Access values with <code>[]</code> and <code>.get()</code></li>
+            <li>Iterate with <code>.items()</code>, <code>.keys()</code>, <code>.values()</code></li>
+            <li>Add, update (<code>.update()</code>), delete (<code>del</code>, <code>.pop()</code>)</li>
+            <li>Build nested structures</li>
+            <li>Count frequencies with the <code>.get()</code> + 1 pattern</li>
+          </ol>
+        </div>
+      </div>
+      <div class="col">
+        <h3>Coming up</h3>
+        <ul>
+          <li>Day 11: Tuples &amp; Sets</li>
+          <li>Day 12: String Methods &amp; Formatting</li>
+          <li>Day 13: Functions — Defining &amp; Calling</li>
+          <li><strong>Week 4:</strong> Project 1 — CLI Todo List!</li>
+        </ul>
+        <br>
+        <h3>📝 Practice before next time</h3>
+        <p>Build your own mini phonebook app that stores names, numbers, AND email addresses using nested dicts. Add a search feature!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 17: Closing -->
+  <section class="slide title-slide" data-slide="17">
+    <h1>Great work today! 🎉</h1>
+    <div class="subtitle">Dictionaries are everywhere in Python —<br>you'll use them in every project from here on.</div>
+    <div class="meta">See you on Day 11 · Keep coding!</div>
+  </section>
+</div>
+
+<div id="progress"></div>
+<div id="counter">1 / 18</div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+
+  function showSlide(idx){
+    idx = Math.max(0, Math.min(total - 1, idx));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    location.hash = idx;
+  }
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown'){
+      e.preventDefault();
+      showSlide(current + 1);
+    }
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      showSlide(current - 1);
+    }
+    if(e.key === 'f' && !e.ctrlKey && !e.metaKey){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+    if(e.key === 'n'){
+      document.querySelectorAll('.slide aside').forEach(a => a.style.display =
+        a.style.display === 'block' ? 'none' : 'block');
+    }
+  });
+
+  // Handle hash on load
+  const hash = parseInt(location.hash.slice(1), 10);
+  if(!isNaN(hash) && hash >= 0 && hash < total) showSlide(hash);
+  else showSlide(0);
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if(Math.abs(dx) > 50) showSlide(current + (dx < 0 ? 1 : -1));
+  });
+})();
+</script>
+</body>
+</html>
