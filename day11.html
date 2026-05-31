@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 11 — File I/O: Read & Write Text Files</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242838;
+    --accent: #5fc3e0;
+    --accent-dim: #3a8ba8;
+    --text: #e8edf5;
+    --text-dim: #8b95ad;
+    --code-bg: #151821;
+    --green: #7ec894;
+    --yellow: #e6c384;
+    --orange: #e9a06b;
+    --red: #e67e80;
+    --border: #2d3248;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #090b10;
+    font-family: var(--font);
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  /* Deck container — 16:9 aspect ratio */
+  .deck {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .slides {
+    position: relative;
+    width: min(100vw, 177.78vh);
+    height: min(100vh, 56.25vw);
+    overflow: hidden;
+    background: var(--bg);
+    border-radius: 4px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5);
+  }
+
+  .slide {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    padding: 48px 56px;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1; pointer-events: auto;
+  }
+
+  /* Syntax highlight */
+  .highlight { color: var(--accent); }
+  .hl-kw { color: var(--accent); }
+  .hl-fn { color: var(--yellow); }
+  .hl-str { color: var(--green); }
+  .hl-cm { color: var(--text-dim); font-style: italic; }
+  .hl-num { color: var(--orange); }
+  .hl-op { color: var(--red); }
+
+  h1 { font-size: 42px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+  h2 { font-size: 28px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 16px; }
+  h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; }
+  p, li { font-size: 18px; line-height: 1.6; color: var(--text-dim); }
+  p { margin-bottom: 12px; }
+
+  /* Title slide */
+  .slide-title {
+    justify-content: center; align-items: center; text-align: center;
+  }
+  .slide-title h1 {
+    font-size: 52px; margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--yellow));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .slide-title .subtitle {
+    font-size: 22px; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .slide-title .meta {
+    font-size: 16px; color: var(--text-dim); margin-top: 24px;
+    opacity: 0.7;
+  }
+  .slide-title .phase-badge {
+    display: inline-block;
+    padding: 6px 16px; border-radius: 20px;
+    background: var(--surface2); color: var(--accent);
+    font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* Section break */
+  .slide-section {
+    justify-content: center; align-items: center; text-align: center;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+  }
+  .slide-section h2 {
+    font-size: 38px; margin-bottom: 8px;
+  }
+  .slide-section p {
+    font-size: 18px; color: var(--text-dim);
+  }
+
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.55;
+    overflow-x: auto;
+    margin-bottom: 14px;
+    tab-size: 4;
+  }
+  code {
+    font-family: var(--mono);
+    font-size: 15px;
+  }
+  p code, li code {
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 15px;
+  }
+  pre .hl { background: rgba(95, 195, 224, 0.12); display: inline-block; width: 100%; }
+
+  /* Lists */
+  ul, ol { margin: 8px 0 14px 20px; }
+  li { margin-bottom: 6px; }
+  li strong { color: var(--text); }
+
+  /* Progress bar */
+  .progress {
+    position: absolute; bottom: 0; left: 0;
+    height: 3px; background: var(--accent);
+    transition: width 0.3s ease;
+    z-index: 10;
+  }
+  .slide-counter {
+    position: absolute; bottom: 12px; right: 20px;
+    font-size: 13px; color: var(--text-dim);
+    font-family: var(--mono);
+    z-index: 10;
+    opacity: 0.6;
+  }
+
+  /* Exercise box */
+  .exercise-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+  .exercise-box .label {
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--yellow); margin-bottom: 6px;
+  }
+
+  /* Tip box */
+  .tip-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .tip-box .label {
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--green); margin-bottom: 4px;
+  }
+
+  /* Two column layout */
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    flex: 1; min-height: 0;
+  }
+  .two-col .col { display: flex; flex-direction: column; }
+  .two-col .col p { font-size: 16px; }
+
+  /* Key list */
+  .key-list { list-style: none; margin: 10px 0; }
+  .key-list li {
+    padding: 6px 0; font-size: 18px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .key-list li::before {
+    content: '▸'; color: var(--accent); font-weight: bold;
+  }
+
+  /* Recap grid */
+  .recap-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+    flex: 1;
+  }
+  .recap-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+    display: flex; flex-direction: column;
+  }
+  .recap-card h3 { color: var(--accent); margin-bottom: 10px; }
+  .recap-card p { font-size: 16px; }
+
+  /* Footer */
+  .footer-timestamp {
+    position: absolute; bottom: 12px; left: 20px;
+    font-size: 11px; color: var(--text-dim); opacity: 0.4;
+    z-index: 10;
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .slide { padding: 28px 20px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 22px; }
+    p, li { font-size: 15px; }
+    pre { font-size: 13px; padding: 12px 14px; }
+    .slide-title h1 { font-size: 32px; }
+    .two-col { grid-template-columns: 1fr; gap: 12px; }
+    .recap-grid { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    .slide { opacity: 1 !important; position: relative !important; page-break-after: always; height: auto; }
+    .deck { height: auto; }
+    .slides { width: 100%; height: auto; box-shadow: none; border-radius: 0; }
+    .progress, .slide-counter, .footer-timestamp { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="slides" role="main">
+
+    <!-- ===== SLIDE 0: TITLE ===== -->
+    <section class="slide slide-title active" data-slide="0">
+      <div class="phase-badge">Week 2 · Phase I — Python</div>
+      <h1>File I/O: Read &amp; Write<br>Text Files</h1>
+      <p class="subtitle">Working with files using <code>open()</code>, the <code>with</code> block, and text processing</p>
+      <p class="meta">Day 11 · 60 min · 90-Day Co-op Prep Plan</p>
+    </section>
+
+    <!-- ===== SLIDE 1: OVERVIEW ===== -->
+    <section class="slide" data-slide="1">
+      <h2>🎯 What You'll Learn Today</h2>
+      <p style="margin-bottom:20px;">By the end of this session, you'll be able to:</p>
+      <ul class="key-list">
+        <li>Open and close files with <code>open()</code></li>
+        <li>Use the <code>with</code> block for safe, automatic cleanup</li>
+        <li>Read file contents — whole file, line by line, or into a list</li>
+        <li>Write and append text to files</li>
+        <li>Count lines, words, and characters in a text file</li>
+      </ul>
+      <div style="margin-top:auto;">
+        <div class="tip-box">
+          <div class="label">📋 Prerequisites</div>
+          <p style="margin:0;">Python installed, basic string operations, and <code>for</code> loops. Today's exercises create real files — use a practice folder!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 2: SECTION — FILE BASICS ===== -->
+    <section class="slide slide-section" data-slide="2">
+      <h2>📂 File Basics</h2>
+      <p><code>open()</code> + <code>with</code> = the foundation of all file work</p>
+    </section>
+
+    <!-- ===== SLIDE 3: CONCEPT — open() and Modes ===== -->
+    <section class="slide" data-slide="3">
+      <h2>The <code>open()</code> Function</h2>
+      <p><code>open(filename, mode)</code> returns a <em>file object</em>. The mode tells Python what you intend to do.</p>
+      <div class="two-col">
+        <div class="col">
+          <h3 style="font-size:16px;">Common Modes</h3>
+          <table style="width:100%; border-collapse: collapse; font-size:15px;">
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 0;"><code style="font-size:14px;">'r'</code></td><td style="padding:6px 0; color:var(--text-dim);">read (default)</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 0;"><code style="font-size:14px;">'w'</code></td><td style="padding:6px 0; color:var(--text-dim);">write (overwrites!)</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 0;"><code style="font-size:14px;">'a'</code></td><td style="padding:6px 0; color:var(--text-dim);">append</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 0;"><code style="font-size:14px;">'r+'</code></td><td style="padding:6px 0; color:var(--text-dim);">read + write</td></tr>
+            <tr><td style="padding:6px 0;"><code style="font-size:14px;">'x'</code></td><td style="padding:6px 0; color:var(--text-dim);">create, fail if exists</td></tr>
+          </table>
+        </div>
+        <div class="col">
+          <h3 style="font-size:16px;">Without <code>with</code> (old way)</h3>
+          <pre style="font-size:13px; padding:12px 14px; margin-bottom:6px;">f = <span class="hl-fn">open</span>(<span class="hl-str">'data.txt'</span>, <span class="hl-str">'r'</span>)
+content = f.<span class="hl-fn">read</span>()
+f.<span class="hl-fn">close</span>()  <span class="hl-cm"># easy to forget!</span></pre>
+          <p style="font-size:13px; color:var(--red); margin:0;">⚠️ Forgetting <code>close()</code> leaks file handles.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 4: CONCEPT — The with Block ===== -->
+    <section class="slide" data-slide="4">
+      <h2>The <code>with</code> Block — Context Manager</h2>
+      <p>Python's <code>with</code> statement automatically closes the file, even if an error occurs.</p>
+      <pre><span class="hl-cm"># The modern, safe way</span>
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'data.txt'</span>, <span class="hl-str">'r'</span>) <span class="hl-kw">as</span> f:
+    content = f.<span class="hl-fn">read</span>()
+<span class="hl-cm"># File is closed here — no close() needed!</span></pre>
+      <div class="tip-box">
+        <div class="label">💡 Mental Model</div>
+        <p style="margin:0;"><code>with open(...) as f:</code> = "open this file, call it <code>f</code> inside this block, and close it when we're done — no matter what."</p>
+      </div>
+      <div class="two-col" style="margin-top:10px;">
+        <div class="col">
+          <p style="font-size:15px;"><strong>✅ Good:</strong> auto-close, readable, Pythonic</p>
+        </div>
+        <div class="col">
+          <p style="font-size:15px;"><strong>❌ Bad:</strong> manual <code>close()</code>, easy to forget, risk of corruption</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 5: WALKTHROUGH — Reading Files ===== -->
+    <section class="slide" data-slide="5">
+      <h2>📖 Walkthrough: Reading Files</h2>
+      <p>Three common ways to read. Create a file <code>sample.txt</code> with a few lines of text first.</p>
+      <pre><span class="hl-cm"># 1. Read entire file at once</span>
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'data.txt'</span>, <span class="hl-str">'r'</span>) <span class="hl-kw">as</span> f:
+    text = f.<span class="hl-fn">read</span>()</pre>
+      <pre><span class="hl-cm"># 2. Read into a list of lines</span>
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'data.txt'</span>, <span class="hl-str">'r'</span>) <span class="hl-kw">as</span> f:
+    lines = f.<span class="hl-fn">readlines</span>()  <span class="hl-cm"># each line + \n as a list element</span></pre>
+      <pre><span class="hl-cm"># 3. Iterate line by line (memory efficient for big files)</span>
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'data.txt'</span>, <span class="hl-str">'r'</span>) <span class="hl-kw">as</span> f:
+    <span class="hl-kw">for</span> line <span class="hl-kw">in</span> f:
+        <span class="hl-fn">print</span>(line.<span class="hl-fn">strip</span>())  <span class="hl-cm"># strip removes trailing \n</span></pre>
+      <div class="tip-box">
+        <div class="label">🔑 Key Insight</div>
+        <p style="margin:0;">For small files, <code>.read()</code> is fine. For large files (GB of logs), iterate with <code>for line in f</code> — it reads one line at a time.</p>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 6: WALKTHROUGH — Writing Files ===== -->
+    <section class="slide" data-slide="6">
+      <h2>✍️ Walkthrough: Writing Files</h2>
+      <p>Use <code>'w'</code> (overwrite) or <code>'a'</code> (append).</p>
+      <pre><span class="hl-cm"># Write mode — creates or overwrites</span>
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'output.txt'</span>, <span class="hl-str">'w'</span>) <span class="hl-kw">as</span> f:
+    f.<span class="hl-fn">write</span>(<span class="hl-str">'Hello, World!\n'</span>)
+    f.<span class="hl-fn">write</span>(<span class="hl-str">'Line 2\n'</span>)</pre>
+      <pre><span class="hl-cm"># Append mode — adds to end</span>
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'output.txt'</span>, <span class="hl-str">'a'</span>) <span class="hl-kw">as</span> f:
+    f.<span class="hl-fn">write</span>(<span class="hl-str">'This goes at the end\n'</span>)</pre>
+      <pre><span class="hl-cm"># Write multiple lines from a list</span>
+lines = [<span class="hl-str">'alpha\n'</span>, <span class="hl-str">'beta\n'</span>, <span class="hl-str">'gamma\n'</span>]
+<span class="hl-kw">with</span> <span class="hl-fn">open</span>(<span class="hl-str">'list.txt'</span>, <span class="hl-str">'w'</span>) <span class="hl-kw">as</span> f:
+    f.<span class="hl-fn">writelines</span>(lines)</pre>
+      <p style="font-size:15px;"><span class="highlight">⚠️</span> <code>'w'</code> mode <strong>deletes existing content</strong> — no warning! Be careful. Use <code>'x'</code> mode to create-but-never-overwrite.</p>
+    </section>
+
+    <!-- ===== SLIDE 7: DEMO — Line & Word Counter ===== -->
+    <section class="slide" data-slide="7">
+      <h2>🔨 Build It: Line &amp; Word Counter</h2>
+      <p>This script reads a file and reports line count, word count, and character count.</p>
+      <pre><span class="hl-cm"># counter.py</span>
+<span class="hl-kw">def</span> <span class="hl-fn">analyze_file</span>(path):
+    <span class="hl-kw">try</span>:
+        <span class="hl-kw">with</span> <span class="hl-fn">open</span>(path, <span class="hl-str">'r'</span>) <span class="hl-kw">as</span> f:
+            text = f.<span class="hl-fn">read</span>()
+    <span class="hl-kw">except</span> <span class="hl-fn">FileNotFoundError</span>:
+        <span class="hl-kw">return</span> <span class="hl-str">"File not found."</span>
+
+    lines = text.<span class="hl-fn">count</span>(<span class="hl-str">'\n'</span>)
+    words = <span class="hl-fn">len</span>(text.<span class="hl-fn">split</span>())
+    chars = <span class="hl-fn">len</span>(text)
+    <span class="hl-kw">return</span> {<span class="hl-str">'lines'</span>: lines, <span class="hl-str">'words'</span>: words, <span class="hl-str">'chars'</span>: chars}
+
+<span class="hl-cm"># Usage</span>
+stats = <span class="hl-fn">analyze_file</span>(<span class="hl-str">'sample.txt'</span>)
+<span class="hl-fn">print</span>(<span class="hl-str">f"Lines: {stats['lines']}, Words: {stats['words']}, Chars: {stats['chars']}"</span>)</pre>
+      <p style="font-size:15px;">Save this as <code>counter.py</code> and test it on a text file you create. <code>str.split()</code> splits on whitespace — perfect for word counting.</p>
+    </section>
+
+    <!-- ===== SLIDE 8: SECTION — PRACTICE ===== -->
+    <section class="slide slide-section" data-slide="8">
+      <h2>🧪 Practice</h2>
+      <p>Write code. Read files. Get comfortable.</p>
+    </section>
+
+    <!-- ===== SLIDE 9: EXERCISES ===== -->
+    <section class="slide" data-slide="9">
+      <h2>🏋️ Exercises</h2>
+
+      <div class="exercise-box">
+        <div class="label">Exercise 1: Reverse File</div>
+        <p style="margin:0;">Read <code>input.txt</code>, reverse each line's character order, and write the result to <code>reversed.txt</code>. Hint: <code>line.strip()[::-1]</code> reverses a string.</p>
+      </div>
+
+      <div class="exercise-box">
+        <div class="label">Exercise 2: Log Analyzer</div>
+        <p style="margin:0;">Read <code>log.txt</code>, count how many lines contain the word "ERROR" (case-insensitive), and write the count and those lines to <code>errors.txt</code>.</p>
+      </div>
+
+      <div class="exercise-box">
+        <div class="label">Exercise 3: Append Notes</div>
+        <p style="margin:0;">Write a script that asks the user for input (use <code>input()</code>) and appends each line to <code>notes.txt</code>. Exit when the user types <code>quit</code>. Each line should start with a timestamp — use <code>from datetime import datetime</code>.</p>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 10: CHECKPOINT ===== -->
+    <section class="slide" data-slide="10">
+      <h2>✅ Checkpoint</h2>
+      <p style="margin-bottom:18px;">Quick question — which of these correctly reads a file safely?</p>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:10px;">
+        <p style="margin:0;">A) <code>f = open('data.txt'); text = f.read()</code></p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:10px;">
+        <p style="margin:0; color:var(--green);">B) <code>with open('data.txt') as f: text = f.read()</code> ← <strong>Correct!</strong></p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:10px;">
+        <p style="margin:0;">C) <code>read('data.txt')</code></p>
+      </div>
+      <p style="margin-top:10px; font-size:16px;"><strong>Why B?</strong> <code>with</code> auto-closes the file, even if an exception occurs. A works but risks forgetting <code>close()</code>. C isn't a real function.</p>
+    </section>
+
+    <!-- ===== SLIDE 11: SUMMARY ===== -->
+    <section class="slide" data-slide="11">
+      <h2>📝 Key Takeaways</h2>
+      <div class="recap-grid">
+        <div class="recap-card">
+          <h3>1</h3>
+          <p>Always use <code>with open(...) as f:</code> — it guarantees the file is closed, no exceptions.</p>
+        </div>
+        <div class="recap-card">
+          <h3>2</h3>
+          <p>Choose the right mode: <code>'r'</code> (read), <code>'w'</code> (write — <strong>overwrites!</strong>), <code>'a'</code> (append), <code>'x'</code> (create-exclusive).</p>
+        </div>
+        <div class="recap-card">
+          <h3>3</h3>
+          <p>Iterate with <code>for line in f</code> for large files; use <code>.read()</code> or <code>.readlines()</code> for small files.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 12: NEXT STEPS ===== -->
+    <section class="slide" data-slide="12">
+      <h2>🔜 Next Steps</h2>
+      <ul class="key-list">
+        <li><strong>Practice:</strong> Re-do today's exercises without looking at the examples first</li>
+        <li><strong>Explore:</strong> Try <code>open('file.txt', 'rb')</code> to read binary files (images, audio)</li>
+        <li><strong>Coming up (Week 3):</strong> Working with CSV files and the <code>csv</code> module</li>
+        <li><strong>Project 1:</strong> CLI Todo List — you'll need file I/O to save and load tasks (after Week 3)</li>
+      </ul>
+      <div style="margin-top: auto;">
+        <p style="font-size:14px; color:var(--text-dim); border-top: 1px solid var(--border); padding-top: 12px;">
+          Upcoming projects: Project 2 (Bookmark Saver) · Project 3 (Weather Dashboard) · Project 5 (Full-Stack App)
+        </p>
+      </div>
+    </section>
+
+  </div><!-- /.slides -->
+
+  <div class="progress" id="progress" style="width:0%"></div>
+  <div class="slide-counter" id="counter">1 / 13</div>
+  <div class="footer-timestamp">Generated 2026-05-31 · 90-Day Co-op Prep Plan</div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const progressBar = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const total = slides.length;
+  let current = 0;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    const pct = ((idx + 1) / total) * 100;
+    progressBar.style.width = pct + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    window.location.hash = idx;
+  }
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  // Hash-based navigation
+  function goToHash() {
+    const hash = parseInt(window.location.hash.replace('#', ''), 10);
+    if (!isNaN(hash) && hash >= 0 && hash < total) showSlide(hash);
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+    else if (e.key === 'Home') { showSlide(0); }
+    else if (e.key === 'End') { showSlide(total - 1); }
+  });
+
+  // Touch swipe
+  let touchStartX = 0, touchEndX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next();
+      else prev();
+    }
+  });
+
+  // Initialize
+  goToHash();
+  if (!window.location.hash) showSlide(0);
+})();
+</script>
+</body>
+</html>
