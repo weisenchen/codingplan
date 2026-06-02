@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 13 — Git init, add, commit | 90-Day Co-op Prep</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #181a24;
+  --text: #e2e4ed;
+  --text-dim: #8b8fa3;
+  --accent: #f05033;
+  --accent-dim: #c03f28;
+  --accent-glow: rgba(240, 80, 51, 0.2);
+  --green: #4ade80;
+  --yellow: #facc15;
+  --red: #f87171;
+  --cyan: #22d3ee;
+  --orange: #fb923c;
+  --border: #2a2d3a;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 12px;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: var(--bg); overflow: hidden; font-family: var(--font-sans); color: var(--text); }
+
+/* Slide container */
+#deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Slide */
+.slide {
+  position: absolute;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  max-width: 94vw;
+  max-height: calc(94vw * 9 / 16);
+  background: var(--slide-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 48px 56px;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.4);
+}
+.slide.active { display: flex; }
+
+/* Slide header + progress */
+.slide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.slide-number {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+.progress-bar {
+  flex: 0 0 120px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Typography */
+h1 {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+h1 .accent { color: var(--accent); }
+h2 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+p, li { font-size: 17px; line-height: 1.6; color: var(--text-dim); }
+ul, ol { padding-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 6px; }
+li strong { color: var(--text); }
+code {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  background: rgba(240, 80, 51, 0.12);
+  color: var(--cyan);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+pre {
+  background: #10121b;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 8px 0 16px;
+  flex-shrink: 0;
+}
+pre code {
+  background: none;
+  color: var(--text);
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+pre code .kw { color: var(--accent); }
+pre code .fn { color: var(--yellow); }
+pre code .str { color: var(--green); }
+pre code .cm { color: var(--text-dim); font-style: italic; }
+pre code .num { color: var(--orange); }
+pre code .ty { color: var(--cyan); }
+pre code .op { color: var(--red); }
+
+/* Slide body */
+.slide-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide h1 { font-size: 54px; margin-bottom: 12px; }
+.title-slide .subtitle {
+  font-size: 22px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.title-slide .meta {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-top: 32px;
+}
+
+/* Two-column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  flex: 1;
+}
+.col { display: flex; flex-direction: column; }
+.col h3 { margin-bottom: 10px; }
+.col ul { flex: 1; }
+
+/* Tag / badge */
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tag-phase { background: rgba(240, 80, 51, 0.15); color: var(--accent); }
+.tag-concept { background: rgba(34, 211, 238, 0.15); color: var(--cyan); }
+.tag-code { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+.tag-exercise { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+
+/* Exercise box */
+.exercise-box {
+  background: rgba(74, 222, 128, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0 12px;
+}
+.exercise-box h3 { color: var(--green); margin-bottom: 8px; font-size: 16px; }
+.exercise-box p, .exercise-box li { font-size: 15px; }
+
+/* Hint box */
+.hint-box {
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+}
+.hint-box strong { color: var(--yellow); }
+
+/* Info box */
+.info-box {
+  background: rgba(34, 211, 238, 0.06);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+}
+.info-box strong { color: var(--cyan); }
+
+/* Section break */
+.break-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #1a1818 0%, #1e1715 100%);
+}
+.break-slide h2 { font-size: 38px; margin-bottom: 8px; color: var(--text); }
+.break-slide p { font-size: 18px; }
+
+/* Recap list */
+.recap-list {
+  list-style: none;
+  padding: 0;
+}
+.recap-list li {
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  margin-bottom: 10px;
+  background: rgba(240, 80, 51, 0.04);
+  border-radius: 0 6px 6px 0;
+  font-size: 17px;
+  color: var(--text);
+}
+
+/* Command table */
+.cmd-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 16px;
+}
+.cmd-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-table td {
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.cmd-table td:first-child {
+  font-family: var(--font-mono);
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
+/* Speaker notes */
+.speaker-notes {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 360px;
+  height: 100vh;
+  background: #0d0f17;
+  border-left: 1px solid var(--border);
+  padding: 24px;
+  overflow-y: auto;
+  z-index: 100;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.speaker-notes h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+.speaker-notes.visible { display: block; }
+
+/* Keyboard hint */
+.key-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(15,17,23,0.85);
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  z-index: 50;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Scrollbar */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Responsive */
+@media (max-width: 800px) {
+  .slide { padding: 28px 24px; max-height: calc(100vh - 40px); border-radius: 8px; }
+  h1 { font-size: 28px; }
+  .title-slide h1 { font-size: 32px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 15px; }
+  pre { padding: 12px 14px; }
+  pre code { font-size: 13px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .speaker-notes { width: 280px; }
+  .cmd-table td { font-size: 13px; }
+  .cmd-table td:first-child { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 0: TITLE                           -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="slide-header">
+    <span class="slide-number">1 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="slide-body" style="justify-content:center;align-items:center;text-align:center;">
+    <div style="margin-bottom:24px;">
+      <span class="tag tag-phase">Phase I</span>
+      <span class="tag tag-phase">Week 3</span>
+    </div>
+    <h1>Day 13:<br><span class="accent">Git init, add, commit</span></h1>
+    <p class="subtitle" style="font-size:20px;color:var(--text-dim);margin-bottom:4px;">Initialize a repo, stage changes, commit with messages</p>
+    <p class="subtitle" style="font-size:18px;color:var(--text-dim);">git status &bull; git log</p>
+    <p class="meta">90-Day Co-op Prep Plan &bull; June 2, 2026 &bull; ⏱ 60 min</p>
+  </div>
+  <aside class="notes">Welcome to Week 3! This week kicks off the most important tool in a developer's workflow: Git. Today we cover the foundational commands — init, add, commit, status, and log. By the end of this session you'll have made your first local commits. This is the bedrock for Project 1 (CLI Todo List) starting next week.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 1: OVERVIEW                        -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="1">
+  <div class="slide-header">
+    <span class="slide-number">2 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:8%"></div></div>
+  </div>
+  <h2>📋 Today's Plan</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>⏱ 60-Minute Schedule</h3>
+      <ul>
+        <li><strong>0:00–0:05</strong> — Why Git exists (the time machine analogy)</li>
+        <li><strong>0:05–0:12</strong> — <code>git init</code> &amp; <code>git status</code></li>
+        <li><strong>0:12–0:22</strong> — <code>git add</code>: the staging area</li>
+        <li><strong>0:22–0:35</strong> — <code>git commit</code>: writing snapshots</li>
+        <li><strong>0:35–0:42</strong> — <code>git log</code>: reading history</li>
+        <li><strong>0:42–0:52</strong> — Practice: own your first repo</li>
+        <li><strong>0:52–0:60</strong> — Summary + Project 1 preview</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>🎯 Learning Objectives</h3>
+      <ul>
+        <li>Create a Git repo with <code>git init</code></li>
+        <li>Stage files with <code>git add</code> and check status</li>
+        <li>Save commits with meaningful messages</li>
+        <li>Read project history with <code>git log</code></li>
+        <li>Understand the <strong>working directory → staging → committed</strong> flow</li>
+      </ul>
+      <div class="info-box" style="margin-top:12px;">
+        <strong>💡 Prerequisite:</strong> Basic terminal navigation (<code>cd</code>, <code>ls</code>, <code>mkdir</code>). Git should already be installed — verify with <code>git --version</code>.
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Git is the tool every dev uses daily. Today is purely local — no GitHub yet. Explain that Git is like a save-point system for your code: you can always rewind. Emphasise the staging area as a unique Git concept.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 2: SECTION BREAK — Git Basics     -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide break-slide" data-slide="2">
+  <div class="slide-header">
+    <span class="slide-number">3 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:15%"></div></div>
+  </div>
+  <div class="slide-body">
+    <h2>🔧 Git Basics</h2>
+    <p>Why version control &bull; The three states &bull; First repo</p>
+  </div>
+  <aside class="notes">Transition to the content portion. Git is non-negotiable for co-op — every company expects it. Frame this as a superpower, not a chore.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 3: WHY GIT?                        -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="3">
+  <div class="slide-header">
+    <span class="slide-number">4 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:23%"></div></div>
+  </div>
+  <h2>🧠 Why Git?</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>The Problem</h3>
+      <ul>
+        <li>❌ <code>mycode_final_v2_really_final.py</code></li>
+        <li>❌ "Oops, I deleted something and can't undo"</li>
+        <li>❌ "Which version fixed the bug last week?"</li>
+        <li>❌ No collaboration without file sharing chaos</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Git Is the Solution</h3>
+      <ul>
+        <li>✅ <strong>Time machine</strong> — every commit is a save point</li>
+        <li>✅ <strong>Safety net</strong> — experiment fearlessly, revert if needed</li>
+        <li>✅ <strong>History</strong> — see what changed, when, and who</li>
+        <li>✅ <strong>Collaboration</strong> — multiple people on the same code</li>
+      </ul>
+    </div>
+  </div>
+  <div class="info-box">
+    <strong>💡 Analogy:</strong> Git is like save-states in a video game. Before a boss fight (big change), you save. If you die (break something), you load the last save. Git commits are those save files.
+  </div>
+  <aside class="notes">Use the video game analogy to make it click. Emphasise that Git stores snapshots, not just file copies. The staging area is what makes Git different from older VCS tools like SVN.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 4: THE THREE STATES OF GIT        -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="4">
+  <div class="slide-header">
+    <span class="slide-number">5 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:31%"></div></div>
+  </div>
+  <h2>🔄 The Three States of Git</h2>
+  <p style="margin-bottom:16px;">Every file in a Git repo lives in one of three states:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;flex:1;">
+    <div style="background:#10121b;border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;">
+      <div style="font-family:var(--font-mono);font-size:14px;color:var(--red);font-weight:600;margin-bottom:4px;">1. Modified</div>
+      <div style="font-size:14px;color:var(--text-dim);line-height:1.5;">
+        You changed a file but haven't told Git about it yet. It lives in your <strong>working directory</strong>.
+      </div>
+    </div>
+    <div style="background:#10121b;border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;">
+      <div style="font-family:var(--font-mono);font-size:14px;color:var(--yellow);font-weight:600;margin-bottom:4px;">2. Staged</div>
+      <div style="font-size:14px;color:var(--text-dim);line-height:1.5;">
+        You marked the changes for the next snapshot. It's in the <strong>staging area</strong> (index), ready to be committed.
+      </div>
+    </div>
+    <div style="background:#10121b;border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;">
+      <div style="font-family:var(--font-mono);font-size:14px;color:var(--green);font-weight:600;margin-bottom:4px;">3. Committed</div>
+      <div style="font-size:14px;color:var(--text-dim);line-height:1.5;">
+        The snapshot is saved in Git's database. You can return to this state forever.
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px;text-align:center;font-size:16px;color:var(--text-dim);">
+    <code>Working Directory</code> → <code>git add</code> → <strong style="color:var(--yellow);">Staging Area</strong> → <code>git commit</code> → <strong style="color:var(--green);">Repository</strong>
+  </div>
+  <aside class="notes">This three-state model is the most important mental model in Git. Emphasise that staging lets you craft exactly what goes into each commit — you can change 3 files but only commit 2 of them. This is unique to Git.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 5: GIT INIT & STATUS              -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="5">
+  <div class="slide-header">
+    <span class="slide-number">6 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:38%"></div></div>
+  </div>
+  <h2>🚀 Step 1: <code>git init</code> &amp; <code>git status</code></h2>
+  <p style="margin-bottom:8px;">Turn any folder into a Git repository and check what's happening inside.</p>
+  <pre><code><span class="cm"># Create a project folder</span>
+mkdir my-first-repo
+cd my-first-repo
+
+<span class="cm"># Initialize a new Git repository</span>
+git init
+<span class="cm"># → Initialized empty Git repository in .../my-first-repo/.git/</span>
+
+<span class="cm"># Check the state of your repo</span>
+git status
+<span class="cm"># → On branch master
+# → No commits yet
+# → nothing to commit</span>
+
+<span class="cm"># List the hidden .git folder (Git's engine room)</span>
+ls -la .git/</code></pre>
+  <div class="info-box">
+    <strong>💡</strong> <code>git init</code> creates a <code>.git/</code> subdirectory — this is where all your history lives. Never delete or edit it manually!
+  </div>
+  <aside class="notes">Run these commands live. Show that .git/ is just a folder — Git's database. After init, the repo is empty: no commits yet, nothing staged. `git status` becomes your most-used Git command.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 6: GIT ADD — THE STAGING AREA    -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="6">
+  <div class="slide-header">
+    <span class="slide-number">7 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:46%"></div></div>
+  </div>
+  <h2>📦 Step 2: <code>git add</code> — The Staging Area</h2>
+  <p style="margin-bottom:8px;">Create a file, then stage it for the next commit.</p>
+  <pre><code><span class="cm"># Create a file</span>
+echo "# My First Repo" &gt; README.md
+
+<span class="cm"># Git sees an untracked file</span>
+git status
+<span class="cm"># → Untracked files:
+# →   README.md</span>
+
+<span class="cm"># Stage the file (add to staging area)</span>
+git add README.md
+
+<span class="cm"># Check again</span>
+git status
+<span class="cm"># → Changes to be committed:
+# →   new file:   README.md</span>
+
+<span class="cm"># Stage everything at once</span>
+git add .</code></pre>
+  <div style="display:flex;gap:12px;margin-top:4px;">
+    <div class="hint-box" style="flex:1;margin:0;">
+      <strong>💡</strong> <code>git add .</code> stages all changes in the current directory. Use <code>git add &lt;file&gt;</code> for precision.
+    </div>
+    <div class="hint-box" style="flex:1;margin:0;">
+      <strong>💡</strong> You can stage <em>parts</em> of a file with <code>git add -p</code> (advanced — coming later).
+    </div>
+  </div>
+  <aside class="notes">The staging area is Git's killer feature. Show that you can stage multiple files incrementally. The `git add .` shorthand is common but warn learners to check status first so they don't accidentally stage trash files.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 7: GIT COMMIT                     -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="7">
+  <div class="slide-header">
+    <span class="slide-number">8 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:54%"></div></div>
+  </div>
+  <h2>💾 Step 3: <code>git commit</code> — Save the Snapshot</h2>
+  <p style="margin-bottom:8px;">Commit the staged changes with a message describing what you did.</p>
+  <pre><code><span class="cm"># Make another file</span>
+echo "print('Hello Git!')" &gt; hello.py
+git add hello.py
+
+<span class="cm"># Commit with a message</span>
+git commit -m "Add README and hello script"
+
+<span class="cm"># → [master (root-commit) a1b2c3d] Add README and hello script
+# →  2 files changed, 2 insertions(+)
+# →  create mode 100644 README.md
+# →  create mode 100644 hello.py</span>
+
+<span class="cm"># Check status — clean!</span>
+git status
+<span class="cm"># → nothing to commit, working tree clean</span></code></pre>
+  <div class="info-box">
+    <strong>💡 Best practice:</strong> Write commit messages in <strong>imperative present tense</strong> — "Add feature", not "Added feature" or "Adding feature". The <code>-m</code> flag is for short messages. For longer ones, omit <code>-m</code> to open an editor.
+  </div>
+  <aside class="notes">Walk through the output: commit hash (a1b2c3d), branch name (master), files changed. The hash is a unique identifier for this snapshot. Good commit messages are a differentiator on co-op — reviewers read commit history.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 8: GIT LOG — READING HISTORY     -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="8">
+  <div class="slide-header">
+    <span class="slide-number">9 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:62%"></div></div>
+  </div>
+  <h2>📜 Step 4: <code>git log</code> — Read the History</h2>
+  <p style="margin-bottom:8px;">See every commit you've made, in reverse chronological order.</p>
+  <pre><code><span class="cm"># Make another change and commit it</span>
+echo "def greet(name):\n    return f'Hello, {name}'" &gt;&gt; hello.py
+git add hello.py
+git commit -m "Add greet function"
+
+<span class="cm"># View commit history</span>
+git log
+<span class="cm"># → commit 7e8f9a0 (HEAD -> master)
+# → Author: Your Name &lt;you@example.com&gt;
+# → Date:   Tue Jun 2 10:00:00 2026 -0400
+# →
+# →     Add greet function
+# →
+# → commit a1b2c3d
+# → Author: Your Name &lt;you@example.com&gt;
+# → Date:   Tue Jun 2 09:55:00 2026 -0400
+# →
+# →     Add README and hello script</span>
+
+<span class="cm"># Compact one-line view</span>
+git log --oneline
+<span class="cm"># → 7e8f9a0 Add greet function
+# → a1b2c3d Add README and hello script</span></code></pre>
+  <div style="display:flex;gap:12px;margin-top:4px;">
+    <div class="hint-box" style="flex:1;margin:0;">
+      <strong>💡</strong> <code>git log --oneline</code> is your everyday view. <code>git log --graph</code> visualises branches (Week 4).
+    </div>
+    <div class="hint-box" style="flex:1;margin:0;">
+      <strong>💡</strong> Press <code>q</code> to exit the log pager. Use <code>git log --oneline -5</code> to see only the last 5 commits.
+    </div>
+  </div>
+  <aside class="notes">Git log is your project diary. Show --oneline and --graph (even though we haven't done branches yet, learners should know it exists). The hash is a SHA-1 checksum — you don't need to remember it, just copy-paste.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 9: COMMAND CHEAT SHEET            -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="9">
+  <div class="slide-header">
+    <span class="slide-number">10 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:69%"></div></div>
+  </div>
+  <h2>📋 Git Cheat Sheet — Today's Commands</h2>
+  <table class="cmd-table">
+    <thead>
+      <tr>
+        <th>Command</th>
+        <th>What It Does</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>git init</td>
+        <td>Create a new Git repository in the current folder</td>
+      </tr>
+      <tr>
+        <td>git status</td>
+        <td>Show which files are modified, staged, or untracked</td>
+      </tr>
+      <tr>
+        <td>git add &lt;file&gt;</td>
+        <td>Stage a specific file for the next commit</td>
+      </tr>
+      <tr>
+        <td>git add .</td>
+        <td>Stage all changes in the current directory</td>
+      </tr>
+      <tr>
+        <td>git commit -m "msg"</td>
+        <td>Commit staged changes with a message</td>
+      </tr>
+      <tr>
+        <td>git log</td>
+        <td>Show commit history in detail</td>
+      </tr>
+      <tr>
+        <td>git log --oneline</td>
+        <td>Show commit history as a compact list</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="info-box">
+    <strong>💡 Pro tip:</strong> Run <code>git status</code> constantly — it's your compass. After every <code>git add</code> and <code>git commit</code>, run <code>git status</code> to confirm the state. It's impossible to break anything with these commands!
+  </div>
+  <aside class="notes">Reference slide learners can come back to. The most important habit: git status after every command until it becomes automatic.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 10: SECTION BREAK — PRACTICE     -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide break-slide" data-slide="10">
+  <div class="slide-header">
+    <span class="slide-number">11 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:77%"></div></div>
+  </div>
+  <div class="slide-body">
+    <h2>💪 Practice Time</h2>
+    <p>Build your own repo from scratch</p>
+  </div>
+  <aside class="notes">Give learners 10 minutes to work through the exercise. Encourage them to run git status after every step to see the state change.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 11: PRACTICE EXERCISE            -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="11">
+  <div class="slide-header">
+    <span class="slide-number">12 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
+  </div>
+  <h2>🏋️ Exercise: Own Your First Repo</h2>
+  <div class="exercise-box">
+    <h3>🎯 Task</h3>
+    <p>Create a Git repository for a recipe collector, making at least 3 commits with meaningful messages.</p>
+    <ol style="margin-top:8px;">
+      <li><code>mkdir recipe-collector &amp;&amp; cd recipe-collector</code></li>
+      <li><code>git init</code></li>
+      <li>Create <code>recipes/pasta.md</code> with "<code># Spaghetti Carbonara</code>"</li>
+      <li><code>git add .</code> then <code>git status</code></li>
+      <li><code>git commit -m "Add pasta recipe stub"</code></li>
+      <li>Edit <code>pasta.md</code> — add ingredients list (3+ items)</li>
+      <li><code>git add -u</code> (stage modified files only) then commit</li>
+      <li>Create <code>recipes/salad.md</code> with a recipe title</li>
+      <li>Add and commit it</li>
+      <li>Run <code>git log --oneline</code> — you should see 3 commits</li>
+    </ol>
+  </div>
+  <div class="hint-box">
+    <strong>💡 Stuck?</strong> Use <code>mkdir -p recipes</code> to create the subfolder. <code>git add -u</code> stages <em>modified</em> files (already tracked), while <code>git add .</code> stages everything including new files.
+  </div>
+  <aside class="notes">The exercise is deliberately about food — low cognitive load on the content so the learner can focus on the Git mechanics. Watch for the `git add -u` vs `git add .` distinction.</aside>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<!-- SLIDE 12: SUMMARY + NEXT STEPS         -->
+<!-- ════════════════════════════════════════ -->
+<section class="slide" data-slide="12">
+  <div class="slide-header">
+    <span class="slide-number">13 / 13</span>
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+  </div>
+  <h2>🎯 Key Takeaways</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>📌 Remember This</h3>
+      <ul class="recap-list" style="padding-left:0;">
+        <li>📌 <strong>Working → Staged → Committed.</strong> Changes flow left to right through three states. <code>git add</code> moves left, <code>git commit</code> moves right.</li>
+        <li>📌 <strong>Commit often, with good messages.</strong> Small focused commits make history readable. Imperative tense ("Add", not "Added").
+
+        </li>
+        <li>📌 <strong>git status is your compass.</strong> When in doubt, run it. It tells you exactly what's happening and what to do next.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>🗓️ What's Next</h3>
+      <ul>
+        <li><strong>Day 14</strong> — Git diff, amend, ignore (<code>.gitignore</code>)</li>
+        <li><strong>Day 15</strong> — Undoing changes: checkout, reset, restore</li>
+        <li><strong>Day 16</strong> — Branching basics: <code>git branch</code>, <code>git checkout</code></li>
+        <li style="margin-top:12px;"><span class="tag tag-code">After Week 3</span> <strong>Project 1:</strong> CLI Todo List</li>
+        <li><span class="tag tag-code">After Week 6</span> <strong>Project 2:</strong> Bookmark Saver</li>
+        <li><span class="tag tag-code">After Week 8</span> <strong>Project 3:</strong> Weather Dashboard</li>
+        <li><span class="tag tag-code">After Week 12</span> <strong>Project 5:</strong> Full-Stack App</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">End with encouragement: Git feels foreign at first but after a week of daily use it becomes automatic. Today you learned the commands that make up 80% of daily Git use. Everything else builds on this.</aside>
+</section>
+
+</div><!-- #deck -->
+
+<!-- Keyboard hint -->
+<div class="key-hint">← → navigate · f fullscreen · n speaker notes</div>
+
+<!-- Speaker notes panel -->
+<div class="speaker-notes" id="notesPanel">
+  <h3>📝 Speaker Notes</h3>
+  <div id="notesContent">Select a slide to see notes.</div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+  const notesPanel = document.getElementById('notesPanel');
+  const notesContent = document.getElementById('notesContent');
+  const keyHint = document.querySelector('.key-hint');
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    // Update slide numbers
+    document.querySelectorAll('.slide-number').forEach((el, i) => {
+      el.textContent = (i + 1) + ' / ' + total;
+    });
+    // Update progress bars
+    document.querySelectorAll('.progress-fill').forEach((el, i) => {
+      el.style.width = ((i) / (total - 1)) * 100 + '%';
+    });
+    const fills = document.querySelectorAll('.progress-fill');
+    if (fills[idx]) fills[idx].style.width = ((idx) / (total - 1)) * 100 + '%';
+
+    // Update URL hash
+    window.location.hash = idx;
+
+    // Update speaker notes
+    const aside = slides[idx].querySelector('.notes');
+    if (aside) {
+      notesContent.textContent = aside.textContent.trim();
+    } else {
+      notesContent.textContent = 'No notes for this slide.';
+    }
+
+    current = idx;
+  }
+
+  function nextSlide() {
+    if (current < total - 1) showSlide(current + 1);
+  }
+
+  function prevSlide() {
+    if (current > 0) showSlide(current - 1);
+  }
+
+  // Keyboard events
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Space') {
+      e.preventDefault();
+      nextSlide();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      prevSlide();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.body.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      notesPanel.classList.toggle('visible');
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      showSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      showSlide(total - 1);
+    }
+  });
+
+  // Touch/swipe support for mobile
+  let touchStartX = 0;
+  let touchEndX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, {passive: true});
+  document.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) nextSlide();
+      else prevSlide();
+    }
+  }, {passive: true});
+
+  // Hash-based navigation
+  window.addEventListener('hashchange', function() {
+    const idx = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < total) {
+      showSlide(idx);
+    }
+  });
+
+  // Init from hash
+  const initIdx = parseInt(window.location.hash.slice(1), 10);
+  showSlide(isNaN(initIdx) || initIdx < 0 || initIdx >= total ? 0 : initIdx);
+
+  // Hide key hint after 5 seconds
+  setTimeout(function() {
+    keyHint.style.opacity = '0.3';
+    keyHint.style.transition = 'opacity 0.5s';
+  }, 5000);
+})();
+</script>
+
+</body>
+</html>
