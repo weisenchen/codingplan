@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 14 — GitHub: Remote, Push, Pull</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242837;
+    --border: #2e3349;
+    --text: #e4e6f0;
+    --text-dim: #8b8fa3;
+    --accent: #58a6ff;
+    --accent-glow: rgba(88, 166, 255, 0.15);
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --slide-w: 1280px;
+    --slide-h: 720px;
+    --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    overflow: hidden;
+  }
+  body { display: flex; justify-content: center; align-items: center; }
+
+  /* ---- deck container ---- */
+  #deck {
+    position: relative;
+    width: min(100vw, 100vh * var(--slide-w) / var(--slide-h));
+    height: min(100vh, 100vw * var(--slide-h) / var(--slide-w));
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: 0 0 60px rgba(0,0,0,.5);
+  }
+
+  /* ---- slides ---- */
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 48px 64px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s ease;
+    overflow-y: auto;
+  }
+  .slide.active { opacity: 1; pointer-events: auto; z-index: 1; }
+
+  /* ---- progress bar ---- */
+  #progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 4px; z-index: 10;
+    background: var(--surface2);
+  }
+  #progress-bar {
+    height: 100%; width: 0%;
+    background: var(--accent);
+    transition: width .35s ease;
+  }
+  #counter {
+    position: absolute; bottom: 14px; right: 24px;
+    font-family: var(--font-mono); font-size: 13px;
+    color: var(--text-dim); z-index: 10; user-select: none;
+  }
+
+  /* ---- slide content ---- */
+  h1 { font-size: 44px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; color: var(--text); }
+  h2 { font-size: 32px; font-weight: 700; letter-spacing: -.01em; color: var(--accent); margin-bottom: 16px; }
+  h3 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  p, li { font-size: 20px; line-height: 1.6; color: var(--text-dim); }
+  ul, ol { padding-left: 28px; }
+  li { margin-bottom: 8px; }
+  strong { color: var(--text); font-weight: 600; }
+  code {
+    font-family: var(--font-mono); font-size: .9em;
+    background: var(--surface2); padding: 2px 8px; border-radius: 4px;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; overflow-x: auto; margin: 12px 0;
+  }
+  pre code {
+    background: none; padding: 0; font-size: 16px; line-height: 1.55;
+    color: var(--text);
+    tab-size: 2;
+  }
+  .hl { color: var(--green); }  /* highlighted token */
+  .hl-orange { color: var(--orange); }
+  .hl-purple { color: var(--purple); }
+  .hl-red { color: var(--red); }
+
+  /* ---- title slide ---- */
+  .slide.title {
+    justify-content: center; align-items: center; text-align: center;
+  }
+  .slide.title h1 { font-size: 56px; margin-bottom: 12px; }
+  .slide.title .subtitle {
+    font-size: 24px; color: var(--text-dim); font-weight: 400;
+  }
+  .slide.title .meta {
+    margin-top: 24px; font-size: 16px; color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+  .slide.title .badge {
+    display: inline-block; margin-bottom: 24px;
+    background: var(--accent-glow); color: var(--accent);
+    padding: 6px 18px; border-radius: 999px; font-size: 14px;
+    font-weight: 600; letter-spacing: .03em;
+    border: 1px solid rgba(88,166,255,.2);
+  }
+
+  /* ---- section break ---- */
+  .slide.section-break {
+    justify-content: center; align-items: center;
+    background: linear-gradient(135deg, var(--surface) 0%, #1a2540 100%);
+  }
+  .slide.section-break h2 { font-size: 48px; margin: 0; }
+
+  /* ---- two-column layout ---- */
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1;
+  }
+  .two-col .col { display: flex; flex-direction: column; }
+  .two-col .col h3 { font-size: 20px; margin-bottom: 10px; }
+  .two-col .col p, .two-col .col li { font-size: 17px; }
+
+  /* ---- code-only slide ---- */
+  .slide.code-slide { justify-content: center; }
+  .slide.code-slide h2 { margin-bottom: 16px; }
+  .slide.code-slide pre { margin: 8px 0; flex-shrink: 0; }
+
+  /* ---- exercise slide ---- */
+  .exercise-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-left: 4px solid var(--orange); border-radius: var(--radius);
+    padding: 20px 24px; margin: 12px 0;
+  }
+  .exercise-box .label {
+    font-size: 13px; font-weight: 700; letter-spacing: .05em;
+    color: var(--orange); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .hint-box {
+    background: var(--accent-glow); border: 1px solid rgba(88,166,255,.2);
+    border-radius: var(--radius); padding: 14px 18px; margin: 8px 0;
+  }
+  .hint-box .label {
+    font-size: 12px; font-weight: 700; letter-spacing: .05em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  /* ---- recap ---- */
+  .recap-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1;
+    align-items: center;
+  }
+  .recap-card {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 28px 20px; border: 1px solid var(--border); text-align: center;
+  }
+  .recap-card .num {
+    font-size: 36px; font-weight: 800; color: var(--accent);
+    font-family: var(--font-mono); margin-bottom: 8px;
+  }
+  .recap-card p { font-size: 17px; margin: 0; }
+
+  /* ---- timeline ---- */
+  .timeline {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 12px;
+  }
+  .timeline-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 16px; background: var(--surface2);
+    border-radius: var(--radius); border: 1px solid var(--border);
+  }
+  .timeline-item .week {
+    font-family: var(--font-mono); font-size: 13px;
+    color: var(--accent); font-weight: 600; min-width: 60px;
+  }
+  .timeline-item .desc { font-size: 16px; color: var(--text-dim); }
+  .timeline-item .proj {
+    margin-left: auto; font-size: 13px; font-weight: 600;
+    color: var(--green); white-space: nowrap;
+  }
+
+  /* ---- responsive ---- */
+  @media (max-width: 700px) {
+    .slide { padding: 24px 20px; }
+    .slide.title h1 { font-size: 32px; }
+    .slide.title .subtitle { font-size: 18px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 22px; }
+    p, li { font-size: 16px; }
+    pre code { font-size: 13px; }
+    .two-col { grid-template-columns: 1fr; gap: 16px; }
+    .recap-grid { grid-template-columns: 1fr; gap: 12px; }
+    #counter { font-size: 11px; bottom: 8px; right: 12px; }
+    .slide.section-break h2 { font-size: 28px; }
+    .timeline-item { flex-wrap: wrap; }
+    .timeline-item .proj { margin-left: 0; }
+  }
+
+  /* ---- print ---- */
+  @media print {
+    #deck { width: 100%; height: auto; box-shadow: none; aspect-ratio: auto; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; break-after: page; padding: 40px; height: auto; min-height: 90vh; }
+    body { overflow: visible; display: block; background: #fff; }
+    #progress, #counter { display: none; }
+    :root { --bg: #fff; --surface: #fff; --surface2: #f3f4f6; --border: #d1d5db; --text: #111; --text-dim: #4b5563; --accent: #2563eb; --accent-glow: rgba(37,99,235,.08); }
+  }
+
+  /* ---- focus visible ---- */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="deck" role="region" aria-label="Presentation">
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 0: TITLE -->
+  <!-- ============================================================ -->
+  <section class="slide title active" data-slide="0" role="region" aria-label="Title slide">
+    <div class="badge">90-Day Co-op Prep Plan · Phase I · Week 3</div>
+    <h1>GitHub: Remote, Push, Pull</h1>
+    <p class="subtitle">Connecting local Git to GitHub — the essential remote workflow</p>
+    <p class="meta">Day 14 · 60 min · Theme: Git</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 1: OVERVIEW -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="1" role="region" aria-label="Overview">
+    <h2>Today's Plan</h2>
+    <p style="margin-bottom: 16px; font-size: 18px; color: var(--text-dim);">What you'll learn and do in the next 60 minutes.</p>
+    <ul>
+      <li><strong>GitHub account</strong> — create one and configure SSH access</li>
+      <li><strong>Remote repos</strong> — what they are and why every project needs one</li>
+      <li><strong><code>git remote add</code></strong> — link your local repo to GitHub</li>
+      <li><strong><code>git push</code></strong> — send your commits to the cloud</li>
+      <li><strong><code>git pull</code></strong> — sync changes from teammates</li>
+      <li><strong><code>git clone</code></strong> — copy an existing repo to your machine</li>
+    </ul>
+    <div style="margin-top: 12px;">
+      <p style="font-size: 16px; color: var(--text-dim);">
+        <span style="color: var(--accent);">▸</span> Milestone: <strong>Project 1 (CLI Todo List)</strong> starts after Week 3
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 2: GitHub Account -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="2" role="region" aria-label="GitHub account">
+    <h2>1. Create a GitHub Account</h2>
+    <p style="margin-bottom: 12px;">GitHub hosts your repos in the cloud and enables collaboration. If you don't have one already:</p>
+    <ol>
+      <li>Go to <strong><a href="https://github.com/signup" target="_blank" style="color: var(--accent);">github.com/signup</a></strong></li>
+      <li>Pick a <strong>professional username</strong> (e.g. <code>firstname-lastname</code>)</li>
+      <li>Use your <strong>personal email</strong> — you'll co-op employers will look at this</li>
+      <li>Verify your email and complete the onboarding</li>
+    </ol>
+    <div class="hint-box" style="margin-top: 16px;">
+      <div class="label">💡 Pro Tip</div>
+      <p style="font-size: 16px; margin: 0;">Employers check GitHub profiles. Use a real name or professional handle, not gamertags. Add a profile photo and bio — it signals you're serious.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 3: What's a Remote? -->
+  <!-- ============================================================ -->
+  <section class="slide section-break" data-slide="3" role="region" aria-label="Section: Remotes">
+    <h2>Remotes &nbsp;·&nbsp; The Bridge</h2>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 4: Concept – Remote Repos -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="4" role="region" aria-label="Remote repos concept">
+    <h2>What's a Remote Repository?</h2>
+    <p style="margin-bottom: 16px;">A <strong>remote</strong> is a copy of your Git repo hosted on another computer (usually GitHub's servers). It's the <em>bridge</em> between your local work and the outside world.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>Local repo</h3>
+        <p>On <em>your</em> machine. You commit here. Only you can see it.</p>
+        <pre style="margin-top: 8px;"><code><span class="hl">$</span> git init<span style="color:var(--text-dim);">
+<span class="hl">$</span> git add .</span>
+<span class="hl">$</span> git commit -m "first commit"</code></pre>
+      </div>
+      <div class="col">
+        <h3>Remote repo (GitHub)</h3>
+        <p>On <em>GitHub's</em> servers. You push/pull from here. <strong>Everyone</strong> on the team can see it.</p>
+        <pre style="margin-top: 8px;"><code style="color: var(--text-dim);">github.com/you/project<wbr>.git</code></pre>
+        <p style="font-size: 16px; margin-top: 8px;">This URL is your remote's address.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 5: git remote add -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="5" role="region" aria-label="Git remote add">
+    <h2>2. Link: <code>git remote add</code></h2>
+    <p style="margin-bottom: 6px;">After creating an <strong>empty repo on GitHub</strong>, connect it to your local repo:</p>
+    <pre><code><span class="hl">$</span> git remote add origin git@github.com:your-u<wbr>sername/project.git</code></pre>
+    <p style="font-size: 17px; margin: 6px 0;">
+      <code>origin</code> = the conventional name for your primary remote.
+    </p>
+    <p style="font-size: 17px;">Verify it worked:</p>
+    <pre><code><span class="hl">$</span> git remote -v
+<span style="color: var(--text-dim);">origin  git@github.com:your-username/project.git (fetch)
+origin  git@github.com:your-username/project.git (push)</span></code></pre>
+    <div class="hint-box" style="margin-top: 6px;">
+      <div class="label">⚠️ Two URL formats</div>
+      <p style="font-size: 16px; margin: 0;"><code>git@github.com:...</code> = SSH (preferred, no password each time).<br><code>https://github.com/...</code> = HTTPS (needs token or password). Set up SSH keys first!</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 6: git push -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="6" role="region" aria-label="Git push">
+    <h2>3. Upload: <code>git push</code></h2>
+    <p style="margin-bottom: 6px;">Sends your local commits to GitHub. Your code is now backed up and shareable.</p>
+    <pre><code><span class="hl">$</span> git push -u origin main</code></pre>
+    <ul style="font-size: 17px;">
+      <li><code>-u</code> = <strong>--set-upstream</strong>. Tells Git: "main on local = main on origin."</li>
+      <li>After <code>-u</code>, future pushes can just be <code>git push</code>.</li>
+    </ul>
+    <p style="font-size: 17px; margin-top: 8px;">What happens behind the scenes:</p>
+    <pre><code style="font-size: 15px;"><span style="color: var(--text-dim);">Counting objects: 15, done.
+Writing objects: 100% (15/15), 2.1 MiB ...
+To github.com:your-username/project.git</span>
+   <span style="color: var(--green);">* [new branch]</span>  main -> main</code></pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 7: git pull -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="7" role="region" aria-label="Git pull">
+    <h2>4. Download: <code>git pull</code></h2>
+    <p style="margin-bottom: 6px;">Fetches changes from GitHub and merges them into your local branch. Use this when:</p>
+    <ul style="font-size: 17px;">
+      <li>A <strong>teammate pushed</strong> new code</li>
+      <li>You <strong>edited on GitHub.com</strong> (or another machine)</li>
+      <li>You're <strong>starting work</strong> on a shared branch</li>
+    </ul>
+    <pre><code><span class="hl">$</span> git pull
+<span style="color: var(--text-dim);">Already up to date.</span>  <span style="color: var(--green);"># nothing new on remote</span>
+
+<span class="hl">$</span> git pull
+<span style="color: var(--text-dim);">Updating a1b2c3d..e4f5g6h
+Fast-forward
+ README.md | 2 ++
+ 1 file changed, 2 insertions(+)</span>  <span style="color: var(--green);"># got new stuff</span></code></pre>
+    <p style="font-size: 17px;">
+      <code>git pull</code> = <code>git fetch</code> + <code>git merge</code>. Do this <strong>before</strong> you start coding on a shared branch.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 8: git clone -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="8" role="region" aria-label="Git clone">
+    <h2>5. Copy: <code>git clone</code></h2>
+    <p style="margin-bottom: 6px;">Downloads an <strong>existing</strong> GitHub repo to your machine — sets up the remote automatically.</p>
+    <pre><code><span class="hl">$</span> git clone git@github.com:some-user/some-project.git
+<span style="color: var(--text-dim);">Cloning into 'some-project'...
+remote: Enumerating objects: 42, done.
+Receiving objects: 100% (42/42), 1.2 MiB, done.</span></code></pre>
+    <p style="font-size: 17px;">After clone, you have:</p>
+    <ul style="font-size: 17px;">
+      <li>The full repo history locally</li>
+      <li>A remote called <code>origin</code> already configured</li>
+      <li>The default branch checked out</li>
+    </ul>
+    <div class="hint-box" style="margin-top: 6px;">
+      <div class="label">💡 Clone vs. Init + Remote Add</div>
+      <p style="font-size: 16px; margin: 0;">Use <code>git clone</code> when the repo <strong>exists on GitHub first</strong>. Use <code>git init</code> + <code>git remote add</code> when you <strong>start locally</strong> and then create the GitHub repo.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 9: Section – Full Workflow -->
+  <!-- ============================================================ -->
+  <section class="slide section-break" data-slide="9" role="region" aria-label="Section: Full workflow">
+    <h2>The Complete Workflow</h2>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 10: Walkthrough -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="10" role="region" aria-label="Walkthrough">
+    <h2>Putting It All Together</h2>
+    <p style="margin-bottom: 10px; font-size: 18px;">Create a local project and push it to GitHub — start to finish.</p>
+    <pre><code><span style="color: var(--text-dim);"># 1. Create a new project locally</span>
+<span class="hl">$</span> mkdir my-first-project && cd my-first-project
+<span class="hl">$</span> echo "# My First Project" > README.md
+<span class="hl">$</span> git init
+<span class="hl">$</span> git add README.md
+<span class="hl">$</span> git commit -m "initial commit"
+
+<span style="color: var(--text-dim);"># 2. Create a NEW repo on GitHub (no README, no .gitignore)</span>
+<span style="color: var(--text-dim);">#    Copy the SSH URL from the GitHub page</span>
+
+<span class="hl">$</span> git remote add origin git@github.com:you/my-first-project.git
+<span class="hl">$</span> git push -u origin main
+
+<span style="color: var(--text-dim);"># 3. Verify on GitHub — refresh the page, your code is there!</span></code></pre>
+    <p style="font-size: 16px; color: var(--text-dim);">This is the pattern you'll use for every project, including your co-op projects.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 11: Exercises -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="11" role="region" aria-label="Exercises">
+    <h2>Practice Exercises</h2>
+
+    <div class="exercise-box">
+      <div class="label">Exercise 1 · Push a project</div>
+      <p style="font-size: 17px;">Create a new local repo called <code>co-op-prep</code> with a <code>README.md</code>. Create an empty repo on GitHub with the same name. Connect and push. Verify it shows on GitHub.com.</p>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">Exercise 2 · Clone and inspect</div>
+      <p style="font-size: 17px;">Find an open-source project on GitHub that interests you. Clone it. Run <code>git log --oneline -5</code>, <code>git remote -v</code>, and <code>git branch -a</code>. What do each of these tell you?</p>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">Exercise 3 · Pull simulation</div>
+      <p style="font-size: 17px;">Partner up (or use a second account/browser): one person edits the README on GitHub.com and commits. The other runs <code>git pull</code> locally. What do you see?</p>
+    </div>
+
+    <div class="hint-box" style="margin-top: 8px;">
+      <div class="label">💡 Stuck?</div>
+      <p style="font-size: 16px; margin: 0;">For Ex.1, create the GitHub repo <strong>without</strong> initializing it with a README or .gitignore — otherwise push will fail. Watch the GitHub UI carefully.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 12: SSH Setup -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="12" role="region" aria-label="SSH setup">
+    <h2>Bonus: SSH Key Setup</h2>
+    <p style="margin-bottom: 6px;">Skip password prompts forever. Generate and register an SSH key.</p>
+    <pre><code><span class="hl">$</span> ssh-keygen -t ed25519 -C "your_email@example.com"
+<span style="color: var(--text-dim);"># Press Enter to accept defaults</span>
+
+<span class="hl">$</span> cat ~/.ssh/id_ed25519.pub
+<span style="color: var(--text-dim);"># Copy the full line starting with "ssh-ed25519 ..."</span></code></pre>
+    <p style="font-size: 17px;">Then add it on GitHub:</p>
+    <ul style="font-size: 17px;">
+      <li><strong>GitHub.com</strong> → Settings → SSH and GPG keys → New SSH key</li>
+      <li>Paste the public key, give it a name (e.g. "My Laptop")</li>
+    </ul>
+    <p style="font-size: 17px;">Test it:</p>
+    <pre><code><span class="hl">$</span> ssh -T git@github.com
+<span style="color: var(--green);">Hi your-username! You've successfully authenticated.</span></code></pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 13: Milestones -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="13" role="region" aria-label="Milestones">
+    <h2>Your Co-op Project Milestones</h2>
+    <p style="margin-bottom: 10px;">Everything you're learning builds toward these portfolio projects:</p>
+    <div class="timeline">
+      <div class="timeline-item">
+        <span class="week">Wk 3</span>
+        <span class="desc">CLI Todo List · <span style="color: var(--text-dim);">First real project, pure Python + Git</span></span>
+        <span class="proj">Project 1</span>
+      </div>
+      <div class="timeline-item">
+        <span class="week">Wk 6</span>
+        <span class="desc">Bookmark Saver · <span style="color: var(--text-dim);">Data persistence, file I/O, JSON</span></span>
+        <span class="proj">Project 2</span>
+      </div>
+      <div class="timeline-item">
+        <span class="week">Wk 8</span>
+        <span class="desc">Weather Dashboard · <span style="color: var(--text-dim);">API calls, JSON parsing, env vars</span></span>
+        <span class="proj">Project 3</span>
+      </div>
+      <div class="timeline-item">
+        <span class="week">Wk 12</span>
+        <span class="desc">Full-Stack App · <span style="color: var(--text-dim);">Database, frontend, deployment</span></span>
+        <span class="proj">Project 5</span>
+      </div>
+    </div>
+    <p style="font-size: 16px; color: var(--text-dim); margin-top: 12px;">Each project gets pushed to GitHub. Your remote workflow today is the foundation for all of them.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 14: Summary -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="14" role="region" aria-label="Summary">
+    <h2>Key Takeaways</h2>
+    <div class="recap-grid">
+      <div class="recap-card">
+        <div class="num">git remote add</div>
+        <p>Links your local repo to a GitHub URL. The bridge between your machine and the cloud.</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">git push</div>
+        <p>Uploads your commits. Backs up your work and shares it with the team.</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">git pull</div>
+        <p>Downloads teammates' changes. Keeps you in sync before you start coding.</p>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 16px;">
+      <p style="font-size: 17px;"><code>git clone</code> = one-step copy + remote setup for existing repos.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 15: Next Steps -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="15" role="region" aria-label="Next steps">
+    <h2>Next Up</h2>
+    <p style="margin-bottom: 16px; font-size: 20px;">Coming this week and next:</p>
+    <ul>
+      <li><strong>Day 15</strong> — Branching: <code>git branch</code>, <code>git checkout</code>, <code>git merge</code></li>
+      <li><strong>Day 16</strong> — Merge conflicts: resolve them without panic</li>
+      <li><strong>Day 17</strong> — GitHub Pull Requests: collaborative code review</li>
+      <li><strong>Day 18</strong> — .gitignore, README, and project hygiene</li>
+      <li><strong>Week 4</strong> — <span style="color: var(--accent);">Project 1: CLI Todo List</span> — your first build!</li>
+    </ul>
+    <div style="margin-top: 20px; text-align: center;">
+      <p style="font-size: 18px; color: var(--text);">Keep pushing. Every commit is a signal to employers.</p>
+    </div>
+  </section>
+
+</div>
+
+<div id="progress"><div id="progress-bar"></div></div>
+<div id="counter">1 / 16</div>
+
+<script>
+(function() {
+  'use strict';
+  var slides = document.querySelectorAll('.slide');
+  var progressBar = document.getElementById('progress-bar');
+  var counter = document.getElementById('counter');
+  var current = 0;
+
+  function showSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= slides.length) index = slides.length - 1;
+    current = index;
+    for (var i = 0; i < slides.length; i++) {
+      slides[i].classList.toggle('active', i === current);
+    }
+    var pct = ((current + 1) / slides.length) * 100;
+    progressBar.style.width = pct + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    window.location.hash = current;
+  }
+
+  function next() { showSlide(current + 1); }
+  function prev() { showSlide(current - 1); }
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen().catch(function(){});
+      } else {
+        document.exitFullscreen().catch(function(){});
+      }
+    } else if (e.key === 'Home') {
+      e.preventDefault(); showSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); showSlide(slides.length - 1);
+    }
+  });
+
+  // Restore from hash on load
+  if (window.location.hash) {
+    var n = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < slides.length) { current = n; }
+  }
+  showSlide(current);
+
+  // Touch swipe support
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    var diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next();
+      else prev();
+    }
+  });
+})();
+</script>
+</body>
+</html>
