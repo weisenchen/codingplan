@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 16 — try/except, Error Handling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #161822;
+  --accent: #7c5cfc;
+  --accent-dim: #4a3a8a;
+  --accent-glow: #9b7fff;
+  --text: #e2e4f0;
+  --text-dim: #8b8fa8;
+  --code-bg: #1c1e2e;
+  --code-text: #d4d6e6;
+  --keyword: #c792ea;
+  --string: #c3e88d;
+  --number: #f78c6c;
+  --comment: #676e95;
+  --function: #82aaff;
+  --border: #2a2d3e;
+  --success: #4ec9b0;
+  --warn: #ffcb6b;
+  --error: #ff5370;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-serif); overflow: hidden; }
+
+/* Slide container */
+#deck {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: min(100% - 40px, var(--slide-w));
+  height: min(100% - 40px, calc((100vw - 40px) * 9 / 16));
+  max-height: calc(100vh - 40px);
+  background: var(--slide-bg);
+  border-radius: 12px;
+  padding: 48px 56px;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  overflow-y: auto;
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+
+/* Typography */
+h1 { font-size: 42px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; }
+h2 { font-size: 30px; font-weight: 600; line-height: 1.3; margin-bottom: 16px; color: var(--accent); }
+h3 { font-size: 22px; font-weight: 600; line-height: 1.3; margin-bottom: 10px; color: var(--accent-glow); }
+p, li { font-size: 20px; line-height: 1.6; color: var(--text-dim); }
+strong { color: var(--text); font-weight: 600; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Lists */
+ul, ol { margin-left: 24px; }
+li { margin-bottom: 6px; }
+
+/* Code */
+code, pre { font-family: var(--font-mono); font-size: 17px; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+code { color: var(--code-text); }
+pre code { background: none; padding: 0; border: none; }
+.kw { color: var(--keyword); }
+.fn { color: var(--function); }
+.st { color: var(--string); }
+.num { color: var(--number); }
+.cm { color: var(--comment); font-style: italic; }
+.success { color: var(--success); }
+.error { color: var(--error); }
+.warn { color: var(--warn); }
+
+/* Progress bar */
+#progress {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: var(--border); z-index: 100;
+}
+#progress-bar { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+
+/* Slide counter */
+#counter {
+  position: fixed; bottom: 14px; right: 20px;
+  font-family: var(--font-mono); font-size: 14px; color: var(--text-dim); z-index: 100;
+}
+
+/* Code highlight line */
+.hl-line { background: rgba(124, 92, 252, 0.15); display: inline-block; width: 100%; }
+
+/* Title slide */
+.title-slide { justify-content: center; align-items: center; text-align: center; }
+.title-slide h1 { font-size: 52px; margin-bottom: 12px; }
+.title-slide .subtitle { font-size: 22px; color: var(--accent-glow); margin-bottom: 24px; }
+.title-slide .meta { font-size: 18px; color: var(--text-dim); }
+
+/* Section break */
+.section-break { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #1a1640, #161822); }
+.section-break h2 { font-size: 38px; color: var(--text); margin-bottom: 8px; }
+.section-break p { font-size: 20px; color: var(--accent-glow); }
+
+/* Two columns */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
+.col { display: flex; flex-direction: column; }
+.col h3 { font-size: 20px; margin-bottom: 8px; }
+.col p, .col li { font-size: 17px; }
+
+/* Recap slide */
+.recap-slide { justify-content: center; }
+.recap-slide h2 { text-align: center; margin-bottom: 28px; }
+.recap-item { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+.recap-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 16px; flex-shrink: 0; }
+.recap-item p { font-size: 18px; margin: 0; }
+
+/* Scrollbar styling */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 28px 20px; border-radius: 0; width: 100%; height: 100%; max-height: 100%; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 16px; }
+  pre { font-size: 14px; padding: 12px 14px; }
+  .title-slide h1 { font-size: 32px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .recap-item p { font-size: 15px; }
+}
+
+/* Print */
+@media print {
+  body { background: #fff; }
+  .slide { position: static; opacity: 1; pointer-events: auto; page-break-after: always; border: 1px solid #ddd; box-shadow: none; background: #fff; color: #222; width: 100%; height: auto; min-height: 5in; }
+  #progress, #counter { display: none; }
+  h2 { color: #555; }
+  .text-dim, p, li { color: #444; }
+}
+
+/* Last updated */
+#footer {
+  position: fixed; bottom: 14px; left: 20px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); z-index: 100;
+}
+
+/* Exercise styling */
+.exercise-box {
+  border: 1px solid var(--accent-dim);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  background: rgba(124, 92, 252, 0.06);
+}
+.exercise-box h3 { font-size: 18px; margin-bottom: 6px; color: var(--accent-glow); }
+.exercise-box p, .exercise-box li { font-size: 17px; }
+
+.hint { color: var(--warn); font-family: var(--font-mono); font-size: 15px; margin-top: 8px; }
+
+/* Checkbox style for prerequisites */
+.checklist { list-style: none; margin-left: 0; }
+.checklist li::before { content: "☐ "; color: var(--accent-dim); font-size: 20px; margin-right: 6px; }
+
+/* Error display / console-like styling */
+.console-output {
+  background: #0a0c12;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.console-output .error-text { color: var(--error); }
+.console-output .success-text { color: var(--success); }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>try / except —<br>Error Handling in Python</h1>
+  <p class="subtitle">Day 16 — 90-Day Co-op Prep Plan</p>
+  <p class="meta">Week 3 · Phase I · Python</p>
+  <p class="meta" style="margin-top:20px;">⏱ 60 minutes</p>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>Today's Plan</h2>
+  <p style="margin-bottom:12px;">Programs crash. Learn to catch errors gracefully instead of letting them blow up in your user's face — or your production logs.</p>
+  <ul>
+    <li><strong>What are exceptions?</strong> — Python's error-reporting mechanism</li>
+    <li><strong><code>try / except</code></strong> — catch errors before they crash your program</li>
+    <li><strong>Specific exceptions</strong> — <code>FileNotFoundError</code>, <code>TypeError</code>, <code>ValueError</code></li>
+    <li><strong><code>else</code> &amp; <code>finally</code></strong> — success paths and cleanup</li>
+    <li><strong>Practical patterns</strong> — reading files, validating user input</li>
+    <li><strong>Hands-on exercises</strong> — build a safe file reader</li>
+  </ul>
+  <p style="margin-top:12px;color:var(--accent-glow);">🎯 After this session you'll handle Python errors with confidence — no more mysterious crash messages.</p>
+</section>
+
+<!-- SLIDE 2: Why Error Handling Matters -->
+<section class="slide" data-slide="2">
+  <h2>Why Error Handling?</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>Without handling</h3>
+      <div class="console-output">
+        $ python read_data.py<br>
+        <span class="error-text">Traceback (most recent call last):<br>
+        &nbsp;&nbsp;File "read_data.py", line 3, in &lt;module&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;contents = file.read()<br>
+        FileNotFoundError: [Errno 2] No such file or directory: 'data.txt'</span>
+      </div>
+      <p style="font-size:17px;">Program crashes. User has no idea what happened. <span class="error">Bad UX.</span></p>
+    </div>
+    <div class="col">
+      <h3>With handling</h3>
+      <div class="console-output">
+        $ python read_data.py<br>
+        <span class="success-text">File 'data.txt' not found. Creating a new one.<br>
+        Enter your data: _</span>
+      </div>
+      <p style="font-size:17px;">Program recovers gracefully. User gets a helpful message. <span class="success">Good UX.</span></p>
+    </div>
+  </div>
+  <p style="margin-top:12px;font-size:18px;"><strong>Key idea:</strong> Errors happen — network drops, missing files, bad input. Robust code <em>anticipates</em> them and <em>handles</em> them.</p>
+</section>
+
+<!-- SLIDE 3: Section Break — try/except -->
+<section class="slide section-break" data-slide="3">
+  <h2><code>try / except</code> Basics</h2>
+  <p>The fundamental error-handling building block</p>
+</section>
+
+<!-- SLIDE 4: try/except syntax -->
+<section class="slide" data-slide="4">
+  <h2><code>try / except</code> — Catching an Exception</h2>
+  <pre><code><span class="kw">try</span>:
+    <span class="cm"># Code that might fail</span>
+    number = int(input(<span class="st">"Enter a number: "</span>))
+    print(<span class="st">f"You entered {number}"</span>)
+<span class="kw">except</span>:
+    <span class="cm"># Code that runs if anything goes wrong</span>
+    print(<span class="st">"That wasn't a valid number!"</span>)</code></pre>
+  <p>The recipe:</p>
+  <ul>
+    <li><strong><code>try:</code></strong> Python attempts this block first</li>
+    <li>If an <strong>exception</strong> occurs, the rest of <code>try</code> is skipped</li>
+    <li><strong><code>except:</code></strong> catches <em>any</em> exception — use this carefully!</li>
+    <li>If no exception occurs, <code>except</code> is skipped entirely</li>
+  </ul>
+  <p style="margin-top:8px;font-size:17px;color:var(--warn);">⚠ Plain <code>except:</code> catches everything (even <code>KeyboardInterrupt</code>). Always prefer specific exceptions.</p>
+</section>
+
+<!-- SLIDE 5: Catching specific exceptions -->
+<section class="slide" data-slide="5">
+  <h2>Catching Specific Exceptions</h2>
+  <p>Different errors deserve different responses. Name the exception type you expect:</p>
+  <pre><code><span class="kw">try</span>:
+    <span class="kw">with</span> open(<span class="st">"data.txt"</span>) <span class="kw">as</span> f:
+        data = f.read()
+<span class="kw">except</span> FileNotFoundError:
+    print(<span class="st">"The file doesn't exist yet — creating it."</span>)
+    <span class="kw">with</span> open(<span class="st">"data.txt"</span>, <span class="st">"w"</span>) <span class="kw">as</span> f:
+        f.write(<span class="st">""</span>)</code></pre>
+  <p>Common built-in exceptions:</p>
+  <div class="two-col" style="gap:16px;">
+    <div class="col">
+      <p style="font-size:16px;"><span class="error">FileNotFoundError</span> — file doesn't exist</p>
+      <p style="font-size:16px;"><span class="error">ValueError</span> — wrong value (e.g. <code>int("abc")</code>)</p>
+    </div>
+    <div class="col">
+      <p style="font-size:16px;"><span class="error">TypeError</span> — operation on wrong type</p>
+      <p style="font-size:16px;"><span class="error">KeyError</span> — missing dict key</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: Catching the exception object -->
+<section class="slide" data-slide="6">
+  <h2>Accessing the Exception Message</h2>
+  <p>Use <code>as</code> to capture the exception object and inspect the error:</p>
+  <pre><code><span class="kw">try</span>:
+    num = int(input(<span class="st">"Enter a number: "</span>))
+<span class="kw">except</span> ValueError <span class="kw">as</span> e:
+    print(<span class="st">f"Oops! {e}"</span>)
+    <span class="cm"># Output: Oops! invalid literal for int() with base 10: 'hello'</span></code></pre>
+  <p>This is useful for:</p>
+  <ul>
+    <li><strong>Logging</strong> — record the error details for debugging</li>
+    <li><strong>User feedback</strong> — show a friendly version of the problem</li>
+    <li><strong>Fallback logic</strong> — decide what to do based on the error</li>
+  </ul>
+  <div class="console-output">
+    <span class="cm"># Pattern: log the error, show the user a simple message</span><br>
+    <span class="kw">import</span> logging<br><br>
+    <span class="kw">try</span>:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;result = risky_operation()<br>
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;logging.error(<span class="st">f"Operation failed: {e}"</span>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;print(<span class="st">"Something went wrong. Please try again."</span>)
+  </div>
+</section>
+
+<!-- SLIDE 7: Multiple except blocks -->
+<section class="slide" data-slide="7">
+  <h2>Multiple <code>except</code> Blocks</h2>
+  <p>Handle different errors with different responses:</p>
+  <pre><code><span class="kw">try</span>:
+    filename = input(<span class="st">"Enter filename: "</span>)
+    multiplier = int(input(<span class="st">"Multiplier: "</span>))
+    <span class="kw">with</span> open(filename) <span class="kw">as</span> f:
+        value = int(f.read().strip())
+    result = value * multiplier
+    print(<span class="st">f"Result: {result}"</span>)
+
+<span class="kw">except</span> FileNotFoundError:
+    print(<span class="st">f"'{filename}' not found. Check the name."</span>)
+<span class="kw">except</span> ValueError:
+    print(<span class="st">"Couldn't convert to a number. Check your input."</span>)
+<span class="kw">except</span> Exception <span class="kw">as</span> e:
+    print(<span class="st">f"Unexpected error: {e}"</span>)</code></pre>
+  <p><strong>Order matters!</strong> Python checks <code>except</code> blocks top-to-bottom. Put specific exceptions first, general (<code>Exception</code>) last.</p>
+</section>
+
+<!-- SLIDE 8: Section Break — else and finally -->
+<section class="slide section-break" data-slide="8">
+  <h2><code>else</code> &amp; <code>finally</code></h2>
+  <p>Success paths and guaranteed cleanup</p>
+</section>
+
+<!-- SLIDE 9: else block -->
+<section class="slide" data-slide="9">
+  <h2><code>else</code> — Runs Only on Success</h2>
+  <p>Code in the <code>else</code> block runs <em>only</em> if no exception was raised. Keeps the try block minimal.</p>
+  <pre><code><span class="kw">try</span>:
+    file = open(<span class="st">"settings.json"</span>)
+<span class="kw">except</span> FileNotFoundError:
+    print(<span class="st">"No settings file. Using defaults."</span>)
+    config = {<span class="st">"theme"</span>: <span class="st">"dark"</span>}
+<span class="kw">else</span>:
+    <span class="cm"># Only runs if open() succeeded</span>
+    config = json.load(file)
+    file.close()
+    print(<span class="st">"Settings loaded."</span>)</code></pre>
+  <p style="font-size:17px;"><strong>Why not just put it in try?</strong> The <code>else</code> block makes it clear: "this code runs <em>because</em> the risky part succeeded." It also avoids accidentally catching exceptions that shouldn't be caught.</p>
+</section>
+
+<!-- SLIDE 10: finally block -->
+<section class="slide" data-slide="10">
+  <h2><code>finally</code> — Runs No Matter What</h2>
+  <p><code>finally</code> always runs — whether the try succeeded, failed, or even if you <code>return</code> from inside try. Use it for <strong>cleanup</strong>.</p>
+  <pre><code><span class="kw">try</span>:
+    file = open(<span class="st">"data.txt"</span>)
+    data = file.read()
+    <span class="kw">return</span> process(data)
+<span class="kw">except</span> FileNotFoundError:
+    print(<span class="st">"File not found."</span>)
+    <span class="kw">return</span> []
+<span class="kw">finally</span>:
+    <span class="cm"># ALWAYS runs — even if we returned from try or except!</span>
+    file.close()</code></pre>
+  <p>Common <code>finally</code> use cases:</p>
+  <ul>
+    <li>Closing files, network connections, or database handles</li>
+    <li>Releasing locks or temporary resources</li>
+    <li>Logging that an operation completed (success or failure)</li>
+  </ul>
+  <p style="font-size:17px;color:var(--comment);">💡 With file operations, the <code>with</code> statement handles <code>finally</code> automatically — but for custom resources, <code>finally</code> is essential.</p>
+</section>
+
+<!-- SLIDE 11: Full try/except/else/finally -->
+<section class="slide" data-slide="11">
+  <h2>The Complete Pattern</h2>
+  <p>All four clauses together — the full error-handling toolkit:</p>
+  <pre><code><span class="kw">try</span>:
+    <span class="cm"># Risky code</span>
+    num = int(input(<span class="st">"Number: "</span>))
+    result = <span class="num">100</span> / num
+<span class="kw">except</span> ValueError:
+    print(<span class="st">"That's not a number!"</span>)
+<span class="kw">except</span> ZeroDivisionError:
+    print(<span class="st">"Can't divide by zero!"</span>)
+<span class="kw">else</span>:
+    <span class="cm"># Only if no exception</span>
+    print(<span class="st">f"Result: {result}"</span>)
+<span class="kw">finally</span>:
+    <span class="cm"># Always runs</span>
+    print(<span class="st">"Operation attempted."</span>)</code></pre>
+  <div class="console-output">
+    <span class="cm"># Example runs:</span><br><br>
+    <span class="cm"># Input: "hello"</span><br>
+    <span>That's not a number!</span><br>
+    <span class="success-text">Operation attempted.</span><br><br>
+    <span class="cm"># Input: "5"</span><br>
+    <span class="success-text">Result: 20.0<br>Operation attempted.</span><br><br>
+    <span class="cm"># Input: "0"</span><br>
+    <span>Can't divide by zero!</span><br>
+    <span class="success-text">Operation attempted.</span>
+  </div>
+</section>
+
+<!-- SLIDE 12: Practical — Safe File Reader -->
+<section class="slide" data-slide="12">
+  <h2>Walkthrough: Safe File Reader</h2>
+  <p>Write a function that reads a number from a file safely — handling every failure point:</p>
+  <pre><code><span class="kw">def</span> <span class="fn">read_number</span>(filename):
+    <span class="st">"""Read a number from file. Returns None on failure."""</span>
+    <span class="kw">try</span>:
+        <span class="kw">with</span> open(filename) <span class="kw">as</span> f:
+            content = f.read().strip()
+        <span class="kw">if</span> <span class="kw">not</span> content:
+            <span class="kw">return</span> <span class="num">0</span>
+        <span class="kw">return</span> int(content)
+    <span class="kw">except</span> FileNotFoundError:
+        print(<span class="st">f"'{filename}' not found. Creating with value 0."</span>)
+        <span class="kw">with</span> open(filename, <span class="st">"w"</span>) <span class="kw">as</span> f:
+            f.write(<span class="st">"0"</span>)
+        <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">except</span> ValueError:
+        print(<span class="st">f"'{filename}' doesn't contain a valid number."</span>)
+        <span class="kw">return</span> <span class="kw">None</span></code></pre>
+  <p>Each error gets a specific, helpful response. The function <em>never crashes</em> — it always returns a usable value.</p>
+</section>
+
+<!-- SLIDE 13: Raising exceptions -->
+<section class="slide" data-slide="13">
+  <h2>Raising Exceptions with <code>raise</code></h2>
+  <p>Sometimes <em>you</em> need to signal that something's wrong. Use <code>raise</code> to throw your own exceptions:</p>
+  <pre><code><span class="kw">def</span> <span class="fn">set_age</span>(age):
+    <span class="kw">if</span> age &lt; <span class="num">0</span>:
+        <span class="kw">raise</span> ValueError(<span class="st">"Age can't be negative!"</span>)
+    <span class="kw">if</span> age &gt; <span class="num">150</span>:
+        <span class="kw">raise</span> ValueError(<span class="st">"Age seems unrealistic."</span>)
+    print(<span class="st">f"Age set to {age}"</span>)</code></pre>
+  <div class="two-col" style="gap:16px;">
+    <div class="col">
+      <h3>Bad practice</h3>
+      <pre style="font-size:15px;"><code><span class="kw">def</span> <span class="fn">divide</span>(a, b):
+    <span class="kw">if</span> b == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="st">"Error!"</span>  <span class="cm"># mixed types!</span>
+    <span class="kw">return</span> a / b</code></pre>
+      <p style="font-size:15px;">Returning different types is confusing. <span class="error">Don't do this.</span></p>
+    </div>
+    <div class="col">
+      <h3>Good practice</h3>
+      <pre style="font-size:15px;"><code><span class="kw">def</span> <span class="fn">divide</span>(a, b):
+    <span class="kw">if</span> b == <span class="num">0</span>:
+        <span class="kw">raise</span> ValueError(<span class="st">"Division by zero"</span>)
+    <span class="kw">return</span> a / b</code></pre>
+      <p style="font-size:15px;">Raise an exception. Let the <em>caller</em> decide how to handle it. <span class="success">✓</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 14: Section Break — Exercises -->
+<section class="slide section-break" data-slide="14">
+  <h2>Practice Exercises</h2>
+  <p>Test your error-handling skills</p>
+</section>
+
+<!-- SLIDE 15: Exercise -->
+<section class="slide" data-slide="15">
+  <h2>Exercises</h2>
+
+  <div class="exercise-box">
+    <h3>Exercise 1: Safe Integer Input</h3>
+    <p>Write a function <code>safe_int(prompt)</code> that keeps asking until the user enters a valid integer. Return the integer.</p>
+    <pre style="font-size:15px;"><code><span class="kw">def</span> <span class="fn">safe_int</span>(prompt):
+    <span class="cm"># Keep asking until we get a valid int</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        <span class="cm"># ???</span></code></pre>
+    <p class="hint">💡 Use <code>try/except ValueError</code> inside a <code>while True</code> loop. Break only on success.</p>
+  </div>
+
+  <div class="exercise-box">
+    <h3>Exercise 2: Safe Calculator</h3>
+    <p>Write a function <code>calculate(a, op, b)</code> that handles <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>. Raise <code>ValueError</code> for unknown operators. Handle <code>ZeroDivisionError</code> gracefully.</p>
+    <p class="hint">💡 <code>calculate(10, "/", 0)</code> → should print "Can't divide by zero!" and return <code>None</code>.</p>
+  </div>
+
+  <div class="exercise-box">
+    <h3>Exercise 3: Read Config</h3>
+    <p>Write <code>get_setting(filename, key)</code> that reads a JSON file and returns a value by key. Handle <code>FileNotFoundError</code>, <code>json.JSONDecodeError</code>, and <code>KeyError</code> — each with a specific message.</p>
+    <p class="hint">💡 <code>import json</code> — <code>json.JSONDecodeError</code> is a subclass of <code>ValueError</code>.</p>
+  </div>
+</section>
+
+<!-- SLIDE 16: Recap -->
+<section class="slide recap-slide" data-slide="16">
+  <h2>Key Takeaways</h2>
+  <div class="recap-item">
+    <div class="recap-num">1</div>
+    <p><strong><code>try/except</code> catches errors</strong> — wrap risky code in <code>try</code>, handle failures in <code>except</code>. Always catch <strong>specific</strong> exceptions.</p>
+  </div>
+  <div class="recap-item">
+    <div class="recap-num">2</div>
+    <p><strong><code>else</code> runs on success, <code>finally</code> always runs</strong> — <code>else</code> is for "if it worked", <code>finally</code> is for cleanup (close files, release resources).</p>
+  </div>
+  <div class="recap-item">
+    <div class="recap-num">3</div>
+    <p><strong>Raise, don't return errors</strong> — use <code>raise ValueError(...)</code> instead of returning mixed types. Let the caller handle it.</p>
+  </div>
+  <div class="recap-item">
+    <div class="recap-num">4</div>
+    <p><strong>Robust code anticipates failure</strong> — file not found, bad input, network issues. Handle each case specifically for the best user experience.</p>
+  </div>
+</section>
+
+<!-- SLIDE 17: Next Steps -->
+<section class="slide" data-slide="17">
+  <h2>What's Next?</h2>
+  <p style="margin-bottom:16px;">You now know how to catch, handle, and raise exceptions — making your programs robust and user-friendly.</p>
+  <ul>
+    <li><strong>Tomorrow (Day 17):</strong> Working with JSON and CSV files</li>
+    <li><span style="color:var(--comment);">Coming up this week:</span> File I/O, modules, and wrapping up Phase I</li>
+  </ul>
+  <div style="margin-top:20px;padding:16px;border:1px solid var(--border);border-radius:8px;">
+    <p style="font-size:17px;"><strong>📅 Milestone check-in</strong></p>
+    <p style="font-size:16px;">After <strong>Week 3</strong> → <span class="accent" style="color:var(--accent-glow);">Project 1: CLI Todo List</span><br>
+    After <strong>Week 6</strong> → Project 2: Bookmark Saver<br>
+    After <strong>Week 8</strong> → Project 3: Weather Dashboard<br>
+    After <strong>Week 12</strong> → Project 5: Full-Stack App</p>
+    <p style="font-size:16px;margin-top:8px;color:var(--accent-glow);">Error handling is critical for Project 1 — your todo list shouldn't crash on a bad input!</p>
+  </div>
+  <p style="margin-top:20px;font-size:18px;color:var(--comment);">Practice today's exercises. Try breaking your own code — then fix it with the patterns you just learned.</p>
+</section>
+
+</div>
+
+<div id="progress"><div id="progress-bar"></div></div>
+<div id="counter">0 / 0</div>
+<div id="footer">Day 16 · Co-op Prep · Python Error Handling</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const counter = document.getElementById('counter');
+  const bar = document.getElementById('progress-bar');
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + total;
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = '' + (idx + 1);
+  }
+
+  function next() { showSlide(Math.min(current + 1, total - 1)); }
+  function prev() { showSlide(Math.max(current - 1, 0)); }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+  });
+
+  // Touch swipe
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) next(); else prev();
+    }
+  }, { passive: true });
+
+  // Hash init
+  const hash = parseInt(window.location.hash.slice(1), 10);
+  if (hash && hash >= 1 && hash <= total) showSlide(hash - 1);
+  else showSlide(0);
+})();
+</script>
+
+</body>
+</html>
