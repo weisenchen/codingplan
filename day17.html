@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 17 — Project: CLI Todo List (Part 1) | 90-Day Co-op Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f14;
+    --bg2: #1a1a24;
+    --bg3: #252533;
+    --fg: #e2e2ea;
+    --fg2: #9090a0;
+    --accent: #7c5cfc;
+    --accent2: #f59e0b;
+    --green: #34d399;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --title-font: 'Inter', sans-serif;
+    --body-font: 'Inter', sans-serif;
+    --code-font: 'JetBrains Mono', monospace;
+    --slide-w: 1920px;
+    --slide-h: 1080px;
+    --scale: 1;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #08080b;
+    font-family: var(--body-font);
+    color: var(--fg);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .deck {
+    position: relative;
+    width: min(100vw, calc(100vh * 16/9));
+    height: min(100vh, calc(100vw * 9/16));
+    overflow: hidden;
+    background: var(--bg);
+    border-radius: 4px;
+    box-shadow: 0 0 80px rgba(124,92,252,0.08);
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 60px 72px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+  }
+
+  .slide h1 {
+    font-family: var(--title-font);
+    font-size: clamp(28px, 3.2vw, 62px);
+    font-weight: 800;
+    color: var(--fg);
+    line-height: 1.15;
+    margin-bottom: 0.3em;
+  }
+  .slide h2 {
+    font-family: var(--title-font);
+    font-size: clamp(20px, 2.2vw, 42px);
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.4em;
+  }
+  .slide h3 {
+    font-family: var(--title-font);
+    font-size: clamp(16px, 1.6vw, 30px);
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 0.3em;
+  }
+  .slide p, .slide li {
+    font-size: clamp(14px, 1.3vw, 24px);
+    line-height: 1.6;
+    color: var(--fg2);
+  }
+  .slide ul, .slide ol {
+    padding-left: 1.5em;
+    margin: 0.5em 0;
+  }
+  .slide li { margin-bottom: 0.25em; }
+
+  /* code blocks */
+  pre {
+    background: var(--bg2);
+    border: 1px solid var(--bg3);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 0.5em 0;
+    font-size: clamp(11px, 1vw, 18px);
+    line-height: 1.55;
+  }
+  code {
+    font-family: var(--code-font);
+    font-size: 0.95em;
+  }
+  pre code { font-size: 1em; }
+  .hl { color: var(--green); }
+  .hl-kw { color: var(--accent); }
+  .hl-str { color: var(--accent2); }
+  .hl-cm { color: #6b7280; font-style: italic; }
+  .hl-fn { color: var(--blue); }
+
+  /* progress */
+  .progress {
+    position: absolute;
+    bottom: 20px;
+    right: 32px;
+    font-size: clamp(11px, 0.9vw, 16px);
+    color: var(--fg2);
+    font-family: var(--code-font);
+    z-index: 10;
+  }
+  .bar-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--bg3);
+    z-index: 10;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.35s ease;
+    width: 0%;
+  }
+
+  /* title slide */
+  .slide-title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide-title .day-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--code-font);
+    font-weight: 700;
+    font-size: clamp(12px, 1vw, 18px);
+    padding: 6px 18px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+  }
+  .slide-title h1 {
+    font-size: clamp(32px, 4vw, 76px);
+    margin-bottom: 8px;
+  }
+  .slide-title .subtitle {
+    font-size: clamp(16px, 1.6vw, 30px);
+    color: var(--fg2);
+    margin-bottom: 4px;
+  }
+  .slide-title .meta {
+    font-size: clamp(12px, 1vw, 18px);
+    color: var(--fg2);
+    font-family: var(--code-font);
+    margin-top: 16px;
+  }
+  .slide-title .phase {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  /* section break */
+  .slide-section {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(135deg, var(--accent) 0%, #4a2db8 100%);
+  }
+  .slide-section h2 {
+    color: #fff;
+    font-size: clamp(28px, 3vw, 56px);
+    margin-bottom: 0;
+  }
+  .slide-section p {
+    color: rgba(255,255,255,0.7);
+    font-size: clamp(14px, 1.4vw, 26px);
+    margin-top: 8px;
+  }
+
+  /* columns */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 0.5em 0;
+    flex: 1;
+  }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .col-card {
+    background: var(--bg2);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid var(--bg3);
+  }
+  .col-card h3 { font-size: clamp(13px, 1.1vw, 20px); margin-bottom: 8px; }
+  .col-card p, .col-card li {
+    font-size: clamp(11px, 0.95vw, 17px);
+  }
+
+  /* step list */
+  .step { counter-increment: step; margin-bottom: 0.5em; }
+  .step::before {
+    content: counter(step);
+    display: inline-block;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 24px;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps li { margin-bottom: 0.5em; }
+
+  /* hint / tip */
+  .tip {
+    background: rgba(124,92,252,0.1);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 0.5em 0;
+    font-size: clamp(12px, 1vw, 18px);
+  }
+  .tip strong { color: var(--accent); }
+
+  /* output box */
+  .output {
+    background: #0a0a12;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--code-font);
+    font-size: clamp(10px, 0.85vw, 15px);
+    color: var(--green);
+    margin: 0.3em 0;
+  }
+
+  /* exercise */
+  .exercise-box {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 0.5em 0;
+  }
+  .exercise-box h3 { color: var(--accent2); margin-bottom: 0.3em; }
+
+  /* summary checkmark */
+  .check { color: var(--green); margin-right: 8px; }
+  .cross { color: var(--red); margin-right: 8px; }
+
+  /* objectives */
+  .obj-list { list-style: none; padding: 0; }
+  .obj-list li {
+    padding: 8px 0;
+    font-size: clamp(14px, 1.2vw, 22px);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .obj-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    min-width: 28px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 50%;
+  }
+
+  /* responsive */
+  @media (max-width: 768px) {
+    .slide { padding: 24px 20px; }
+    .cols { grid-template-columns: 1fr; gap: 12px; }
+    .cols-3 { grid-template-columns: 1fr; }
+    .slide-title h1 { font-size: clamp(22px, 6vw, 38px); }
+    .deck { border-radius: 0; }
+  }
+
+  /* nav hints */
+  .nav-hint {
+    position: absolute;
+    bottom: 20px;
+    left: 32px;
+    font-size: clamp(10px, 0.7vw, 13px);
+    color: var(--fg2);
+    opacity: 0.5;
+    z-index: 10;
+    font-family: var(--code-font);
+  }
+
+  /* print */
+  @media print {
+    body { overflow: visible; }
+    .deck { width: 100%; height: auto; box-shadow: none; border-radius: 0; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: 100vh; }
+    .bar-track, .nav-hint, .progress { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ====== 0: TITLE ====== -->
+  <section class="slide slide-title active" data-slide="0">
+    <span class="day-badge">Day 17</span>
+    <h1>CLI Todo List<br><span style="font-weight:400;font-size:0.7em;color:var(--fg2)">Part 1</span></h1>
+    <p class="subtitle">Build your first real Python project</p>
+    <p class="meta"><span class="phase">Phase I</span> · Week 3 · Python · ⏱ 60 min</p>
+  </section>
+
+  <!-- ====== 1: PREREQUISITES ====== -->
+  <section class="slide" data-slide="1">
+    <h2>📋 Prerequisites</h2>
+    <p style="margin-bottom:1em;">Before starting, make sure you have:</p>
+    <ul>
+      <li>Python 3.10+ installed (<code>python3 --version</code>)</li>
+      <li>Basic Python: functions, conditionals, loops, lists, dicts</li>
+      <li><code>json</code> module — we'll use it for file I/O (stdlib, no install needed)</li>
+      <li>Familiarity with the terminal / command line</li>
+    </ul>
+    <div class="tip">
+      <strong>💡 No pip installs needed.</strong> Everything today uses Python's standard library.
+    </div>
+  </section>
+
+  <!-- ====== 2: LEARNING OBJECTIVES ====== -->
+  <section class="slide" data-slide="2">
+    <h2>🎯 Learning Objectives</h2>
+    <p style="margin-bottom:0.8em;">By the end of this session, you will be able to:</p>
+    <ul class="obj-list">
+      <li><span class="obj-num">1</span> Structure a small Python project with functions</li>
+      <li><span class="obj-num">2</span> Read and write JSON data from a file</li>
+      <li><span class="obj-num">3</span> Build CLI commands: <code>add</code>, <code>list</code>, <code>done</code>, <code>delete</code></li>
+      <li><span class="obj-num">4</span> Handle edge cases (empty list, invalid IDs, missing file)</li>
+    </ul>
+  </section>
+
+  <!-- ====== 3: SECTION BREAK — PROJECT OVERVIEW ====== -->
+  <section class="slide slide-section" data-slide="3">
+    <h2>🧱 Project Overview</h2>
+    <p>A CLI todo list — add tasks, mark them done, delete them, save to a JSON file</p>
+  </section>
+
+  <!-- ====== 4: CONCEPT — PROJECT STRUCTURE ====== -->
+  <section class="slide" data-slide="4">
+    <h2>📁 Project Structure</h2>
+    <p>One file. One JSON store. Four functions.</p>
+    <div class="cols">
+      <div class="col-card">
+        <h3>File layout</h3>
+        <pre style="font-size:clamp(10px,0.8vw,14px);margin:0;"><code>todo.py          <span class="hl-cm"># your script</span>
+tasks.json       <span class="hl-cm"># created on first run</span></code></pre>
+      </div>
+      <div class="col-card">
+        <h3>JSON format</h3>
+        <pre style="font-size:clamp(10px,0.8vw,14px);margin:0;"><code>[
+  {
+    "id": 1,
+    "task": "Buy groceries",
+    "done": false
+  },
+  ...
+]</code></pre>
+      </div>
+    </div>
+    <p style="margin-top:0.5em;">Each task has three fields: <code>id</code> (int), <code>task</code> (str), <code>done</code> (bool).</p>
+  </section>
+
+  <!-- ====== 5: WALKTHROUGH — SETUP + LOAD/SAVE ====== -->
+  <section class="slide" data-slide="5">
+    <h2>🛠 Step 1 — Load &amp; Save Tasks</h2>
+    <p>These two helpers wrap JSON file I/O so the rest of the program is clean.</p>
+    <pre><code><span class="hl-kw">import</span> json
+<span class="hl-kw">import</span> os
+
+DATA_FILE = <span class="hl-str">"tasks.json"</span>
+
+<span class="hl-kw">def</span> <span class="hl-fn">load_tasks</span>():
+    <span class="hl-cm">"""Load tasks from JSON file. Returns [] if file missing."""</span>
+    <span class="hl-kw">if</span> <span class="hl-kw">not</span> os.path.exists(DATA_FILE):
+        <span class="hl-kw">return</span> []
+    <span class="hl-kw">with</span> open(DATA_FILE, <span class="hl-str">"r"</span>) <span class="hl-kw">as</span> f:
+        <span class="hl-kw">return</span> json.load(f)
+
+<span class="hl-kw">def</span> <span class="hl-fn">save_tasks</span>(tasks):
+    <span class="hl-cm">"""Save tasks list to JSON file."""</span>
+    <span class="hl-kw">with</span> open(DATA_FILE, <span class="hl-str">"w"</span>) <span class="hl-kw">as</span> f:
+        json.dump(tasks, f, indent=2)</code></pre>
+    <div class="tip">
+      <strong>🔑 Key idea:</strong> <code>json.load()</code> reads the file into a Python list. <code>json.dump()</code> writes it back. <code>indent=2</code> makes the file human-readable.
+    </div>
+  </section>
+
+  <!-- ====== 6: WALKTHROUGH — ADD TASK ====== -->
+  <section class="slide" data-slide="6">
+    <h2>➕ Step 2 — Add a Task</h2>
+    <p>Takes a task description, assigns the next ID, appends it, saves.</p>
+    <pre><code><span class="hl-kw">def</span> <span class="hl-fn">add_task</span>(description):
+    <span class="hl-cm">"""Add a new task. Returns the new task dict."""</span>
+    tasks = load_tasks()
+    <span class="hl-cm"># Next ID: max existing + 1, or 1 if empty</span>
+    new_id = max((t[<span class="hl-str">"id"</span>] <span class="hl-kw">for</span> t <span class="hl-kw">in</span> tasks), default=0) + 1
+    task = {<span class="hl-str">"id"</span>: new_id, <span class="hl-str">"task"</span>: description, <span class="hl-str">"done"</span>: <span class="hl-kw">False</span>}
+    tasks.append(task)
+    save_tasks(tasks)
+    <span class="hl-kw">return</span> task</code></pre>
+    <div class="tip">
+      <strong>🔑 Key idea:</strong> <code>max(..., default=0)+1</code> gives us auto-incrementing IDs — no collisions.
+    </div>
+  </section>
+
+  <!-- ====== 7: WALKTHROUGH — LIST + DONE + DELETE ====== -->
+  <section class="slide" data-slide="7">
+    <h2>📋 Step 3 — List, Done &amp; Delete</h2>
+    <div class="cols cols-3">
+      <div class="col-card">
+        <h3>📄 List</h3>
+        <pre style="font-size:clamp(9px,0.7vw,13px);margin:0;"><code><span class="hl-kw">def</span> <span class="hl-fn">list_tasks</span>(tasks):
+    <span class="hl-kw">if</span> <span class="hl-kw">not</span> tasks:
+        print(<span class="hl-str">"No tasks yet!"</span>)
+        <span class="hl-kw">return</span>
+    <span class="hl-kw">for</span> t <span class="hl-kw">in</span> tasks:
+        status = <span class="hl-str">"✓"</span> <span class="hl-kw">if</span> t[<span class="hl-str">"done"</span>] <span class="hl-kw">else</span> <span class="hl-str">" "</span>
+        print(f<span class="hl-str">"[{status}] {t['id']}. {t['task']}"</span>)</code></pre>
+      </div>
+      <div class="col-card">
+        <h3>✅ Mark Done</h3>
+        <pre style="font-size:clamp(9px,0.7vw,13px);margin:0;"><code><span class="hl-kw">def</span> <span class="hl-fn">done_task</span>(task_id):
+    tasks = load_tasks()
+    <span class="hl-kw">for</span> t <span class="hl-kw">in</span> tasks:
+        <span class="hl-kw">if</span> t[<span class="hl-str">"id"</span>] == task_id:
+            t[<span class="hl-str">"done"</span>] = <span class="hl-kw">True</span>
+            save_tasks(tasks)
+            <span class="hl-kw">return</span> t
+    print(f<span class="hl-str">"Task {task_id} not found."</span>)</code></pre>
+      </div>
+      <div class="col-card">
+        <h3>🗑 Delete</h3>
+        <pre style="font-size:clamp(9px,0.7vw,13px);margin:0;"><code><span class="hl-kw">def</span> <span class="hl-fn">delete_task</span>(task_id):
+    tasks = load_tasks()
+    new_tasks = [t <span class="hl-kw">for</span> t <span class="hl-kw">in</span> tasks
+                 <span class="hl-kw">if</span> t[<span class="hl-str">"id"</span>] != task_id]
+    <span class="hl-kw">if</span> len(new_tasks) == len(tasks):
+        print(f<span class="hl-str">"Task {task_id} not found."</span>)
+        <span class="hl-kw">return</span>
+    save_tasks(new_tasks)
+    print(f<span class="hl-str">"Deleted task {task_id}."</span>)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 8: WALKTHROUGH — MAIN LOOP ====== -->
+  <section class="slide" data-slide="8">
+    <h2>🏗 Step 4 — The Main Loop</h2>
+    <p>A simple REPL that reads commands and dispatches to our functions.</p>
+    <pre><code><span class="hl-kw">def</span> <span class="hl-fn">main</span>():
+    <span class="hl-kw">while</span> <span class="hl-kw">True</span>:
+        cmd = input(<span class="hl-str">"todo> "</span>).strip().lower()
+        <span class="hl-kw">if</span> cmd == <span class="hl-str">"exit"</span> <span class="hl-kw">or</span> cmd == <span class="hl-str">"quit"</span>:
+            <span class="hl-kw">break</span>
+        <span class="hl-kw">elif</span> cmd == <span class="hl-str">"add"</span>:
+            desc = input(<span class="hl-str">"Task description: "</span>)
+            add_task(desc)
+            print(<span class="hl-str">"Task added!"</span>)
+        <span class="hl-kw">elif</span> cmd == <span class="hl-str">"list"</span>:
+            list_tasks(load_tasks())
+        <span class="hl-kw">elif</span> cmd.startswith(<span class="hl-str">"done"</span>):
+            <span class="hl-cm"># e.g. "done 3"</span>
+            parts = cmd.split()
+            <span class="hl-kw">if</span> len(parts) == 2 <span class="hl-kw">and</span> parts[1].isdigit():
+                done_task(int(parts[1]))
+        <span class="hl-kw">elif</span> cmd.startswith(<span class="hl-str">"delete"</span>):
+            parts = cmd.split()
+            <span class="hl-kw">if</span> len(parts) == 2 <span class="hl-kw">and</span> parts[1].isdigit():
+                delete_task(int(parts[1]))
+        <span class="hl-kw">else</span>:
+            print(<span class="hl-str">"Commands: add, list, done &lt;id&gt;, delete &lt;id&gt;, exit"</span>)
+
+<span class="hl-kw">if</span> __name__ == <span class="hl-str">"__main__"</span>:
+    main()</code></pre>
+    <div class="tip">
+      <strong>🔑 Key idea:</strong> The <code>if __name__ == "__main__"</code> guard lets you import this file without running it.
+    </div>
+  </section>
+
+  <!-- ====== 9: EXPECTED OUTPUT ====== -->
+  <section class="slide" data-slide="9">
+    <h2>👀 What It Looks Like</h2>
+    <p>Running the finished program:</p>
+    <div class="output">
+$ python3 todo.py<br>
+todo> add<br>
+Task description: Buy milk<br>
+Task added!<br>
+todo> add<br>
+Task description: Finish homework<br>
+Task added!<br>
+todo> list<br>
+[ ] 1. Buy milk<br>
+[ ] 2. Finish homework<br>
+todo> done 1<br>
+todo> list<br>
+[✓] 1. Buy milk<br>
+[ ] 2. Finish homework<br>
+todo> delete 2<br>
+Deleted task 2.<br>
+todo> list<br>
+[✓] 1. Buy milk<br>
+todo> exit
+    </div>
+  </section>
+
+  <!-- ====== 10: SECTION BREAK — PRACTICE ====== -->
+  <section class="slide slide-section" data-slide="10">
+    <h2>✏️ Your Turn</h2>
+    <p>Try these exercises on your own</p>
+  </section>
+
+  <!-- ====== 11: EXERCISES ====== -->
+  <section class="slide" data-slide="11">
+    <h2>🏋️ Exercises</h2>
+
+    <div class="exercise-box" style="margin-bottom:0.8em;">
+      <h3>Exercise 1 — Priority Levels</h3>
+      <p>Add a <code>priority</code> field (high / medium / low) to each task. Update the <code>list_tasks</code> function to show the priority next to each task.</p>
+      <p style="margin-top:8px;font-size:clamp(11px,0.9vw,16px);color:var(--fg2);">
+        <strong>💡 Hint:</strong> Add <code>"priority": "medium"</code> as a default in <code>add_task</code>. Accept an optional second argument.
+      </p>
+    </div>
+
+    <div class="exercise-box">
+      <h3>Exercise 2 — Task Counter</h3>
+      <p>Print a summary at the top of <code>list_tasks</code> showing: <code>"3 total · 2 done · 1 pending"</code>.</p>
+      <p style="margin-top:8px;font-size:clamp(11px,0.9vw,16px);color:var(--fg2);">
+        <strong>💡 Hint:</strong> Use <code>sum(1 for t in tasks if t["done"])</code> to count done tasks.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== 12: SUMMARY ====== -->
+  <section class="slide" data-slide="12">
+    <h2>🎯 Key Takeaways</h2>
+    <ul class="obj-list">
+      <li><span class="obj-num">✓</span> <strong>JSON is your friend.</strong> <code>json.load</code> / <code>json.dump</code> make persistent storage trivial.</li>
+      <li><span class="obj-num">✓</span> <strong>Functions keep it clean.</strong> One function per operation = easy to test and extend.</li>
+      <li><span class="obj-num">✓</span> <strong>Auto-increment IDs</strong> via <code>max(...)+1</code> — simple and collision-free.</li>
+      <li><span class="obj-num">✓</span> <strong>REPL pattern</strong> (read-eval-print loop) works great for CLI tools.</li>
+    </ul>
+    <div class="tip" style="margin-top:1em;">
+      <strong>📅 Next session (Day 18):</strong> Part 2 — we'll add due dates, categories, and search filtering!
+    </div>
+  </section>
+
+  <!-- ====== 13: PROJECT ROADMAP ====== -->
+  <section class="slide" data-slide="13">
+    <h2>🗺 Project Roadmap</h2>
+    <p>Where this fits in the bigger picture:</p>
+    <div class="cols" style="margin-top:0.5em;">
+      <div class="col-card" style="border-color:var(--accent);">
+        <h3>✅ Project 1</h3>
+        <p><strong style="color:var(--fg);">CLI Todo List</strong><br>
+        <span style="font-size:0.85em;">Week 3 (now)</span></p>
+      </div>
+      <div class="col-card">
+        <h3>📌 Project 2</h3>
+        <p><strong style="color:var(--fg);">Bookmark Saver</strong><br>
+        <span style="font-size:0.85em;">Week 6</span></p>
+      </div>
+      <div class="col-card">
+        <h3>📌 Project 3</h3>
+        <p><strong style="color:var(--fg);">Weather Dashboard</strong><br>
+        <span style="font-size:0.85em;">Week 8</span></p>
+      </div>
+      <div class="col-card">
+        <h3>📌 Project 5</h3>
+        <p><strong style="color:var(--fg);">Full-Stack App</strong><br>
+        <span style="font-size:0.85em;">Week 12</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- progress bar -->
+  <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+  <div class="nav-hint">← → navigate · f fullscreen</div>
+  <div class="progress" id="progress"></div>
+</div>
+
+<script>
+(function() {
+  const deck = document.getElementById('deck');
+  const slides = deck.querySelectorAll('.slide');
+  const total = slides.length;
+  const progressEl = document.getElementById('progress');
+  const barFill = document.getElementById('barFill');
+  let current = 0;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    const pct = ((idx + 1) / total) * 100;
+    progressEl.textContent = (idx + 1) + ' / ' + total;
+    barFill.style.width = pct + '%';
+    window.location.hash = idx;
+  }
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  // keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.body.requestFullscreen();
+    } else if (e.key === 'Home') {
+      showSlide(0);
+    } else if (e.key === 'End') {
+      showSlide(total - 1);
+    }
+  });
+
+  // touch
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) next();
+      else prev();
+    }
+  });
+
+  // hash on load
+  const hash = parseInt(window.location.hash.slice(1), 10);
+  if (!isNaN(hash) && hash >= 0 && hash < total) showSlide(hash);
+  else showSlide(0);
+})();
+</script>
+</body>
+</html>
