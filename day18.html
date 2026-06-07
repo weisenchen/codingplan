@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 18 — Project Day: CLI Todo List (Part 2) | 90-Day Co-op Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #1a1d27;
+  --text: #e8eaed;
+  --text-dim: #9aa0a6;
+  --accent: #00c9a7;
+  --accent-dim: #007f6e;
+  --code-bg: #141822;
+  --code-border: #2a2d3e;
+  --highlight: #ffd54f;
+  --danger: #f28b82;
+  --success: #81c995;
+  --warning: #fdd663;
+  --font-sans: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  --slide-w: 960px;
+  --slide-h: 540px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font-sans);color:var(--text)}
+body{display:flex;align-items:center;justify-content:center}
+#deck{position:relative;width:100vw;height:56.25vw;max-height:100vh;max-width:177.78vh;overflow:hidden;background:var(--slide-bg);border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:40px 56px;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--accent-dim) transparent}
+.slide.active{opacity:1;visibility:visible;z-index:1}
+.slide::-webkit-scrollbar{width:4px}
+.slide::-webkit-scrollbar-thumb{background:var(--accent-dim);border-radius:4px}
+
+/* Progress bar */
+#progress{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);transition:width .4s ease;z-index:10;border-radius:0 2px 2px 0}
+#counter{position:absolute;bottom:12px;right:20px;font-size:12px;color:var(--text-dim);font-family:var(--font-mono);z-index:10}
+
+/* Typography */
+h1{font-size:48px;font-weight:800;letter-spacing:-1.5px;line-height:1.2}
+h2{font-size:32px;font-weight:700;letter-spacing:-.5px;margin-bottom:12px;color:var(--accent)}
+h3{font-size:22px;font-weight:600;margin-bottom:8px}
+p,li{font-size:18px;line-height:1.6;color:var(--text-dim)}
+strong{color:var(--text);font-weight:600}
+code{font-family:var(--font-mono);font-size:15px;background:var(--code-bg);padding:2px 6px;border-radius:4px;color:var(--accent)}
+pre{background:var(--code-bg);border:1px solid var(--code-border);border-radius:10px;padding:16px 20px;margin:8px 0;overflow-x:auto;font-size:14px;line-height:1.6}
+pre code{background:none;padding:0;border-radius:0;color:var(--text);font-size:14px}
+.hl{color:var(--highlight)}
+.hl-g{color:var(--success)}
+.hl-r{color:var(--danger)}
+.hl-c{color:#6a9955}
+.hl-k{color:#c586c0}
+
+/* Lists */
+ul,ol{padding-left:24px;margin:6px 0}
+li{margin:4px 0}
+
+/* Title slide */
+.title-slide{justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#0f1117 0%,#1a2d27 100%)}
+.title-slide h1{font-size:56px;margin-bottom:8px}
+.title-slide .subtitle{font-size:22px;color:var(--text-dim);margin-bottom:24px}
+.title-slide .meta{font-size:16px;color:var(--accent);font-family:var(--font-mono)}
+.title-slide .phase-badge{display:inline-block;background:var(--accent-dim);color:#fff;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+
+/* Section break */
+.section-break{justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#1a2d27,#0f1117)}
+.section-break h2{font-size:40px;color:var(--text);margin-bottom:6px}
+.section-break p{font-size:18px}
+
+/* Card layout */
+.card-grid{display:grid;gap:12px;flex:1;align-content:center}
+.card-grid-2{grid-template-columns:1fr 1fr}
+.card-grid-3{grid-template-columns:1fr 1fr 1fr}
+.card{background:var(--code-bg);border:1px solid var(--code-border);border-radius:10px;padding:16px}
+.card h3{font-size:16px;color:var(--accent);margin-bottom:6px}
+.card p,.card li{font-size:14px}
+.card li{font-size:14px;margin:2px 0}
+
+/* Two column layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1;align-content:center}
+.col{padding:0}
+.col h3{font-size:18px;margin-bottom:8px}
+
+/* Exercise styles */
+.exercise-box{background:var(--code-bg);border:1px solid var(--warning);border-radius:10px;padding:20px;margin:12px 0}
+.exercise-box .label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--warning);margin-bottom:8px}
+.exercise-box p,.exercise-box li{font-size:16px}
+
+/* Hint / solution toggle */
+.toggle-wrap{margin:8px 0}
+.toggle-btn{background:var(--code-bg);border:1px dashed var(--accent-dim);color:var(--accent);padding:8px 16px;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:13px;transition:background .2s}
+.toggle-btn:hover{background:var(--accent-dim);color:#fff}
+.toggle-content{display:none;margin-top:8px}
+.toggle-content.show{display:block}
+
+/* Checkboxes for steps */
+.step-list{list-style:none;padding:0}
+.step-list li{padding:8px 0 8px 36px;position:relative;font-size:16px}
+.step-list li::before{content:'▢';position:absolute;left:0;top:8px;font-size:20px;color:var(--accent-dim)}
+.step-list li.done::before{content:'▣';color:var(--success)}
+
+/* Code highlight decoration */
+.cmd-prompt::before{content:'$ ';color:var(--accent-dim);font-weight:500}
+
+/* Tags */
+.tag{display:inline-block;font-size:12px;padding:2px 10px;border-radius:12px;font-weight:500;margin-right:4px}
+.tag-git{background:#1a2d27;color:var(--accent);border:1px solid var(--accent-dim)}
+.tag-py{background:#1a1d2d;color:#88c0ff;border:1px solid #3a4d6e}
+.tag-md{background:#2d2a1a;color:var(--highlight);border:1px solid #5a4e2a}
+
+/* Responsive */
+@media(max-width:700px){
+  #deck{width:100vw;height:100vh;max-width:none;border-radius:0}
+  .slide{padding:20px 24px}
+  h1{font-size:32px;letter-spacing:-1px}
+  h2{font-size:24px}
+  p,li{font-size:15px}
+  pre{font-size:12px;padding:12px;margin:6px 0}
+  .card-grid-2,.card-grid-3,.two-col{grid-template-columns:1fr}
+  .title-slide h1{font-size:36px}
+  .section-break h2{font-size:28px}
+  #counter{bottom:8px;right:12px;font-size:10px}
+}
+
+@media print{
+  #deck{max-width:100%;max-height:100%;border-radius:0;box-shadow:none}
+  .slide{position:relative;display:block;opacity:1;visibility:visible;break-after:page;padding:30px 40px;height:auto;min-height:100vh}
+  .slide.active{z-index:auto}
+  #progress,#counter{display:none}
+}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="phase-badge">Phase I — Week 3</div>
+  <h1>Project Day: CLI Todo List</h1>
+  <p class="subtitle">Part 2 — Polish, Error Handling, Git &amp; GitHub</p>
+  <p class="meta">Day 18 · 60 min · Co-op Prep Plan</p>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>Today's Plan</h2>
+  <p style="margin-bottom:16px;font-size:17px;">We finished the core code yesterday. Today we <strong>polish</strong> it into something you'd ship.</p>
+  <div class="card-grid card-grid-2">
+    <div class="card">
+      <h3>🔧 Polish &amp; Error Handling</h3>
+      <p>Graceful file errors, input validation, edge cases, consistent exit codes</p>
+    </div>
+    <div class="card">
+      <h3>📘 README</h3>
+      <p>Write a clear README.md — install, usage, examples, badges</p>
+    </div>
+    <div class="card">
+      <h3>📦 Git &amp; GitHub</h3>
+      <p>Init repo, commit history, push to GitHub, write a good first commit message</p>
+    </div>
+    <div class="card">
+      <h3>🎯 Milestone</h3>
+      <p><strong>Project 1 ✓</strong> — CLI Todo List. You now have a real project on GitHub.</p>
+    </div>
+  </div>
+  <p style="margin-top:12px;font-size:16px;color:var(--text-dim);">Prerequisites: Day 17's code (a working CLI todo list) + a GitHub account.</p>
+</section>
+
+<!-- SLIDE 2: Section Break -->
+<section class="slide section-break" data-slide="2">
+  <h2>🔧 Polish &amp; Error Handling</h2>
+  <p>Make it robust — real programs crash gracefully</p>
+</section>
+
+<!-- SLIDE 3: Error Handling Patterns -->
+<section class="slide" data-slide="3">
+  <h2>Error Handling — The Mindset</h2>
+  <p style="margin-bottom:10px;">A user should <em>never</em> see a raw Python traceback. Wrap everything in friendly messages.</p>
+  <div class="two-col">
+    <div class="col">
+      <h3>❌ Before</h3>
+      <pre><code>def load_todos():
+    with open(FILE) as f:
+        return json.load(f)
+<span class="hl-c"># Crash if FILE missing or corrupt</span>
+<span class="hl-c"># User sees a terrifying traceback</span></code></pre>
+    </div>
+    <div class="col">
+      <h3>✅ After</h3>
+      <pre><code>def load_todos():
+    try:
+        with open(FILE) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
+        print(<span class="hl-s">"⚠️ todos.json is corrupt. Starting fresh."</span>)
+        return []</code></pre>
+    </div>
+  </div>
+  <p style="margin-top:8px;font-size:15px;">Same pattern for <code>add_task</code>, <code>complete_task</code>, and <code>delete_task</code> — wrap every file operation.</p>
+</section>
+
+<!-- SLIDE 4: Input Validation -->
+<section class="slide" data-slide="4">
+  <h2>Input Validation — Assume Nothing</h2>
+  <p style="margin-bottom:8px;">Never trust user input. Validate everything before acting.</p>
+  <pre><code>def complete_task(todo_id):
+    <span class="hl-c"># Validate the argument exists</span>
+    if not todo_id:
+        print(<span class="hl-s">"❌ Usage: todo complete &lt;id&gt;"</span>)
+        return 1
+    try:
+        idx = int(todo_id)
+    except ValueError:
+        print(<span class="hl-s">f"❌ '{todo_id}' is not a valid number"</span>)
+        return 1
+
+    todos = load_todos()
+    <span class="hl-c"># Validate the ID is in range</span>
+    if idx &lt; 1 or idx &gt; len(todos):
+        print(<span class="hl-s">f"❌ No task with id {idx}"</span>)
+        return 1
+    <span class="hl-c"># Validate it's not already done</span>
+    if todos[idx-1][<span class="hl-s">"done"</span>]:
+        print(<span class="hl-s">f"⚠️ Task {idx} is already completed"</span>)
+        return 0
+
+    todos[idx-1][<span class="hl-s">"done"</span>] = True
+    save_todos(todos)
+    print(<span class="hl-s">f"✅ Task {idx} marked complete!"</span>)
+    return 0</code></pre>
+  <p style="font-size:14px;color:var(--text-dim);margin-top:4px;">Return <code>0</code> for success, <code>1</code> for errors — standard Unix convention.</p>
+</section>
+
+<!-- SLIDE 5: Consistent Exit Codes -->
+<section class="slide" data-slide="5">
+  <h2>Exit Codes &amp; Script Entry Point</h2>
+  <p style="margin-bottom:8px;">Every command returns a proper exit code. The entry point dispatches cleanly.</p>
+  <div class="two-col">
+    <div class="col">
+      <h3>Main dispatch</h3>
+      <pre><code><span class="hl-k">import</span> sys
+<span class="hl-k">import</span> argparse
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=<span class="hl-s">"📋 CLI Todo List"</span>
+    )
+    sub = parser.add_subparsers(dest=<span class="hl-s">"command"</span>)
+    <span class="hl-c"># ... add subcommand parsers ...</span>
+    args = parser.parse_args()
+
+    if args.command == <span class="hl-s">"add"</span>:
+        return add_task(args.text)
+    <span class="hl-c"># ... etc ...</span>
+    return 0
+
+<span class="hl-k">if</span> __name__ == <span class="hl-s">"__main__"</span>:
+    sys.exit(main())</code></pre>
+    </div>
+    <div class="col">
+      <h3>Why <code>sys.exit(main())</code>?</h3>
+      <p style="font-size:14px;line-height:1.5;">Every function returns an int. <code>sys.exit(0)</code> = success, <code>sys.exit(1)</code> = error. This means:</p>
+      <ul style="font-size:14px;">
+        <li>Shell scripts can check <code>$?</code></li>
+        <li>CI pipelines know if it failed</li>
+        <li>Other tools can chain it with <code>&&</code></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: Section Break -->
+<section class="slide section-break" data-slide="6">
+  <h2>📘 Writing the README</h2>
+  <p>Your project's front door — make it count</p>
+</section>
+
+<!-- SLIDE 7: README Structure -->
+<section class="slide" data-slide="7">
+  <h2>README.md — What Every Project Needs</h2>
+  <p style="margin-bottom:4px;">A <strong>good</strong> README answers three questions in under 10 seconds: <em>What is this? How do I run it? What commands can I use?</em></p>
+  <pre><code><span class="hl-c"># 📋 CLI Todo List</span>
+A minimal todo list for the terminal. Built with Python 3.
+
+## ✨ Features
+- Add, list, complete, and delete todos
+- Persistent storage (JSON)
+- Clean error messages
+
+## 🚀 Install
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>python3 -m venv venv
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>source venv/bin/activate
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>pip install -r requirements.txt  <span class="hl-c"># if any</span>
+
+## 📖 Usage
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>python todo.py add "Buy groceries"
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>python todo.py list
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>python todo.py complete 1
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>python todo.py delete 1</code></pre>
+</section>
+
+<!-- SLIDE 8: README Extras -->
+<section class="slide" data-slide="8">
+  <h2>README Polish — Badges &amp; Structure</h2>
+  <div class="two-col">
+    <div class="col">
+      <h3>Badges (optional but nice)</h3>
+      <pre><code>[![Python](https://img.shields.io/badge/python-3.9+-blue)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()</code></pre>
+      <p style="font-size:13px;">Copy badge URLs from <strong>shields.io</strong>. They live-render from GitHub.</p>
+    </div>
+    <div class="col">
+      <h3>Good READMEs also include</h3>
+      <ul style="font-size:14px;">
+        <li><strong>Project structure</strong> — tree diagram</li>
+        <li><strong>Requirements</strong> — Python version, OS</li>
+        <li><strong>Example output</strong> — copy-paste a terminal session</li>
+        <li><strong>License</strong> — pick one (MIT is standard for small projects)</li>
+        <li><strong>Acknowledgments</strong> — co-op prep plan, tutorials used</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:10px;font-size:15px;">🔑 <strong>Key principle:</strong> Someone who has never seen your project should be able to clone, install, and run it in under 2 minutes — guided entirely by your README.</p>
+</section>
+
+<!-- SLIDE 9: Section Break -->
+<section class="slide section-break" data-slide="9">
+  <h2>📦 Git &amp; GitHub</h2>
+  <p>From local code to a shipped project</p>
+</section>
+
+<!-- SLIDE 10: Git Init & Commit -->
+<section class="slide" data-slide="10">
+  <h2>Initializing the Repo</h2>
+  <p style="margin-bottom:8px;">Start fresh with <code>git init</code>. Keep your commits small and atomic.</p>
+  <div class="two-col">
+    <div class="col">
+      <h3>First, <code>.gitignore</code></h3>
+      <pre><code><span class="hl-c"># .gitignore</span>
+venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store</code></pre>
+    </div>
+    <div class="col">
+      <h3>Then commit</h3>
+      <pre><code><span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git init
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git add .
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git status           <span class="hl-c"># verify before commit</span>
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git commit -m <span class="hl-s">"feat: CLI todo list with add/list/complete/delete"</span></code></pre>
+    </div>
+  </div>
+  <p style="margin-top:8px;font-size:15px;"><strong>Commit message convention:</strong> <code>type: description</code> — e.g. <code>feat:</code>, <code>fix:</code>, <code>docs:</code>, <code>refactor:</code>. This is <strong>Conventional Commits</strong>, used by most teams.</p>
+</section>
+
+<!-- SLIDE 11: Push to GitHub -->
+<section class="slide" data-slide="11">
+  <h2>Pushing to GitHub</h2>
+  <p style="margin-bottom:8px;">Create the repo on GitHub <strong>first</strong> (empty, no README or .gitignore since we already have them locally).</p>
+  <pre><code><span class="hl-c"># After creating the repo on github.com:</span>
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git remote add origin git@github.com:<span class="hl">&lt;your-username&gt;</span>/todo-list.git
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git branch -M main
+<span class="cmd-prompt" style="background:transparent;padding:0;font-family:inherit;color:inherit"></span>git push -u origin main</code></pre>
+  <p style="margin-top:8px;font-size:15px;">Use <strong>SSH</strong> (the <code>git@github.com:...</code> URL) over HTTPS — it's more secure and you won't need to re-authenticate. <a href="https://docs.github.com/en/authentication/connecting-to-github-with-ssh" style="color:var(--accent);">GitHub SSH setup guide</a>.</p>
+  <div class="card" style="margin-top:6px;padding:12px 16px;">
+    <p style="font-size:14px;margin:0;">⚠️ <strong>Common pitfall:</strong> If you get a <code>remote origin already exists</code> error, run <code>git remote set-url origin &lt;url&gt;</code> instead.</p>
+  </div>
+</section>
+
+<!-- SLIDE 12: Section Break -->
+<section class="slide section-break" data-slide="12">
+  <h2>✏️ Hands-On Exercises</h2>
+  <p>Apply what you just learned</p>
+</section>
+
+<!-- SLIDE 13: Exercise 1 -->
+<section class="slide" data-slide="13">
+  <h2>Exercise 1: Error-Proof Your Code</h2>
+  <p style="margin-bottom:8px;">Take your Day 17 todo.py and add error handling to every function.</p>
+  <div class="exercise-box">
+    <div class="label">Exercise 1</div>
+    <p><strong>Tasks:</strong></p>
+    <ol>
+      <li>Wrap <code>load_todos()</code> — handle <code>FileNotFoundError</code> and <code>json.JSONDecodeError</code></li>
+      <li>Add <code>try/except</code> to <code>save_todos()</code> — handle permission errors</li>
+      <li>Validate the <code>id</code> argument in <code>complete</code> and <code>delete</code> — must be a positive integer ≤ total todos</li>
+      <li>Validate <code>add</code> — reject empty text</li>
+      <li>Convert to <code>sys.exit(main())</code> pattern</li>
+    </ol>
+  </div>
+  <div class="toggle-wrap">
+    <button class="toggle-btn" onclick="toggleHint(0)">💡 Show hint</button>
+    <div id="hint-0" class="toggle-content">
+      <pre><code><span class="hl-c"># load_todos pattern</span>
+<span class="hl-k">try</span>:
+    <span class="hl-k">with</span> open(FILE) <span class="hl-k">as</span> f:
+        <span class="hl-k">return</span> json.load(f)
+<span class="hl-k">except</span> FileNotFoundError:
+    <span class="hl-k">return</span> []
+<span class="hl-k">except</span> json.JSONDecodeError:
+    print(<span class="hl-s">"⚠️ Corpus, starting fresh"</span>)
+    <span class="hl-k">return</span> []</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 14: Exercise 2 -->
+<section class="slide" data-slide="14">
+  <h2>Exercise 2: Write the README</h2>
+  <p style="margin-bottom:8px;">Create a <code>README.md</code> in your project root. Include all sections below.</p>
+  <div class="exercise-box">
+    <div class="label">Exercise 2</div>
+    <ol>
+      <li>Title with emoji + one-line description</li>
+      <li><strong>Features</strong> — 3 bullet points</li>
+      <li><strong>Install</strong> — clone, venv, run</li>
+      <li><strong>Usage</strong> — list all 4 commands with example output</li>
+      <li><strong>Project structure</strong> — a small <code>tree</code>-style listing</li>
+      <li><strong>License</strong> — MIT</li>
+    </ol>
+  </div>
+  <div class="toggle-wrap">
+    <button class="toggle-btn" onclick="toggleHint(1)">💡 Show example structure</button>
+    <div id="hint-1" class="toggle-content">
+      <pre><code><span class="hl-c"># 📋 CLI Todo List</span>
+A minimal terminal todo list in Python.
+
+## ✨ Features
+- ...
+## 🚀 Install
+...
+## 📖 Usage
+...
+## 📁 Structure
+<span style="color:var(--text-dim)">todo-list/
+├── todo.py
+├── todos.json
+├── README.md
+└── .gitignore</span>
+## 📄 License
+MIT</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 15: Exercise 3 -->
+<section class="slide" data-slide="15">
+  <h2>Exercise 3: Ship It 🚀</h2>
+  <p style="margin-bottom:8px;">Push your polished project to GitHub for the world to see.</p>
+  <div class="exercise-box">
+    <div class="label">Exercise 3</div>
+    <ol>
+      <li>Create a <code>.gitignore</code> (venv, pycache, todos.json optional)</li>
+      <li><code>git init</code> + <code>git add .</code> + <code>git commit -m "..."</code></li>
+      <li>Create a <strong>new empty repo</strong> on GitHub (name: <code>todo-list</code>)</li>
+      <li><code>git remote add origin git@github.com:&lt;you&gt;/todo-list.git</code></li>
+      <li><code>git push -u origin main</code></li>
+      <li>Visit your repo on github.com — verify README renders, files are there</li>
+    </ol>
+  </div>
+  <div class="toggle-wrap">
+    <button class="toggle-btn" onclick="toggleHint(2)">💡 Verification checklist</button>
+    <div id="hint-2" class="toggle-content">
+      <p style="font-size:15px;">After pushing, check that:</p>
+      <ul style="font-size:14px;">
+        <li>✅ README.md renders with proper markdown</li>
+        <li>✅ All 3-5 source files are present</li>
+        <li>✅ No <code>.pyc</code> or <code>venv/</code> in the repo</li>
+        <li>✅ The commit message follows conventional commits format</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 16: Section Break -->
+<section class="slide section-break" data-slide="16">
+  <h2>🎯 Recap &amp; Milestones</h2>
+  <p>Key takeaways + what's coming</p>
+</section>
+
+<!-- SLIDE 17: Recap -->
+<section class="slide" data-slide="17">
+  <h2>Three Takeaways</h2>
+  <div class="card-grid card-grid-3" style="margin-bottom:16px;">
+    <div class="card" style="text-align:center;padding:24px 16px;">
+      <p style="font-size:40px;margin-bottom:4px;">🔧</p>
+      <h3>Error Handling</h3>
+      <p style="font-size:14px;">Every file operation needs <code>try/except</code>. Every user input needs validation. Your program should never crash silently.</p>
+    </div>
+    <div class="card" style="text-align:center;padding:24px 16px;">
+      <p style="font-size:40px;margin-bottom:4px;">📘</p>
+      <h3>README Matters</h3>
+      <p style="font-size:14px;">It's the first thing recruiters and collaborators see. Make it clear, complete, and easy to follow.</p>
+    </div>
+    <div class="card" style="text-align:center;padding:24px 16px;">
+      <p style="font-size:40px;margin-bottom:4px;">🚢</p>
+      <h3>Ship Early</h3>
+      <p style="font-size:14px;">A project on GitHub is real. A project only on your laptop is a draft. Push it.</p>
+    </div>
+  </div>
+  <p style="font-size:16px;color:var(--text-dim);text-align:center;"><strong style="color:var(--accent);">✓ Project 1 Complete</strong> — CLI Todo List. You now have a shipped project.</p>
+</section>
+
+<!-- SLIDE 18: Milestones Ahead -->
+<section class="slide" data-slide="18">
+  <h2>Coming Up: The Co-op Project Roadmap</h2>
+  <div class="card-grid card-grid-3">
+    <div class="card">
+      <h3>📅 Week 3</h3>
+      <p style="font-size:14px;"><strong style="color:var(--success);">Now ✓</strong><br>Project 1: CLI Todo List</p>
+    </div>
+    <div class="card">
+      <h3>📅 Week 6</h3>
+      <p style="font-size:14px;"><strong>Project 2:</strong> Bookmark Saver<br>A CLI tool that saves, tags, and searches bookmarks.</p>
+    </div>
+    <div class="card">
+      <h3>📅 Week 8</h3>
+      <p style="font-size:14px;"><strong>Project 3:</strong> Weather Dashboard<br>A web app that displays weather data from an API.</p>
+    </div>
+    <div class="card">
+      <h3>📅 Week 12</h3>
+      <p style="font-size:14px;"><strong>Project 5:</strong> Full-Stack App<br>A complete web app with auth, database, and deployment.</p>
+    </div>
+    <div class="card" style="grid-column:span 2;">
+      <h3>📅 Beyond</h3>
+      <p style="font-size:14px;">Each project adds skills to your resume. After Project 5 you'll have a <strong>portfolio</strong> that demonstrates Python, CLI tools, web dev, APIs, databases, and deployment — everything a co-op interviewer wants to see.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 19: Q&A / Closing -->
+<section class="slide title-slide" data-slide="19">
+  <h2>🎉 Project 1 Complete!</h2>
+  <p class="subtitle" style="margin-top:12px;">Your CLI Todo List is on GitHub. Ship it, share it, and be proud of it.</p>
+  <p style="margin-top:24px;font-size:16px;color:var(--text-dim);">Next: Week 4 — Python &amp; Data Structures</p>
+  <p style="margin-top:8px;font-size:14px;color:var(--accent);font-family:var(--font-mono);">git commit -m "feat: completed Project 1 🎉"</p>
+</section>
+
+</div><!-- /#deck -->
+
+<div id="progress"></div>
+<div id="counter"></div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+
+  function showSlide(idx) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[idx].classList.add('active');
+    current = idx;
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    location.hash = '#' + idx;
+  }
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  // Hash routing
+  function hashSlide() {
+    const m = location.hash.match(/^#(\d+)$/);
+    if (m) {
+      const i = parseInt(m[1], 10);
+      if (i >= 0 && i < total) showSlide(i);
+    }
+  }
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.getElementById('deck').requestFullscreen(); }
+    if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
+  });
+
+  // Touch support
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) next(); else prev();
+    }
+  });
+
+  // Speaker notes toggle
+  let notesVisible = false;
+  function toggleNotes() {
+    const activeSlide = slides[current];
+    const aside = activeSlide.querySelector('aside.note');
+    if (!aside) return;
+    notesVisible = !notesVisible;
+    aside.style.display = notesVisible ? 'block' : 'none';
+  }
+
+  // Init
+  hashSlide();
+  if (!location.hash) showSlide(0);
+  window.addEventListener('hashchange', hashSlide);
+
+  // Initial progress/counter from hash
+  progress.style.width = ((current + 1) / total * 100) + '%';
+  counter.textContent = (current + 1) + ' / ' + total;
+})();
+
+function toggleHint(id) {
+  const el = document.getElementById('hint-' + id);
+  if (el) el.classList.toggle('show');
+}
+</script>
+</body>
+</html>
