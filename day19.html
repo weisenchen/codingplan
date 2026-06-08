@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 19 — HTML: Structure, Tags, Attributes | 90-Day Co-op Prep</title>
+<style>
+  :root {
+    --bg: #0f0f14;
+    --slide-bg: #1a1a24;
+    --text: #e4e4ec;
+    --text-dim: #8888a0;
+    --accent: #ff7a3d;
+    --accent-dim: #cc5a2a;
+    --accent-glow: rgba(255, 122, 61, 0.15);
+    --code-bg: #13131e;
+    --code-border: #2a2a3a;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --blue: #60a5fa;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --slide-ratio: 56.25%; /* 16:9 */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Deck container */
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+
+  /* Slide viewport */
+  .slides-container {
+    position: relative;
+    width: min(96vw, calc(96vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5);
+    background: var(--slide-bg);
+  }
+
+  /* Each slide */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 3.5% 5%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-dim) transparent;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Slide content areas */
+  .slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    z-index: 10;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* Slide counter */
+  .slide-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 16px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: var(--font-code);
+    z-index: 10;
+    letter-spacing: 0.5px;
+  }
+
+  /* Typography */
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4.5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--accent);
+    margin-bottom: 0.35em;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3vw, 2.6rem);
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.5em;
+  }
+  h3 {
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5em;
+  }
+  p, li {
+    font-size: clamp(0.9rem, 1.3vw, 1.15rem);
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .subtitle {
+    font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+    color: var(--text-dim);
+    margin-bottom: 0.3em;
+  }
+  .dim {
+    color: var(--text-dim);
+  }
+  .accent {
+    color: var(--accent);
+  }
+  .green { color: var(--green); }
+  .yellow { color: var(--yellow); }
+  .blue { color: var(--blue); }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    font-family: var(--font-code);
+    font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+    line-height: 1.55;
+    overflow-x: auto;
+    margin: 0.6em 0;
+    white-space: pre;
+  }
+  code {
+    font-family: var(--font-code);
+    font-size: 0.9em;
+  }
+  .tag { color: #ff7a3d; }
+  .attr { color: #60a5fa; }
+  .val { color: #4ade80; }
+  .comment { color: #6b6b80; }
+  .string { color: #4ade80; }
+
+  /* Lists */
+  ul, ol {
+    padding-left: 1.5em;
+    margin: 0.4em 0;
+  }
+  li {
+    margin-bottom: 0.25em;
+  }
+
+  /* Inline code */
+  p code, li code {
+    background: var(--code-bg);
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    font-size: 0.85em;
+    border: 1px solid var(--code-border);
+  }
+
+  /* Highlight box */
+  .highlight-box {
+    background: var(--accent-glow);
+    border-left: 3px solid var(--accent);
+    padding: 0.8em 1em;
+    border-radius: 0 8px 8px 0;
+    margin: 0.5em 0;
+  }
+  .highlight-box p { margin: 0; }
+
+  /* Grid / columns */
+  .cols {
+    display: grid;
+    gap: 1.2em;
+    margin: 0.5em 0;
+  }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--code-border);
+    border-radius: 8px;
+    padding: 1em;
+  }
+  .card h3 { margin-bottom: 0.3em; font-size: clamp(0.85rem, 1.1vw, 1rem); }
+  .card p, .card li { font-size: clamp(0.8rem, 1vw, 0.95rem); }
+
+  /* Exercise toggle */
+  .exercise-toggle {
+    cursor: pointer;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4em 1em;
+    font-family: var(--font-body);
+    font-size: clamp(0.8rem, 1vw, 0.95rem);
+    font-weight: 600;
+    margin: 0.5em 0;
+    display: inline-block;
+    transition: background 0.2s;
+  }
+  .exercise-toggle:hover { background: var(--accent-dim); }
+  .solution {
+    display: none;
+    margin-top: 0.5em;
+  }
+  .solution.visible { display: block; }
+
+  /* Title slide special */
+  .title-slide {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .title-slide .slide-content {
+    justify-content: center;
+    align-items: center;
+  }
+  .title-slide h1 {
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    margin-bottom: 0.2em;
+  }
+  .title-slide .meta {
+    font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+    color: var(--text-dim);
+    margin-top: 1.5em;
+  }
+  .title-slide .phase-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.3em 1em;
+    border-radius: 20px;
+    font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+    margin-bottom: 1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Section break */
+  .section-break { background: linear-gradient(135deg, var(--accent) 0%, #d94f1a 100%); }
+  .section-break h2 { color: #fff; font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.5rem); }
+  .section-break .slide-content { justify-content: center; align-items: center; text-align: center; }
+  .section-break .subtitle { color: rgba(255,255,255,0.7); }
+
+  /* Footer timestamp */
+  .timestamp {
+    position: absolute;
+    bottom: 10px;
+    left: 16px;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 10;
+  }
+
+  /* Mobile responsive */
+  @media (max-width: 700px) {
+    .slides-container {
+      width: 100vw;
+      aspect-ratio: 16 / 9;
+      border-radius: 0;
+    }
+    .slide { padding: 4% 5%; }
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Print styles */
+  @media print {
+    body { overflow: visible; }
+    .deck { height: auto; display: block; }
+    .slides-container { width: 100%; aspect-ratio: auto; overflow: visible; border-radius: 0; box-shadow: none; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: 100vh; }
+    .progress-bar, .slide-counter, .timestamp { display: none; }
+  }
+
+  /* Scrollable slide support */
+  .slide::-webkit-scrollbar { width: 4px; }
+  .slide::-webkit-scrollbar-track { background: transparent; }
+  .slide::-webkit-scrollbar-thumb { background: var(--accent-dim); border-radius: 2px; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="deck">
+  <div class="slides-container" id="deck">
+
+    <!-- SLIDE 0: Title -->
+    <section class="slide active" data-slide="0">
+      <div class="slide-content title-slide">
+        <div class="phase-badge">Phase II — Week 4</div>
+        <h1>HTML: Structure,<br>Tags &amp; Attributes</h1>
+        <p class="subtitle">Day 19 &middot; 90-Day Co-op Prep Plan</p>
+        <div class="meta">June 8, 2026 &middot; 60-minute session</div>
+      </div>
+      <div class="timestamp">Last updated: 2026-06-08</div>
+    </section>
+
+    <!-- SLIDE 1: Overview -->
+    <section class="slide" data-slide="1">
+      <div class="slide-content">
+        <h2>Today's Plan</h2>
+        <p style="margin-bottom:0.8em;">Welcome to <strong>Phase II: Web Foundations</strong>. Today we learn the skeleton of every web page — HTML.</p>
+        <div class="cols cols-2">
+          <div class="card">
+            <h3 class="accent">📖 Learn</h3>
+            <ul>
+              <li>HTML document structure (<code>&lt;!DOCTYPE html&gt;</code> through <code>&lt;/html&gt;</code>)</li>
+              <li>Essential tags: headings, paragraphs, links, images</li>
+              <li>Attributes — how tags carry extra info</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 class="accent">🛠️ Build</h3>
+            <ul>
+              <li>A complete plain HTML page</li>
+              <li>Navigation links between sections</li>
+              <li>Your first "About Me" page (exercise)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="highlight-box" style="margin-top:0.6em;">
+          <p>⏱ <strong>60 min</strong> &middot; No CSS yet — just pure, semantic HTML.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Prerequisites -->
+    <section class="slide" data-slide="2">
+      <div class="slide-content">
+        <h2>Before We Start</h2>
+        <p>You only need two things today:</p>
+        <ul style="margin-top:0.6em;">
+          <li>A text editor (VS Code, Sublime Text, or even Notepad)</li>
+          <li>A web browser (Chrome, Firefox, Edge — any modern one)</li>
+        </ul>
+        <p style="margin-top:0.8em;">No server, no Node.js, no build tools. HTML files open directly in your browser — just double-click.</p>
+        <div class="highlight-box">
+          <p>💡 <strong>Key mindset:</strong> HTML is <em>markup</em>, not code. You're describing <em>what things are</em> — headings, paragraphs, links — not writing logic. This is the easiest part of web dev. Enjoy it.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Learning Objectives -->
+    <section class="slide" data-slide="3">
+      <div class="slide-content">
+        <h2>By the End of Today</h2>
+        <p>You will be able to:</p>
+        <div class="cols cols-2" style="margin-top:0.6em;">
+          <div class="card">
+            <h3 class="green">✓</h3>
+            <p>Write a valid HTML document with <code>DOCTYPE</code>, <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, and <code>&lt;body&gt;</code></p>
+          </div>
+          <div class="card">
+            <h3 class="green">✓</h3>
+            <p>Use headings (<code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code>), paragraphs, and text formatting</p>
+          </div>
+          <div class="card">
+            <h3 class="green">✓</h3>
+            <p>Create hyperlinks with <code>&lt;a&gt;</code> and embed images with <code>&lt;img&gt;</code></p>
+          </div>
+          <div class="card">
+            <h3 class="green">✓</h3>
+            <p>Add attributes to tags — <code>href</code>, <code>src</code>, <code>alt</code>, <code>id</code>, <code>class</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Concept — Document Structure -->
+    <section class="slide" data-slide="4">
+      <div class="slide-content">
+        <h2>The Skeleton of Every HTML Page</h2>
+        <p>Every HTML document follows the same 5-element skeleton:</p>
+        <pre>&lt;<span class="tag">!DOCTYPE html</span>&gt;
+&lt;<span class="tag">html</span> <span class="attr">lang</span>=<span class="val">"en"</span>&gt;
+  &lt;<span class="tag">head</span>&gt;
+    &lt;<span class="tag">meta</span> <span class="attr">charset</span>=<span class="val">"UTF-8"</span>&gt;
+    &lt;<span class="tag">title</span>&gt;My Page&lt;/<span class="tag">title</span>&gt;
+  &lt;/<span class="tag">head</span>&gt;
+  &lt;<span class="tag">body</span>&gt;
+    &lt;<span class="tag">h1</span>&gt;Hello, World!&lt;/<span class="tag">h1</span>&gt;
+    &lt;<span class="tag">p</span>&gt;This is my first page.&lt;/<span class="tag">p</span>&gt;
+  &lt;/<span class="tag">body</span>&gt;
+&lt;/<span class="tag">html</span>&gt;</pre>
+        <div class="cols cols-3" style="margin-top:0.3em;">
+          <div class="card"><h3><code>&lt;!DOCTYPE html&gt;</code></h3><p>Tells the browser: "This is HTML5." Always the first line.</p></div>
+          <div class="card"><h3><code>&lt;html&gt;</code></h3><p>The root element. Everything lives inside. <code>lang="en"</code> helps accessibility.</p></div>
+          <div class="card"><h3><code>&lt;head&gt;</code></h3><p>Metadata: title, character encoding, styles, scripts. Not displayed.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Concept — head vs body -->
+    <section class="slide" data-slide="5">
+      <div class="slide-content">
+        <h2>&lt;head&gt; vs &lt;body&gt; — What Goes Where?</h2>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div class="card" style="border-left:3px solid var(--blue);">
+            <h3 class="blue">&lt;head&gt; — The Brain</h3>
+            <p><strong>Invisible</strong> to the viewer. Contains:</p>
+            <ul>
+              <li><code>&lt;title&gt;</code> — appears in the browser tab</li>
+              <li><code>&lt;meta charset="UTF-8"&gt;</code> — character encoding</li>
+              <li><code>&lt;meta name="description"&gt;</code> — for search engines</li>
+              <li><code>&lt;link&gt;</code> — stylesheets</li>
+            </ul>
+          </div>
+          <div class="card" style="border-left:3px solid var(--green);">
+            <h3 class="green">&lt;body&gt; — The Body</h3>
+            <p><strong>Visible</strong> to the viewer. Contains:</p>
+            <ul>
+              <li><code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code> — headings</li>
+              <li><code>&lt;p&gt;</code> — paragraphs</li>
+              <li><code>&lt;a&gt;</code> — links</li>
+              <li><code>&lt;img&gt;</code> — images</li>
+              <li><code>&lt;ul&gt;</code>, <code>&lt;ol&gt;</code> — lists</li>
+            </ul>
+          </div>
+        </div>
+        <div class="highlight-box" style="margin-top:0.5em;">
+          <p>📌 <strong>Rule of thumb:</strong> If the user sees it on the page, it goes in <code>&lt;body&gt;</code>. If it's information <em>about</em> the page, it goes in <code>&lt;head&gt;</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Concept — Headings & Paragraphs -->
+    <section class="slide" data-slide="6">
+      <div class="slide-content">
+        <h2>Headings &amp; Paragraphs</h2>
+        <p>HTML gives you six levels of heading and one type of paragraph. Use them to structure your content — this is called <strong>semantic markup</strong>.</p>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div>
+            <pre>&lt;<span class="tag">h1</span>&gt;Main Title&lt;/<span class="tag">h1</span>&gt;
+&lt;<span class="tag">h2</span>&gt;Section Title&lt;/<span class="tag">h2</span>&gt;
+&lt;<span class="tag">h3</span>&gt;Subsection&lt;/<span class="tag">h3</span>&gt;
+&lt;<span class="tag">h4</span>&gt;Detail&lt;/<span class="tag">h4</span>&gt;
+&lt;<span class="tag">p</span>&gt;A block of text.
+Use it for paragraphs.&lt;/<span class="tag">p</span>&gt;
+&lt;<span class="tag">p</span>&gt;Another paragraph.
+Browser adds spacing.&lt;/<span class="tag">p</span>&gt;</pre>
+          </div>
+          <div>
+            <div class="card" style="height:100%;">
+              <h3>Rules of thumb</h3>
+              <ul>
+                <li>Only <strong>one</strong> <code>&lt;h1&gt;</code> per page — the main title</li>
+                <li>Don't skip levels: <code>h1</code> → <code>h2</code> → <code>h3</code></li>
+                <li>Headings are for <em>structure</em>, not size — CSS handles size later</li>
+                <li><code>&lt;p&gt;</code> automatically adds margin above and below</li>
+                <li>Multiple spaces collapse into one (line breaks too)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Concept — Links -->
+    <section class="slide" data-slide="7">
+      <div class="slide-content">
+        <h2>Links — The Web's Superpower</h2>
+        <p>The <code>&lt;a&gt;</code> tag (anchor) creates hyperlinks. The <code>href</code> attribute tells it where to go.</p>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div>
+            <pre>&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="val">"https://example.com"</span>&gt;
+  Visit Example
+&lt;/<span class="tag">a</span>&gt;
+
+&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="val">"about.html"</span>&gt;
+  About Us
+&lt;/<span class="tag">a</span>&gt;
+
+&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="val">"#section2"</span>&gt;
+  Jump to Section 2
+&lt;/<span class="tag">a</span>&gt;
+
+&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="val">"mailto:hi@me.com"</span>&gt;
+  Email Me
+&lt;/<span class="tag">a</span>&gt;</pre>
+          </div>
+          <div>
+            <div class="card" style="height:100%;">
+              <h3>Link destinations</h3>
+              <ul>
+                <li><strong>Absolute:</strong> <code>https://...</code> — links to other sites</li>
+                <li><strong>Relative:</strong> <code>about.html</code> — links within your site</li>
+                <li><strong>Anchor:</strong> <code>#id</code> — jumps to another part of the same page</li>
+                <li><strong>Email:</strong> <code>mailto:address</code> — opens the user's mail app</li>
+              </ul>
+              <h3 style="margin-top:0.6em;">Open in new tab</h3>
+              <p style="font-size:0.9em;">Add <code>target="_blank"</code> and <code>rel="noopener"</code> for safety:</p>
+              <pre style="font-size:0.8em;">&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="val">"..."</span>
+   <span class="attr">target</span>=<span class="val">"_blank"</span>
+   <span class="attr">rel</span>=<span class="val">"noopener"</span>&gt;
+  Link
+&lt;/<span class="tag">a</span>&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Concept — Images -->
+    <section class="slide" data-slide="8">
+      <div class="slide-content">
+        <h2>Images — <code>&lt;img&gt;</code></h2>
+        <p>The <code>&lt;img&gt;</code> tag is <strong>self-closing</strong> — no closing tag needed. It uses attributes to specify the image source and alternative text.</p>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div>
+            <pre>&lt;<span class="tag">img</span>
+  <span class="attr">src</span>=<span class="val">"photo.jpg"</span>
+  <span class="attr">alt</span>=<span class="val">"A description of the photo"</span>
+  <span class="attr">width</span>=<span class="val">"600"</span>
+  <span class="attr">height</span>=<span class="val">"400"</span>
+&gt;</pre>
+            <p style="margin-top:0.4em; font-size:0.9em;">Sources can be relative or absolute URLs:</p>
+            <pre>&lt;<span class="tag">img</span> <span class="attr">src</span>=<span class="val">"images/logo.png"</span>
+     <span class="attr">alt</span>=<span class="val">"Company logo"</span>&gt;
+
+&lt;<span class="tag">img</span> <span class="attr">src</span>=<span class="val">"https://picsum.photos/200"</span>
+     <span class="attr">alt</span>=<span class="val">"Random photo"</span>&gt;</pre>
+          </div>
+          <div>
+            <div class="card" style="height:100%;">
+              <h3>⚠️ Important rules</h3>
+              <ul>
+                <li><strong>Always</strong> include <code>alt</code> — screen readers use it; search engines rank by it; it shows when the image doesn't load</li>
+                <li><code>width</code> and <code>height</code> prevent layout shift while the image loads</li>
+                <li>Use descriptive alt text: <code>"Golden Gate Bridge at sunset"</code> not <code>"image.jpg"</code></li>
+                <li>Decorative images can have <code>alt=""</code> (empty) — screen readers skip them</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Concept — Attributes Deep Dive -->
+    <section class="slide" data-slide="9">
+      <div class="slide-content">
+        <h2>Attributes — How Tags Carry Extra Info</h2>
+        <p>Attributes go <strong>inside the opening tag</strong> and follow <code>name="value"</code> syntax.</p>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div>
+            <pre>&lt;<span class="tag">a</span>    <span class="attr">href</span>=<span class="val">"page.html"</span>&gt;Link&lt;/<span class="tag">a</span>&gt;
+<span class="comment">       ↑          ↑</span>
+<span class="comment">     name    "value"</span>
+
+&lt;<span class="tag">img</span>   <span class="attr">src</span>=<span class="val">"photo.jpg"</span>
+       <span class="attr">alt</span>=<span class="val">"Photo"</span>&gt;
+
+&lt;<span class="tag">html</span>  <span class="attr">lang</span>=<span class="val">"en"</span>&gt;
+
+&lt;<span class="tag">div</span>   <span class="attr">id</span>=<span class="val">"header"</span>
+       <span class="attr">class</span>=<span class="val">"container"</span>&gt;
+
+&lt;<span class="tag">p</span>     <span class="attr">style</span>=<span class="val">"color:red"</span>&gt;Red text&lt;/<span class="tag">p</span>&gt;</pre>
+          </div>
+          <div>
+            <div class="card" style="height:100%;">
+              <h3>Common attributes</h3>
+              <table style="width:100%; border-collapse:collapse; font-size:0.85em;">
+                <tr><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);"><code>href</code></td><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);">Link destination (for <code>&lt;a&gt;</code>)</td></tr>
+                <tr><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);"><code>src</code></td><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);">Image/file source (for <code>&lt;img&gt;</code>)</td></tr>
+                <tr><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);"><code>alt</code></td><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);">Alternative text (for images)</td></tr>
+                <tr><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);"><code>id</code></td><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);">Unique identifier — one per page</td></tr>
+                <tr><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);"><code>class</code></td><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);">Grouping label — many elements can share it</td></tr>
+                <tr><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);"><code>lang</code></td><td style="padding:0.3em 0; border-bottom:1px solid var(--code-border);">Language of content</td></tr>
+                <tr><td style="padding:0.3em 0;"><code>style</code></td><td style="padding:0.3em 0;">Inline CSS (use sparingly)</td></tr>
+              </table>
+              <p style="margin-top:0.5em;">Attributes are key-value pairs: <code>name="value"</code>. Always use quotes (double or single).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Walkthrough — Build Your First Page -->
+    <section class="slide" data-slide="10">
+      <div class="slide-content">
+        <h2>🛠️ Walkthrough: Your First HTML Page</h2>
+        <p>Let's build a page step by step. Create a new file called <code>index.html</code> and follow along.</p>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div>
+            <p><strong>Step 1:</strong> Start with the skeleton</p>
+<pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;My First Page&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+            <p><strong>Step 2:</strong> Add a heading and paragraph inside <code>&lt;body&gt;</code></p>
+<pre>&lt;h1&gt;Welcome to My Website&lt;/h1&gt;
+&lt;p&gt;This is my first HTML page.
+I'm learning web development!&lt;/p&gt;
+</pre>
+          </div>
+          <div>
+            <div class="card" style="height:100%;">
+              <h3>Step 3: Add a link and image</h3>
+<pre>&lt;p&gt;Check out &lt;a href="https://
+developer.mozilla.org"&gt;MDN
+Web Docs&lt;/a&gt; for reference.&lt;/p&gt;
+
+&lt;img src="https://picsum.photos/
+400/300" alt="Random landscape"
+width="400" height="300"&gt;
+</pre>
+              <h3 style="margin-top:0.5em;">Step 4: More structure</h3>
+<pre>&lt;h2&gt;My Hobbies&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;Coding&lt;/li&gt;
+  &lt;li&gt;Reading&lt;/li&gt;
+  &lt;li&gt;Hiking&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Back to &lt;a href="#"&gt;
+top&lt;/a&gt;.&lt;/p&gt;
+</pre>
+            </div>
+          </div>
+        </div>
+        <div class="highlight-box" style="margin-top:0.3em;">
+          <p>💡 <strong>Open it!</strong> Save the file and open <code>index.html</code> in your browser. You should see your headings, paragraph, image, and links.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Walkthrough — Lists -->
+    <section class="slide" data-slide="11">
+      <div class="slide-content">
+        <h2>Ordered &amp; Unordered Lists</h2>
+        <p>Lists are everywhere on the web. Two types: <code>&lt;ul&gt;</code> (bullets) and <code>&lt;ol&gt;</code> (numbers).</p>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div>
+            <pre><span class="comment">&lt;!-- Unordered: bullet points --&gt;</span>
+&lt;<span class="tag">ul</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Apples&lt;/<span class="tag">li</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Bananas&lt;/<span class="tag">li</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Cherries&lt;/<span class="tag">li</span>&gt;
+&lt;/<span class="tag">ul</span>&gt;
+
+<span class="comment">&lt;!-- Ordered: numbered --&gt;</span>
+&lt;<span class="tag">ol</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Mix flour and eggs&lt;/<span class="tag">li</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Add milk&lt;/<span class="tag">li</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Cook on low heat&lt;/<span class="tag">li</span>&gt;
+&lt;/<span class="tag">ol</span>&gt;</pre>
+          </div>
+          <div>
+            <div class="card" style="height:100%;">
+              <h3>Nesting lists</h3>
+              <p>Put one list inside another for sub-items:</p>
+<pre>&lt;<span class="tag">ul</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Frontend
+    &lt;<span class="tag">ul</span>&gt;
+      &lt;<span class="tag">li</span>&gt;HTML&lt;/<span class="tag">li</span>&gt;
+      &lt;<span class="tag">li</span>&gt;CSS&lt;/<span class="tag">li</span>&gt;
+      &lt;<span class="tag">li</span>&gt;JS&lt;/<span class="tag">li</span>&gt;
+    &lt;/<span class="tag">ul</span>&gt;
+  &lt;/<span class="tag">li</span>&gt;
+  &lt;<span class="tag">li</span>&gt;Backend
+    &lt;<span class="tag">ul</span>&gt;
+      &lt;<span class="tag">li</span>&gt;Node.js&lt;/<span class="tag">li</span>&gt;
+      &lt;<span class="tag">li</span>&gt;Python&lt;/<span class="tag">li</span>&gt;
+    &lt;/<span class="tag">ul</span>&gt;
+  &lt;/<span class="tag">li</span>&gt;
+&lt;/<span class="tag">ul</span>&gt;</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Walkthrough — Putting It All Together -->
+    <section class="slide" data-slide="12">
+      <div class="slide-content">
+        <h2>📄 Complete Example Page</h2>
+        <p>Here's a full page that uses everything we've covered:</p>
+        <div style="display:grid; grid-template-columns: 1fr; max-height:65%; overflow-y:auto;">
+<pre style="font-size:clamp(0.65rem, 0.9vw, 0.8rem);">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;My Personal Page&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;h1 id="top"&gt;Alex Rivera&lt;/h1&gt;
+  &lt;p&gt;Welcome to my corner of the web!&lt;/p&gt;
+
+  &lt;h2&gt;About Me&lt;/h2&gt;
+  &lt;p&gt;I'm a web developer in training. I love building things that live in the browser.&lt;/p&gt;
+  &lt;img src="https://picsum.photos/300/200" alt="Random photo" width="300" height="200"&gt;
+
+  &lt;h2&gt;Projects&lt;/h2&gt;
+  &lt;ul&gt;
+    &lt;li&gt;&lt;a href="https://github.com/alex/todo"&gt;CLI Todo App&lt;/a&gt; — Project 1&lt;/li&gt;
+    &lt;li&gt;&lt;a href="https://github.com/alex/bookmarks"&gt;Bookmark Saver&lt;/a&gt; — coming in Week 6&lt;/li&gt;
+  &lt;/ul&gt;
+
+  &lt;h2&gt;My Top 3 Skills&lt;/h2&gt;
+  &lt;ol&gt;
+    &lt;li&gt;HTML &amp; CSS&lt;/li&gt;
+    &lt;li&gt;Python&lt;/li&gt;
+    &lt;li&gt;Git &amp; GitHub&lt;/li&gt;
+  &lt;/ol&gt;
+
+  &lt;p&gt;&lt;a href="#top"&gt;Back to top&lt;/a&gt;&lt;/p&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: Section Break — Practice -->
+    <section class="slide section-break" data-slide="13">
+      <div class="slide-content">
+        <h2>✏️ Your Turn</h2>
+        <p class="subtitle">Exercises to solidify what you've learned</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 14: Exercise 1 -->
+    <section class="slide" data-slide="14">
+      <div class="slide-content">
+        <h2>Exercise 1: About Me Page</h2>
+        <p>Create a file called <code>about.html</code> with the following:</p>
+        <ul>
+          <li>A valid HTML5 skeleton</li>
+          <li>An <code>&lt;h1&gt;</code> with your name (real or fictional)</li>
+          <li>At least 3 paragraphs about your interests</li>
+          <li>An <code>&lt;img&gt;</code> with a placeholder image URL</li>
+          <li>An <code>&lt;h2&gt;</code> "Favorite Sites" with a <code>&lt;ul&gt;</code> of 3 links to real websites</li>
+          <li>A "back to top" link using <code>href="#top"</code></li>
+        </ul>
+        <div style="margin-top:0.5em;">
+          <button class="exercise-toggle" onclick="toggleSolution('ex1')">Show Hint</button>
+          <div id="ex1" class="solution">
+            <pre style="font-size:0.8em;">&lt;h1 id="top"&gt;Jamie Chen&lt;/h1&gt;
+&lt;p&gt;I'm a co-op student learning web dev.&lt;/p&gt;
+&lt;h2&gt;My Interests&lt;/h2&gt;
+&lt;p&gt;I enjoy coding, reading sci-fi, and photography.&lt;/p&gt;
+&lt;img src="https://picsum.photos/400/300" alt="placeholder" width="400" height="300"&gt;
+&lt;h2&gt;Favorite Sites&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href="https://github.com"&gt;GitHub&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href="https://developer.mozilla.org"&gt;MDN&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href="https://news.ycombinator.com"&gt;HN&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a href="#top"&gt;Back to top&lt;/a&gt;&lt;/p&gt;</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 15: Exercise 2 -->
+    <section class="slide" data-slide="15">
+      <div class="slide-content">
+        <h2>Exercise 2: Hyperlink Hub</h2>
+        <p>Create <code>links.html</code> — a simple directory of useful links organized into sections.</p>
+        <ul>
+          <li>Use <code>&lt;h1&gt;</code> for the page title</li>
+          <li>Use <code>&lt;h2&gt;</code> for each category (e.g., "Search", "Social", "Learning")</li>
+          <li>Each category is an <code>&lt;ul&gt;</code> of 2-3 links</li>
+          <li>Add a table of contents at the top with <strong>anchor links</strong> (<code>#search</code>, <code>#social</code>, etc.)</li>
+          <li>Give each category section an <code>id</code> attribute</li>
+        </ul>
+        <div style="margin-top:0.5em;">
+          <button class="exercise-toggle" onclick="toggleSolution('ex2')">Show Hint</button>
+          <div id="ex2" class="solution">
+            <pre style="font-size:0.8em;">&lt;h1&gt;Useful Links&lt;/h1&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href="#search"&gt;Search&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href="#learning"&gt;Learning&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="search"&gt;Search&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href="https://google.com"&gt;Google&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href="https://duckduckgo.com"&gt;DuckDuckGo&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="learning"&gt;Learning&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href="https://freecodecamp.org"&gt;freeCodeCamp&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href="https://w3schools.com"&gt;W3Schools&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 16: Milestones & Project Context -->
+    <section class="slide" data-slide="16">
+      <div class="slide-content">
+        <h2>📌 Where This Fits</h2>
+        <p>HTML is the foundation for every project from here on out.</p>
+        <div class="cols cols-2" style="margin-top:0.6em;">
+          <div class="card">
+            <h3>✅ Already Completed (Weeks 1-3)</h3>
+            <ul>
+              <li>Git, GitHub, terminal basics</li>
+              <li>Python fundamentals</li>
+              <li><strong>Project 1: CLI Todo List</strong> — done!</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔜 Upcoming Milestones</h3>
+            <ul>
+              <li><strong>Project 2: Bookmark Saver</strong> — Week 6</li>
+              <li><strong>Project 3: Weather Dashboard</strong> — Week 8</li>
+              <li><strong>Project 5: Full-Stack App</strong> — Week 12</li>
+            </ul>
+          </div>
+        </div>
+        <div class="highlight-box" style="margin-top:0.5em;">
+          <p>💡 Every project from here uses HTML for its interface. Mastering the skeleton today means less friction when we add CSS (this week) and JavaScript (next week).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 17: Summary -->
+    <section class="slide" data-slide="17">
+      <div class="slide-content">
+        <h2>🎯 Key Takeaways</h2>
+        <div class="cols cols-2" style="margin-top:0.4em;">
+          <div class="card">
+            <h3 class="accent">1. Structure is everything</h3>
+            <p>Every HTML page has the same skeleton: <code>DOCTYPE</code> → <code>&lt;html&gt;</code> → <code>&lt;head&gt;</code> + <code>&lt;body&gt;</code>. Learn it once, use it forever.</p>
+          </div>
+          <div class="card">
+            <h3 class="accent">2. Tags describe meaning</h3>
+            <p><code>&lt;h1&gt;</code> means "this is the main heading." <code>&lt;a&gt;</code> means "this is a link." Choose the right tag for the job — that's semantic HTML.</p>
+          </div>
+          <div class="card">
+            <h3 class="accent">3. Attributes customize tags</h3>
+            <p><code>href</code>, <code>src</code>, <code>alt</code>, <code>id</code>, <code>class</code> — these key-value pairs make tags do what you want. They live inside the opening tag.</p>
+          </div>
+          <div class="card">
+            <h3 class="accent">4. Build to learn</h3>
+            <p>Open your browser, create <code>.html</code> files, experiment. The best way to learn HTML is to write it and see what happens.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 18: Next Steps -->
+    <section class="slide" data-slide="18">
+      <div class="slide-content">
+        <h2>📅 What's Next</h2>
+        <div class="highlight-box" style="margin-bottom:0.6em;">
+          <p><strong>Tomorrow (Day 20):</strong> HTML forms, tables, and semantic elements — <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;footer&gt;</code>.</p>
+        </div>
+        <div class="highlight-box" style="margin-bottom:0.4em;">
+          <p><strong>Later this week:</strong> CSS — colors, fonts, layouts. You'll style the pages you're building today.</p>
+        </div>
+        <p style="margin-top:0.6em;">Before next session, try these optional challenges:</p>
+        <ul>
+          <li>Add a <code>&lt;blockquote&gt;</code> to your About page for a favorite quote</li>
+          <li>Use <code>&lt;br&gt;</code> (line break) to format an address</li>
+          <li>Use <code>&lt;hr&gt;</code> (horizontal rule) to separate sections visually</li>
+          <li>Check your page with the <a href="https://validator.w3.org/" target="_blank" rel="noopener" style="color:var(--accent);">W3C Validator</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SLIDE 19: Q&A / Closing -->
+    <section class="slide" data-slide="19">
+      <div class="slide-content title-slide">
+        <h1>Great work today! 🎉</h1>
+        <p class="subtitle" style="max-width:80%; margin:0 auto;">You've written your first HTML page. Every website you've ever visited started right here — with tags, attributes, and a little bit of structure.</p>
+        <div class="meta" style="margin-top:1.5em;">Day 19 complete &middot; See you tomorrow for Day 20</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progress"></div>
+
+  <!-- Slide counter -->
+  <div class="slide-counter" id="counter"></div>
+</div>
+
+<script>
+  (function() {
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    let current = 0;
+
+    const progress = document.getElementById('progress');
+    const counter = document.getElementById('counter');
+
+    function showSlide(index) {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === index);
+      });
+      current = index;
+      progress.style.width = ((index + 1) / total * 100) + '%';
+      counter.textContent = (index + 1) + ' / ' + total;
+      window.location.hash = index;
+    }
+
+    function next() { if (current < total - 1) showSlide(current + 1); }
+    function prev() { if (current > 0) showSlide(current - 1); }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault(); next();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault(); prev();
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.querySelector('.deck').requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } else if (e.key === 'Home') {
+        e.preventDefault(); showSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault(); showSlide(total - 1);
+      }
+    });
+
+    // Touch support
+    let touchStartX = 0;
+    document.addEventListener('touchstart', function(e) {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    document.addEventListener('touchend', function(e) {
+      const diff = touchStartX - e.changedTouches[0].screenX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) next(); else prev();
+      }
+    });
+
+    // Hash-based navigation
+    window.addEventListener('hashchange', function() {
+      const idx = parseInt(window.location.hash.slice(1), 10);
+      if (!isNaN(idx) && idx >= 0 && idx < total) showSlide(idx);
+    });
+
+    // Init from hash or start at 0
+    const hashIdx = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(hashIdx) && hashIdx >= 0 && hashIdx < total) {
+      showSlide(hashIdx);
+    } else {
+      showSlide(0);
+    }
+  })();
+
+  // Exercise solution toggles
+  function toggleSolution(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('visible');
+  }
+</script>
+</body>
+</html>
