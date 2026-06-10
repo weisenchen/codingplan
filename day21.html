@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 21 — CSS: Selectors, Colors, Units</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Source+Code+Pro:wght@400;600;700&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3348;
+  --text: #e4e6f0;
+  --text-dim: #8b8fa8;
+  --accent: #7c6ff0;
+  --accent-glow: rgba(124,111,240,0.15);
+  --green: #4ade80;
+  --yellow: #facc15;
+  --orange: #fb923c;
+  --red: #f87171;
+  --cyan: #22d3ee;
+  --font-display: 'Merriweather', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-code: 'Source Code Pro', 'Fira Code', monospace;
+  --fs-title: clamp(2.4rem, 5vw, 4rem);
+  --fs-heading: clamp(1.6rem, 3vw, 2.6rem);
+  --fs-body: clamp(1rem, 1.6vw, 1.35rem);
+  --fs-code: clamp(0.85rem, 1.3vw, 1.1rem);
+  --fs-small: clamp(0.75rem, 1vw, 0.9rem);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--font-body);
+  overflow:hidden;height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.slides{position:relative;width:100vw;height:100vh;overflow:hidden}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  padding:clamp(1.5rem,4vw,4rem);
+  opacity:0;pointer-events:none;
+  transition:opacity .35s ease;
+}
+.slide.active{opacity:1;pointer-events:auto}
+.slide-inner{
+  width:100%;max-width:1200px;
+  aspect-ratio:16/9;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:clamp(1.5rem,4vw,3.5rem);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  position:relative;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.slide-inner::-webkit-scrollbar{width:6px}
+.slide-inner::-webkit-scrollbar-track{background:transparent}
+.slide-inner::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* progress */
+.progress{
+  position:absolute;bottom:12px;right:24px;
+  font-size:var(--fs-small);color:var(--text-dim);
+  letter-spacing:.05em;
+  z-index:10;
+}
+.progress-bar{
+  position:absolute;top:0;left:0;height:3px;
+  background:var(--accent);
+  border-radius:2px 0 0 2px;
+  transition:width .35s ease;
+  z-index:10;
+}
+
+/* Typography */
+h1{font-family:var(--font-display);font-size:var(--fs-title);font-weight:900;line-height:1.15;color:#fff}
+h2{font-family:var(--font-display);font-size:var(--fs-heading);font-weight:700;line-height:1.25;color:#fff;margin-bottom:.5em}
+h3{font-family:var(--font-body);font-size:var(--fs-body);font-weight:600;color:var(--accent);margin-bottom:.4em;text-transform:uppercase;letter-spacing:.08em}
+p,li{font-size:var(--fs-body);line-height:1.6;color:var(--text)}
+p + p{margin-top:.6em}
+a{color:var(--accent);text-decoration:underline 1px dotted;text-underline-offset:3px}
+
+/* Code */
+pre{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1em 1.2em;overflow-x:auto;margin:.6em 0}
+code{font-family:var(--font-code);font-size:var(--fs-code);line-height:1.55}
+pre code{color:var(--text)}
+.hl-kw{color:var(--accent);font-weight:600}
+.hl-str{color:var(--green)}
+.hl-num{color:var(--orange)}
+.hl-tag{color:var(--cyan)}
+.hl-attr{color:var(--yellow)}
+.hl-val{color:var(--green)}
+.hl-com{color:var(--text-dim);font-style:italic}
+.hl-prop{color:var(--cyan)}
+
+/* Lists */
+ul,ol{padding-left:1.5em;width:100%}
+li{margin-bottom:.3em}
+ul li::marker{color:var(--accent)}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;width:100%;flex:1;min-height:0}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;width:100%;flex:1;min-height:0}
+.card{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:12px;padding:1rem 1.2rem;
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.card h4{font-size:var(--fs-body);font-weight:600;color:#fff}
+
+/* Exercise boxes */
+.ex-box{
+  background:var(--accent-glow);border:1px solid var(--accent);
+  border-radius:12px;padding:1.2rem 1.5rem;
+  margin:.6em 0;
+}
+.ex-box h4{color:var(--accent);font-size:var(--fs-body);font-weight:600;margin-bottom:.3em}
+.ex-box code{font-size:var(--fs-code)}
+.ex-box .hint{color:var(--text-dim);font-size:var(--fs-small);margin-top:.4em}
+
+/* Title slide */
+.title-slide .slide-inner{
+  justify-content:center;align-items:center;
+  text-align:center;
+  background:linear-gradient(135deg,var(--surface) 0%,var(--bg) 100%);
+  border-color:var(--accent);
+}
+.title-slide .day-badge{
+  display:inline-block;
+  background:var(--accent);color:#fff;
+  font-size:var(--fs-small);font-weight:700;
+  padding:.35em 1em;border-radius:100px;
+  letter-spacing:.1em;margin-bottom:1rem;
+  text-transform:uppercase;
+}
+.title-slide h1{margin-bottom:.3em}
+.title-slide .subtitle{font-size:var(--fs-body);color:var(--text-dim);max-width:600px;margin:0 auto}
+.title-slide .meta{
+  margin-top:1.5rem;
+  display:flex;gap:1.5rem;justify-content:center;
+  font-size:var(--fs-small);color:var(--text-dim);
+}
+.title-slide .meta span{display:flex;align-items:center;gap:.4em}
+
+/* Section break */
+.section-break .slide-inner{
+  justify-content:center;align-items:center;text-align:center;
+  background:linear-gradient(135deg,var(--accent) 0%,#4f46e5 100%);
+  border-color:transparent;
+}
+.section-break h2{color:#fff;font-size:var(--fs-title);margin-bottom:0}
+.section-break p{color:rgba(255,255,255,.75);font-size:var(--fs-body)}
+
+/* Recap */
+.recap-list{display:flex;flex-direction:column;gap:.8rem;width:100%;max-width:700px;margin:.8em auto}
+.recap-item{display:flex;align-items:flex-start;gap:.8rem}
+.recap-num{
+  flex-shrink:0;width:36px;height:36px;
+  border-radius:50%;background:var(--accent);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:var(--fs-small);
+}
+.recap-text{font-size:var(--fs-body);padding-top:.3em}
+
+/* Responsive */
+@media(max-width:700px){
+  .slide-inner{padding:1rem;border-radius:0;border:none;aspect-ratio:auto;min-height:100vh}
+  .grid-2,.grid-3{grid-template-columns:1fr;gap:.8rem}
+  .title-slide .meta{flex-direction:column;gap:.5rem}
+}
+
+/* Print */
+@media print{
+  body{overflow:visible;height:auto}
+  .slide{position:static;opacity:1;pointer-events:auto;page-break-after:always;padding:0;height:auto}
+  .slide-inner{aspect-ratio:auto;min-height:50vh;border:1px solid #ccc;box-shadow:none}
+  .progress,.progress-bar{display:none}
+}
+
+/* Keyboard hint */
+.kb-hint{
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  font-size:var(--fs-small);color:var(--text-dim);
+  background:rgba(15,17,23,.85);
+  padding:.3em 1em;border-radius:100px;
+  border:1px solid var(--border);
+  pointer-events:none;z-index:100;
+  transition:opacity .5s ease;
+}
+</style>
+</head>
+<body>
+
+<div class="slides" id="slides">
+  <!-- Slide 0: Title -->
+  <section class="slide title-slide active" data-slide="0">
+    <div class="slide-inner">
+      <span class="day-badge">Week 4 · Phase II</span>
+      <h1>CSS: Selectors, Colors, Units</h1>
+      <p class="subtitle">Give your HTML pages style — from basic color tweaks to full layout control with the cascade, selectors, and the box model.</p>
+      <div class="meta">
+        <span>📅 Day 21</span>
+        <span>⏱ 60 min</span>
+        <span>🎨 Theme: CSS</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 1: Learning Objectives -->
+  <section class="slide" data-slide="1">
+    <div class="slide-inner">
+      <h3>Learning Objectives</h3>
+      <h2>What you'll learn today</h2>
+      <div class="grid-2" style="flex:1;margin-top:.5em">
+        <div class="card">
+          <h4>🎯 CSS Fundamentals</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim);line-height:1.5">
+            Understand how CSS works — inline, internal, and external stylesheets — and how the cascade decides which rule wins.
+          </p>
+        </div>
+        <div class="card">
+          <h4>🎯 Selectors</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim);line-height:1.5">
+            Target elements by tag, class, and ID. Learn specificity and when to use each.
+          </p>
+        </div>
+        <div class="card">
+          <h4>🎯 Colors &amp; Typography</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim);line-height:1.5">
+            Named colors, hex, rgb(), and how to style text with fonts, size, weight, and alignment.
+          </p>
+        </div>
+        <div class="card">
+          <h4>🎯 The Box Model</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim);line-height:1.5">
+            Margins, padding, and borders — the foundation of every CSS layout.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 2: Prerequisites -->
+  <section class="slide" data-slide="2">
+    <div class="slide-inner" style="justify-content:center">
+      <h3>Prerequisites</h3>
+      <h2>Before you start</h2>
+      <ul style="max-width:700px;margin:1em auto 0">
+        <li>You can write basic HTML — <code>&lt;h1&gt;</code>, <code>&lt;p&gt;</code>, <code>&lt;div&gt;</code>, <code>&lt;ul&gt;</code></li>
+        <li>You know how to create an HTML file and open it in a browser</li>
+        <li>A text editor (VS Code, Sublime, or even Notepad)</li>
+        <li>No prior CSS knowledge required — we start from zero</li>
+      </ul>
+      <div class="ex-box" style="margin-top:1.5em">
+        <h4>📁 Starter file</h4>
+        <p style="font-size:var(--fs-small)">Create <code>index.html</code> with a heading, a paragraph, and a list. We'll style it together.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 3: Section Break - CSS Basics -->
+  <section class="slide section-break" data-slide="3">
+    <div class="slide-inner">
+      <h2>CSS Basics</h2>
+      <p>Three ways to add style · The cascade · Selectors</p>
+    </div>
+  </section>
+
+  <!-- Slide 4: Three Ways to Add CSS -->
+  <section class="slide" data-slide="4">
+    <div class="slide-inner">
+      <h3>Concept</h3>
+      <h2>Inline · Internal · External</h2>
+      <div class="grid-3" style="flex:1;margin-top:.5em">
+        <div class="card">
+          <h4>🚫 Inline</h4>
+          <pre style="margin:0;padding:.6em;font-size:calc(var(--fs-code)*.85)"><code>&lt;<span class="hl-tag">p</span> <span class="hl-attr">style</span>=<span class="hl-str">"color: red;"</span>&gt;
+  Hello
+&lt;/<span class="hl-tag">p</span>&gt;</code></pre>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">Hard to maintain. Avoid except for quick tests.</p>
+        </div>
+        <div class="card">
+          <h4>⚠️ Internal</h4>
+          <pre style="margin:0;padding:.6em;font-size:calc(var(--fs-code)*.85)"><code><span class="hl-tag">&lt;style&gt;</span>
+<span class="hl-tag">p</span> { <span class="hl-prop">color</span>: blue; }
+<span class="hl-tag">&lt;/style&gt;</span></code></pre>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">Good for single-page demos. Not reusable.</p>
+        </div>
+        <div class="card">
+          <h4>✅ External</h4>
+          <pre style="margin:0;padding:.6em;font-size:calc(var(--fs-code)*.85)"><code><span class="hl-tag">&lt;link</span> <span class="hl-attr">rel</span>=<span class="hl-str">"stylesheet"</span>
+      <span class="hl-attr">href</span>=<span class="hl-str">"style.css"</span><span class="hl-tag">&gt;</span></code></pre>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">Best practice. One file controls many pages.</p>
+        </div>
+      </div>
+      <p style="font-size:var(--fs-small);color:var(--text-dim);margin-top:.8em"><strong>Rule of thumb:</strong> always start with an external stylesheet. Keep styling separate from structure.</p>
+    </div>
+  </section>
+
+  <!-- Slide 5: The Cascade -->
+  <section class="slide" data-slide="5">
+    <div class="slide-inner">
+      <h3>Concept</h3>
+      <h2>The Cascade &amp; Specificity</h2>
+      <p style="max-width:800px;margin-bottom:.6em">CSS stands for <strong>Cascading</strong> Style Sheets. When multiple rules target the same element, the browser uses a priority system:</p>
+      <div style="width:100%;max-width:800px;margin:.4em 0">
+        <pre style="font-size:calc(var(--fs-code)*.85)"><code><span class="hl-com">/* Which color wins? */</span>
+<span class="hl-tag">p</span>           { <span class="hl-prop">color</span>: <span class="hl-val">red</span>; }      <span class="hl-com">/* specificity: 0,0,1 */</span>
+<span class="hl-tag">.intro</span>      { <span class="hl-prop">color</span>: <span class="hl-val">blue</span>; }     <span class="hl-com">/* specificity: 0,1,0 — wins! */</span>
+<span class="hl-tag">#main</span>       { <span class="hl-prop">color</span>: <span class="hl-val">green</span>; }    <span class="hl-com">/* specificity: 1,0,0 — wins all */</span></code></pre>
+      </div>
+      <div class="grid-2" style="margin-top:.3em">
+        <div class="card">
+          <h4>Priority order (low → high)</h4>
+          <ol style="font-size:var(--fs-small);padding-left:1.2em">
+            <li>Browser defaults</li>
+            <li>External / internal stylesheets</li>
+            <li>Class selectors (<code>.class</code>)</li>
+            <li>ID selectors (<code>#id</code>)</li>
+            <li>Inline <code>style=""</code> (highest)</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h4>Remember</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">More specific = more priority. The <code>!important</code> flag overrides everything — use it only as a last resort.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 6: Selectors -->
+  <section class="slide" data-slide="6">
+    <div class="slide-inner">
+      <h3>Walkthrough</h3>
+      <h2>Element · Class · ID Selectors</h2>
+      <div class="grid-2" style="flex:1;margin-top:.3em">
+        <div>
+          <pre style="font-size:calc(var(--fs-code)*.85)"><code><span class="hl-com">/* Element selector — targets ALL &lt;p&gt; */</span>
+<span class="hl-tag">p</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-num">16px</span>;
+}
+
+<span class="hl-com">/* Class selector — targets class="highlight" */</span>
+<span class="hl-tag">.highlight</span> {
+  <span class="hl-prop">background</span>: <span class="hl-val">yellow</span>;
+}
+
+<span class="hl-com">/* ID selector — targets id="banner" (use ONCE) */</span>
+<span class="hl-tag">#banner</span> {
+  <span class="hl-prop">width</span>: <span class="hl-num">100%</span>;
+  <span class="hl-prop">height</span>: <span class="hl-num">300px</span>;
+}</code></pre>
+        </div>
+        <div>
+          <div class="card">
+            <h4>When to use each</h4>
+            <table style="width:100%;font-size:var(--fs-small);border-collapse:collapse">
+              <thead><tr><th style="text-align:left;border-bottom:1px solid var(--border);padding:.3em .4em">Selector</th><th style="text-align:left;border-bottom:1px solid var(--border);padding:.3em .4em">Use for</th></tr></thead>
+              <tbody>
+                <tr><td style="padding:.3em .4em"><code>element</code></td><td style="padding:.3em .4em">Default styles (all paragraphs)</td></tr>
+                <tr><td style="padding:.3em .4em"><code>.class</code></td><td style="padding:.3em .4em">Reusable component styles</td></tr>
+                <tr><td style="padding:.3em .4em"><code>#id</code></td><td style="padding:.3em .4em">One-off unique elements</td></tr>
+              </tbody>
+            </table>
+            <p style="font-size:var(--fs-small);color:var(--text-dim);margin-top:.5em"><strong>Pro tip:</strong> Prefer classes. IDs are hard to override and should be reserved for anchors and JavaScript hooks.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 7: Section Break - Colors & Typography -->
+  <section class="slide section-break" data-slide="7">
+    <div class="slide-inner">
+      <h2>Colors &amp; Typography</h2>
+      <p>Named colors · Hex · rgb() · Fonts · Alignment</p>
+    </div>
+  </section>
+
+  <!-- Slide 8: Colors -->
+  <section class="slide" data-slide="8">
+    <div class="slide-inner">
+      <h3>Concept</h3>
+      <h2>Colors in CSS</h2>
+      <p style="margin-bottom:.4em">Three common ways to specify color:</p>
+      <pre style="font-size:calc(var(--fs-code)*.85)"><code><span class="hl-com">/* 1. Named colors (140+ built-in) */</span>
+<span class="hl-tag">h1</span> { <span class="hl-prop">color</span>: <span class="hl-val">tomato</span>; }
+
+<span class="hl-com">/* 2. Hex codes — #RRGGBB or #RGB */</span>
+<span class="hl-tag">h1</span> { <span class="hl-prop">color</span>: <span class="hl-val">#ff6347</span>; }     <span class="hl-com">/* tomato in hex */</span>
+
+<span class="hl-com">/* 3. rgb() / rgba() — red, green, blue, alpha */</span>
+<span class="hl-tag">h1</span> { <span class="hl-prop">color</span>: <span class="hl-func">rgb(</span><span class="hl-num">255</span>, <span class="hl-num">99</span>, <span class="hl-num">71</span><span class="hl-func">)</span>; }  <span class="hl-com">/* same color */</span>
+<span class="hl-tag">h1</span> { <span class="hl-prop">color</span>: <span class="hl-func">rgba(</span><span class="hl-num">255</span>, <span class="hl-num">99</span>, <span class="hl-num">71</span>, <span class="hl-num">0.8</span><span class="hl-func">)</span>; } <span class="hl-com">/* 80% opaque */</span></code></pre>
+      <div class="grid-3" style="margin-top:.4em">
+        <div class="card" style="align-items:center;text-align:center">
+          <div style="width:48px;height:48px;border-radius:8px;background:tomato;border:1px solid var(--border)"></div>
+          <code>tomato</code>
+          <span style="font-size:var(--fs-small);color:var(--text-dim)">#ff6347</span>
+        </div>
+        <div class="card" style="align-items:center;text-align:center">
+          <div style="width:48px;height:48px;border-radius:8px;background:#4ade80;border:1px solid var(--border)"></div>
+          <code>#4ade80</code>
+          <span style="font-size:var(--fs-small);color:var(--text-dim)">green shade</span>
+        </div>
+        <div class="card" style="align-items:center;text-align:center">
+          <div style="width:48px;height:48px;border-radius:8px;background:#7c6ff0;border:1px solid var(--border)"></div>
+          <code>#7c6ff0</code>
+          <span style="font-size:var(--fs-small);color:var(--text-dim)">purple accent</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 9: Fonts & Text -->
+  <section class="slide" data-slide="9">
+    <div class="slide-inner">
+      <h3>Walkthrough</h3>
+      <h2>Fonts, Size, Weight &amp; Alignment</h2>
+      <div class="grid-2" style="flex:1;margin-top:.3em">
+        <div>
+          <pre style="font-size:calc(var(--fs-code)*.85);margin-bottom:.4em"><code><span class="hl-tag">body</span> {
+  <span class="hl-prop">font-family</span>: <span class="hl-val">Arial</span>, <span class="hl-val">sans-serif</span>;
+}
+
+<span class="hl-tag">h1</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-num">32px</span>;
+  <span class="hl-prop">font-weight</span>: <span class="hl-num">700</span>;   <span class="hl-com">/* bold */</span>
+  <span class="hl-prop">text-align</span>: <span class="hl-val">center</span>;
+}
+
+<span class="hl-tag">.lead</span> {
+  <span class="hl-prop">font-size</span>: <span class="hl-num">18px</span>;
+  <span class="hl-prop">line-height</span>: <span class="hl-num">1.6</span>;  <span class="hl-com">/* 1.6× the font size */</span>
+  <span class="hl-prop">color</span>: <span class="hl-val">#666</span>;
+}</code></pre>
+        </div>
+        <div>
+          <div class="card">
+            <h4>Common font properties</h4>
+            <table style="width:100%;font-size:var(--fs-small);border-collapse:collapse">
+              <thead><tr><th style="text-align:left;border-bottom:1px solid var(--border);padding:.25em">Property</th><th style="text-align:left;border-bottom:1px solid var(--border);padding:.25em">Values</th></tr></thead>
+              <tbody>
+                <tr><td style="padding:.25em"><code>font-family</code></td><td style="padding:.25em">"Georgia", serif; Arial, sans-serif</td></tr>
+                <tr><td style="padding:.25em"><code>font-size</code></td><td style="padding:.25em">16px, 1.2rem, 2em</td></tr>
+                <tr><td style="padding:.25em"><code>font-weight</code></td><td style="padding:.25em">400 (normal), 700 (bold)</td></tr>
+                <tr><td style="padding:.25em"><code>text-align</code></td><td style="padding:.25em">left, center, right</td></tr>
+                <tr><td style="padding:.25em"><code>line-height</code></td><td style="padding:.25em">1.4, 1.6, 2.0</td></tr>
+              </tbody>
+            </table>
+            <p style="font-size:var(--fs-small);color:var(--text-dim);margin-top:.5em"><strong>Tip:</strong> Always list a fallback font (<code>sans-serif</code> or <code>serif</code>) after your chosen font.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 10: Section Break - Box Model -->
+  <section class="slide section-break" data-slide="10">
+    <div class="slide-inner">
+      <h2>The Box Model</h2>
+      <p>Content · Padding · Border · Margin</p>
+    </div>
+  </section>
+
+  <!-- Slide 11: Box Model -->
+  <section class="slide" data-slide="11">
+    <div class="slide-inner">
+      <h3>Concept</h3>
+      <h2>Margins, Padding &amp; Borders</h2>
+      <p style="margin-bottom:.4em">Every HTML element is a rectangular box. From inside out: <strong>content → padding → border → margin</strong>.</p>
+      <pre style="font-size:calc(var(--fs-code)*.85)"><code><span class="hl-tag">.card</span> {
+  <span class="hl-prop">width</span>: <span class="hl-num">300px</span>;
+  <span class="hl-prop">padding</span>: <span class="hl-num">20px</span>;              <span class="hl-com">/* space INSIDE the border */</span>
+  <span class="hl-prop">border</span>: <span class="hl-num">2px</span> <span class="hl-val">solid</span> <span class="hl-val">#333</span>;   <span class="hl-com">/* visible edge */</span>
+  <span class="hl-prop">margin</span>: <span class="hl-num">16px</span>;               <span class="hl-com">/* space OUTSIDE the border */</span>
+  <span class="hl-prop">background</span>: <span class="hl-val">#f5f5f5</span>;
+}</code></pre>
+      <div class="grid-2" style="margin-top:.3em">
+        <div class="card">
+          <h4>Shorthand rules</h4>
+          <pre style="margin:0;padding:.5em;font-size:calc(var(--fs-code)*.75)"><code><span class="hl-com">/* All sides */</span>
+<span class="hl-tag">margin</span>: <span class="hl-num">10px</span>;
+
+<span class="hl-com">/* top/bottom left/right */</span>
+<span class="hl-tag">padding</span>: <span class="hl-num">10px</span> <span class="hl-num">20px</span>;
+
+<span class="hl-com">/* top right bottom left */</span>
+<span class="hl-tag">margin</span>: <span class="hl-num">10px</span> <span class="hl-num">5px</span> <span class="hl-num">15px</span> <span class="hl-num">5px</span>;</code></pre>
+        </div>
+        <div class="card">
+          <h4>Individual sides</h4>
+          <pre style="margin:0;padding:.5em;font-size:calc(var(--fs-code)*.75)"><code><span class="hl-tag">margin-top</span>: <span class="hl-num">10px</span>;
+<span class="hl-tag">margin-right</span>: <span class="hl-num">20px</span>;
+<span class="hl-tag">padding-left</span>: <span class="hl-num">15px</span>;
+<span class="hl-tag">padding-bottom</span>: <span class="hl-num">5px</span>;</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 12: CSS Units -->
+  <section class="slide" data-slide="12">
+    <div class="slide-inner">
+      <h3>Concept</h3>
+      <h2>CSS Units — px, em, rem, %</h2>
+      <p style="margin-bottom:.4em">Different units for different jobs:</p>
+      <pre style="font-size:calc(var(--fs-code)*.85)"><code><span class="hl-com">/* Absolute — fixed size, predictable */</span>
+<span class="hl-tag">h1</span> { <span class="hl-prop">font-size</span>: <span class="hl-num">32px</span>; }
+<span class="hl-tag">.box</span> { <span class="hl-prop">width</span>: <span class="hl-num">400px</span>; }
+
+<span class="hl-com">/* Relative — scales with parent or root */</span>
+<span class="hl-tag">.child</span> { <span class="hl-prop">width</span>: <span class="hl-num">50%</span>; }       <span class="hl-com">/* half of parent */</span>
+<span class="hl-tag">.text</span> { <span class="hl-prop">font-size</span>: <span class="hl-num">1.5em</span>; }    <span class="hl-com">/* 1.5× parent font-size */</span>
+<span class="hl-tag">.text</span> { <span class="hl-prop">font-size</span>: <span class="hl-num">1.5rem</span>; }   <span class="hl-com">/* 1.5× root font-size */</span></code></pre>
+      <div class="grid-3" style="margin-top:.3em">
+        <div class="card" style="align-items:center;text-align:center">
+          <h4><code>px</code></h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">Pixels. Fixed size. Best for borders and small precise values.</p>
+        </div>
+        <div class="card" style="align-items:center;text-align:center">
+          <h4><code>em</code></h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">Relative to parent's font-size. Compounds when nested.</p>
+        </div>
+        <div class="card" style="align-items:center;text-align:center">
+          <h4><code>rem</code></h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">Relative to root (<code>&lt;html&gt;</code>) font-size. Predictable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 13: Section Break - Practice -->
+  <section class="slide section-break" data-slide="13">
+    <div class="slide-inner">
+      <h2>Practice Time</h2>
+      <p>Two exercises to cement today's concepts</p>
+    </div>
+  </section>
+
+  <!-- Slide 14: Exercise 1 -->
+  <section class="slide" data-slide="14">
+    <div class="slide-inner">
+      <h3>Exercise 1</h3>
+      <h2>Style a Profile Card</h2>
+      <p>Create an HTML page with a profile card and style it:</p>
+      <pre style="font-size:calc(var(--fs-code)*.8)"><code><span class="hl-com">&lt;!-- Starter HTML --&gt;</span>
+<span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"profile-card"</span><span class="hl-tag">&gt;</span>
+  <span class="hl-tag">&lt;img</span> <span class="hl-attr">src</span>=<span class="hl-str">"avatar.png"</span> <span class="hl-attr">alt</span>=<span class="hl-str">"Avatar"</span><span class="hl-tag">&gt;</span>
+  <span class="hl-tag">&lt;h2</span> <span class="hl-attr">class</span>=<span class="hl-str">"name"</span><span class="hl-tag">&gt;</span>Alex Chen<span class="hl-tag">&lt;/h2&gt;</span>
+  <span class="hl-tag">&lt;p</span> <span class="hl-attr">class</span>=<span class="hl-str">"bio"</span><span class="hl-tag">&gt;</span>Full-stack developer<span class="hl-tag">&lt;/p&gt;</span>
+  <span class="hl-tag">&lt;p</span> <span class="hl-attr">class</span>=<span class="hl-str">"location"</span><span class="hl-tag">&gt;</span>📍 Toronto, ON<span class="hl-tag">&lt;/p&gt;</span>
+<span class="hl-tag">&lt;/div&gt;</span></code></pre>
+      <div class="ex-box">
+        <h4>Requirements</h4>
+        <ol style="font-size:var(--fs-small);padding-left:1.2em">
+          <li>The card has a <code>2px solid</code> border and rounded corners (<code>border-radius: 12px</code>)</li>
+          <li>The name is <code>24px</code>, bold, centered</li>
+          <li>The bio is <code>16px</code>, gray color (<code>#666</code>)</li>
+          <li>Add <code>20px</code> padding inside the card and <code>16px</code> margin outside</li>
+          <li>Center the image with <code>text-align: center</code></li>
+        </ol>
+        <p class="hint">💡 Use an external style block or inline — try both to see which is easier to maintain!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 15: Exercise 2 -->
+  <section class="slide" data-slide="15">
+    <div class="slide-inner">
+      <h3>Exercise 2</h3>
+      <h2>Build a Color Palette Grid</h2>
+      <p>Create a 3×2 grid of colored boxes, each labeled with its hex code:</p>
+      <pre style="font-size:calc(var(--fs-code)*.8)"><code><span class="hl-com">&lt;!-- Starter HTML --&gt;</span>
+<span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"palette"</span><span class="hl-tag">&gt;</span>
+  <span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"swatch"</span> <span class="hl-attr">style</span>=<span class="hl-str">"background:#ff6b6b"</span><span class="hl-tag">&gt;</span>#ff6b6b<span class="hl-tag">&lt;/div&gt;</span>
+  <span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"swatch"</span> <span class="hl-attr">style</span>=<span class="hl-str">"background:#4ecdc4"</span><span class="hl-tag">&gt;</span>#4ecdc4<span class="hl-tag">&lt;/div&gt;</span>
+  <span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"swatch"</span> <span class="hl-attr">style</span>=<span class="hl-str">"background:#45b7d1"</span><span class="hl-tag">&gt;</span>#45b7d1<span class="hl-tag">&lt;/div&gt;</span>
+  <span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"swatch"</span> <span class="hl-attr">style</span>=<span class="hl-str">"background:#96ceb4"</span><span class="hl-tag">&gt;</span>#96ceb4<span class="hl-tag">&lt;/div&gt;</span>
+  <span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"swatch"</span> <span class="hl-attr">style</span>=<span class="hl-str">"background:#feca57"</span><span class="hl-tag">&gt;</span>#feca57<span class="hl-tag">&lt;/div&gt;</span>
+  <span class="hl-tag">&lt;div</span> <span class="hl-attr">class</span>=<span class="hl-str">"swatch"</span> <span class="hl-attr">style</span>=<span class="hl-str">"background:#ff9ff3"</span><span class="hl-tag">&gt;</span>#ff9ff3<span class="hl-tag">&lt;/div&gt;</span>
+<span class="hl-tag">&lt;/div&gt;</span></code></pre>
+      <div class="ex-box">
+        <h4>Requirements</h4>
+        <ol style="font-size:var(--fs-small);padding-left:1.2em">
+          <li>Use CSS Grid or Flexbox to arrange swatches in 3 columns</li>
+          <li>Each swatch is at least <code>100px</code> tall</li>
+          <li>Text is white, centered, with a subtle text-shadow for readability</li>
+          <li>The <code>.palette</code> has <code>16px</code> padding and <code>8px</code> gap between swatches</li>
+        </ol>
+        <p class="hint">💡 <code>display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 16: Summary -->
+  <section class="slide" data-slide="16">
+    <div class="slide-inner" style="justify-content:center">
+      <h3>Summary</h3>
+      <h2>Key Takeaways</h2>
+      <div class="recap-list">
+        <div class="recap-item">
+          <div class="recap-num">1</div>
+          <div class="recap-text"><strong>3 ways to add CSS:</strong> inline (avoid), internal (quick tests), external (best practice). Keep styles separate from HTML.</div>
+        </div>
+        <div class="recap-item">
+          <div class="recap-num">2</div>
+          <div class="recap-text"><strong>Selectors &amp; specificity:</strong> element → class → ID. More specific selectors override less specific ones.</div>
+        </div>
+        <div class="recap-item">
+          <div class="recap-num">3</div>
+          <div class="recap-text"><strong>Box model:</strong> content → padding → border → margin. Master this and you understand CSS layout.</div>
+        </div>
+        <div class="recap-item">
+          <div class="recap-num">4</div>
+          <div class="recap-text"><strong>Units:</strong> <code>px</code> for fixed sizes, <code>%</code> for fluid layouts, <code>rem</code> for accessible typography.</div>
+        </div>
+        <div class="recap-item">
+          <div class="recap-num">5</div>
+          <div class="recap-text"><strong>Colors:</strong> named, hex, and rgb(). Pick a palette early and stick to it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 17: Next Steps -->
+  <section class="slide" data-slide="17">
+    <div class="slide-inner" style="justify-content:center">
+      <h3>Next Steps</h3>
+      <h2>What's coming next</h2>
+      <div class="grid-2" style="margin-top:.5em">
+        <div class="card">
+          <h4>🔜 Tomorrow — Day 22</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)">CSS Layout: Flexbox — the modern way to arrange elements in rows and columns.</p>
+        </div>
+        <div class="card">
+          <h4>📅 Upcoming project</h4>
+          <p style="font-size:var(--fs-small);color:var(--text-dim)"><strong>Project 2: Bookmark Saver</strong> (after Week 6) — You'll build a styled bookmark manager using HTML + CSS.</p>
+        </div>
+      </div>
+      <div style="margin-top:1em;padding:.8em 1.2em;background:var(--bg);border:1px solid var(--border);border-radius:10px;max-width:700px;width:100%">
+        <p style="font-size:var(--fs-small);color:var(--text-dim)"><strong>Practice until then:</strong> Take any unstyled HTML page (even the todo list from Project 1) and add CSS — give it colors, fonts, spacing, and borders. The best way to learn CSS is to tweak things until they break, then fix them.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="progress-bar" id="progressBar" style="width:0%"></div>
+<div class="kb-hint" id="kbHint">← → navigate · f fullscreen · Esc exit</div>
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  // Build progress indicators
+  slides.forEach((slide, i) => {
+    const p = document.createElement('div');
+    p.className = 'progress';
+    p.textContent = (i + 1) + ' / ' + total;
+    slide.querySelector('.slide-inner').appendChild(p);
+  });
+
+  function showSlide(idx) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[idx].classList.add('active');
+    current = idx;
+    document.getElementById('progressBar').style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = idx;
+  }
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  // Hash navigation
+  function hashHandler() {
+    const h = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(h) && h >= 0 && h < total) showSlide(h);
+  }
+  window.addEventListener('hashchange', hashHandler);
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+    else if (e.key === 'n' || e.key === 'N') {
+      // Speaker notes toggle
+      document.querySelectorAll('aside.speaker-notes').forEach(el => el.style.display =
+        el.style.display === 'block' ? 'none' : 'block');
+    }
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+  });
+
+  // Hide hint after 4s
+  setTimeout(() => { document.getElementById('kbHint').style.opacity = '0'; }, 4000);
+
+  // Init from hash
+  if (window.location.hash) hashHandler();
+  else showSlide(0);
+})();
+</script>
+</body>
+</html>
