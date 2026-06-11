@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 22 — CSS: Flexbox Layout</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1c27;
+    --text: #e1e4ed;
+    --text-dim: #8b90a5;
+    --accent: #60a5fa;
+    --accent-dim: #3b82f6;
+    --green: #34d399;
+    --orange: #fbbf24;
+    --pink: #f472b6;
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --slide-w: 1280px;
+    --slide-h: 720px;
+    --radius: 12px;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #090b10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: var(--font-display);
+    color: var(--text);
+    overflow: hidden;
+  }
+  .stage {
+    width: var(--slide-w);
+    height: var(--slide-h);
+    max-width: 100vw;
+    max-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    border-radius: 4px;
+    box-shadow: 0 0 60px rgba(0,0,0,.6);
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 56px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .35s ease;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-thumb { background: var(--text-dim); border-radius: 4px; }
+  .slide-number {
+    position: absolute;
+    bottom: 20px;
+    right: 28px;
+    font-size: 14px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    letter-spacing: .5px;
+    z-index: 10;
+  }
+  .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width .4s ease;
+    z-index: 10;
+  }
+  h1 {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    margin-bottom: 16px;
+  }
+  h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  p, li { font-size: 20px; line-height: 1.6; color: var(--text-dim); }
+  p { margin-bottom: 12px; }
+  .accent { color: var(--accent); }
+  .green { color: var(--green); }
+  .orange { color: var(--orange); }
+  .pink { color: var(--pink); }
+
+  /* Title slide */
+  .slide.title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide.title h1 { font-size: 56px; margin-bottom: 8px; }
+  .slide.title .subtitle { font-size: 24px; color: var(--text-dim); margin-bottom: 6px; }
+  .slide.title .meta { font-size: 16px; color: var(--text-dim); opacity: .7; }
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+  .badge-phase { background: var(--accent-dim); color: #fff; }
+  .badge-week { background: rgba(96,165,250,.15); color: var(--accent); }
+
+  /* Content layout helpers */
+  .two-col {
+    display: flex;
+    gap: 32px;
+    flex: 1;
+    min-height: 0;
+  }
+  .two-col > * { flex: 1; }
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  ul { list-style: none; padding: 0; }
+  li {
+    padding-left: 24px;
+    position: relative;
+    margin-bottom: 6px;
+  }
+  li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+  .checklist li::before { content: '✓'; color: var(--green); }
+  .bullet-green li::before { content: '▸'; color: var(--green); }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid rgba(96,165,250,.12);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.65;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+  pre .hl { color: var(--accent); }
+  pre .cm { color: #6b7280; font-style: italic; }
+  pre .kw { color: var(--pink); }
+  pre .str { color: var(--green); }
+  pre .num { color: var(--orange); }
+  pre .tag { color: var(--accent); }
+  pre .attr { color: var(--orange); }
+  pre .val { color: var(--green); }
+
+  /* Diagram box */
+  .diagram-box {
+    background: var(--surface);
+    border: 1px solid rgba(96,165,250,.12);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    margin: 8px 0;
+  }
+  .demo-flex {
+    display: flex;
+    background: #131722;
+    border-radius: 8px;
+    padding: 12px;
+    gap: 8px;
+    width: 100%;
+  }
+  .demo-flex .box {
+    background: var(--accent-dim);
+    color: #fff;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    text-align: center;
+    min-width: 40px;
+  }
+  .demo-flex .box.green { background: var(--green); }
+  .demo-flex .box.pink { background: var(--pink); }
+  .demo-flex .box.orange { background: var(--orange); }
+  .flex-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  /* Card mock */
+  .card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0;
+    justify-content: center;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid rgba(96,165,250,.12);
+    border-radius: 10px;
+    padding: 16px;
+    width: 140px;
+    text-align: center;
+  }
+  .card .icon { font-size: 28px; margin-bottom: 6px; }
+  .card h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .card p { font-size: 12px; color: var(--text-dim); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    background: rgba(96,165,250,.12);
+    color: var(--accent);
+  }
+
+  /* Speaker notes */
+  .notes {
+    position: fixed;
+    top: 0; right: -340px;
+    width: 320px; height: 100vh;
+    background: #1a1c27;
+    border-left: 2px solid rgba(96,165,250,.2);
+    padding: 24px;
+    font-size: 14px;
+    color: var(--text-dim);
+    transition: right .35s ease;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .notes.open { right: 0; }
+  .notes h4 { color: var(--accent); margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  .notes p { font-size: 14px; line-height: 1.5; }
+  .notes-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid rgba(96,165,250,.2);
+    color: var(--text-dim);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 101;
+    font-family: var(--font-mono);
+    transition: background .2s, color .2s;
+  }
+  .notes-toggle:hover { background: var(--accent-dim); color: #fff; }
+
+  @media (max-width: 700px) {
+    .stage { width: 100vw; height: 100vh; border-radius: 0; }
+    .slide { padding: 24px 20px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 24px; }
+    p, li { font-size: 16px; }
+    .slide.title h1 { font-size: 36px; }
+    .two-col { flex-direction: column; gap: 16px; }
+    pre { font-size: 13px; padding: 12px; }
+    .card-grid { gap: 8px; }
+    .card { width: 100px; padding: 10px; }
+  }
+  @media print {
+    .stage { box-shadow: none; border-radius: 0; }
+    .slide { opacity: 1 !important; position: static !important; page-break-after: always; }
+    .progress-bar, .slide-number, .notes, .notes-toggle { display: none; }
+    body { display: block; background: #fff; }
+    .slide { color: #000; padding: 40px; }
+    pre { background: #f5f5f5; border-color: #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <!-- SLIDE 0: Title -->
+  <section class="slide title active" data-slide="0">
+    <span class="badge badge-week">WEEK 4</span>
+    <span class="badge badge-phase" style="margin-left:8px">PHASE II</span>
+    <h1>CSS: Flexbox Layout</h1>
+    <p class="subtitle">Building a Navbar &amp; Card Grid</p>
+    <p class="meta">Day 22 · 90-Day Co-op Prep Plan · 60 min</p>
+    <div class="slide-number">1 / 16</div>
+    <div class="progress-bar" style="width:6.25%"></div>
+  </section>
+
+  <!-- SLIDE 1: Overview -->
+  <section class="slide" data-slide="1">
+    <h2>📋 What You'll Learn Today</h2>
+    <p>Master Flexbox — the modern way to arrange elements on a page without floats or hacks.</p>
+    <div class="two-col" style="margin-top:16px">
+      <div class="col">
+        <ul>
+          <li><strong><span class="accent">display: flex</span></strong> — activate flexbox</li>
+          <li><strong><span class="accent">flex-direction</span></strong> — row vs column layout</li>
+          <li><strong><span class="accent">justify-content</span></strong> — main-axis alignment</li>
+          <li><strong><span class="accent">align-items</span></strong> — cross-axis alignment</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li><strong><span class="green">Navbar project</span></strong> — real-world layout</li>
+          <li><strong><span class="green">Card grid</span></strong> — responsive patterns</li>
+          <li><strong><span class="orange">flex-wrap</span></strong> — wrapping &amp; overflow</li>
+          <li><strong><span class="pink">gap</span></strong> — spacing without margins</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-size:18px;"><span class="badge badge-week" style="font-size:12px">⏱ 60 min</span>&nbsp;&nbsp;Phase II project prep — builds toward the Bookmark Saver!</p>
+    <div class="slide-number">2 / 16</div>
+    <div class="progress-bar" style="width:12.5%"></div>
+    <aside class="speaker-notes" hidden><p>Flexbox is the cornerstone of modern CSS layout. This session gives them a tool they'll use on every single project going forward. Emphasize that Flexbox replaces float-based layouts and makes centering something you can achieve in one line.</p></aside>
+  </section>
+
+  <!-- SLIDE 2: Why Flexbox -->
+  <section class="slide" data-slide="2">
+    <h2>🤔 Why Flexbox?</h2>
+    <p>Before Flexbox, centering content or creating equal-height columns required CSS hacks, negative margins, and frustration.</p>
+    <div class="two-col" style="margin-top:12px">
+      <div>
+        <h3 style="font-size:18px;color:var(--pink)">❌ The Old Way</h3>
+        <pre><span class="cm">/* Floats + clearfix — nightmare */</span>
+.box { <span class="kw">float</span>: left; <span class="kw">width</span>: <span class="num">33%</span>; }
+.clearfix::after {
+  <span class="kw">content</span>: <span class="str">""</span>;
+  <span class="kw">display</span>: table;
+  <span class="kw">clear</span>: both;
+}</pre>
+      </div>
+      <div>
+        <h3 style="font-size:18px;color:var(--green)">✅ Flexbox Way</h3>
+        <pre><span class="kw">display</span>: flex;
+gap: <span class="num">16px</span>;</pre>
+        <p style="font-size:16px">Three words. That's it. Flexbox handles distribution, alignment, wrapping, and reordering — all without touching <code>float</code>.</p>
+      </div>
+    </div>
+    <p style="margin-top:8px;font-size:17px"><span class="accent">Key insight:</span> Flexbox is <strong>one-dimensional</strong> — great for rows OR columns, not both at once (that's Grid).</p>
+    <div class="slide-number">3 / 16</div>
+    <div class="progress-bar" style="width:18.75%"></div>
+    <aside class="speaker-notes" hidden><p>Show them the pain of float-based layouts first so they appreciate how much simpler Flexbox is. Demo the clearfix hack briefly so they recognize it when they see it in legacy codebases.</p></aside>
+  </section>
+
+  <!-- SLIDE 3: Activating Flexbox -->
+  <section class="slide" data-slide="3">
+    <h2>🚀 Activating Flexbox</h2>
+    <p>One declaration on the <strong>container</strong> turns all direct children into <strong>flex items</strong>:</p>
+    <pre style="margin-top:12px"><span class="cm">/* Container becomes a flex container */</span>
+.<span class="hl">container</span> {
+  <span class="kw">display</span>: flex;
+}
+
+<span class="cm">/* HTML */</span>
+&lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"container"</span>&gt;
+  &lt;<span class="tag">div</span>&gt;Item 1&lt;/<span class="tag">div</span>&gt;
+  &lt;<span class="tag">div</span>&gt;Item 2&lt;/<span class="tag">div</span>&gt;
+  &lt;<span class="tag">div</span>&gt;Item 3&lt;/<span class="tag">div</span>&gt;
+&lt;/<span class="tag">div</span>&gt;</pre>
+    <div class="diagram-box" style="margin-top:4px">
+      <div style="width:100%">
+        <div class="demo-flex">
+          <div class="box">Item 1</div>
+          <div class="box green">Item 2</div>
+          <div class="box pink">Item 3</div>
+        </div>
+        <div class="flex-label">← Default: items sit side-by-side in a row →</div>
+      </div>
+    </div>
+    <p style="font-size:17px;margin-top:4px"><span class="accent">Mental model:</span> The container manages the layout; items just flow into it.</p>
+    <div class="slide-number">4 / 16</div>
+    <div class="progress-bar" style="width:25%"></div>
+    <aside class="speaker-notes" hidden><p>Emphasize that ONLY direct children become flex items — grandchildren are unaffected. This is the most common point of confusion.</p></aside>
+  </section>
+
+  <!-- SLIDE 4: flex-direction -->
+  <section class="slide" data-slide="4">
+    <h2>🧭 flex-direction</h2>
+    <p>Controls whether items line up in a <strong>row</strong> (default) or a <strong>column</strong>.</p>
+    <div class="two-col" style="margin-top:8px">
+      <div>
+        <pre><span class="cm">/* Row (default) */</span>
+.container {
+  <span class="kw">display</span>: flex;
+  <span class="kw">flex-direction</span>: row;
+}</pre>
+        <div class="diagram-box" style="min-height:60px">
+          <div class="demo-flex" style="gap:8px">
+            <div class="box">1</div>
+            <div class="box green">2</div>
+            <div class="box pink">3</div>
+          </div>
+        </div>
+        <div class="flex-label">Left → Right</div>
+      </div>
+      <div>
+        <pre><span class="cm">/* Column */</span>
+.container {
+  <span class="kw">display</span>: flex;
+  <span class="kw">flex-direction</span>: column;
+}</pre>
+        <div class="diagram-box" style="min-height:60px">
+          <div style="display:flex;flex-direction:column;gap:6px;width:100%">
+            <div class="box" style="width:60px">1</div>
+            <div class="box green" style="width:60px">2</div>
+            <div class="box pink" style="width:60px">3</div>
+          </div>
+        </div>
+        <div class="flex-label">Top → Bottom</div>
+      </div>
+    </div>
+    <p style="margin-top:6px;font-size:17px">Also: <code>row-reverse</code> and <code>column-reverse</code> flip the order.</p>
+    <div class="slide-number">5 / 16</div>
+    <div class="progress-bar" style="width:31.25%"></div>
+    <aside class="speaker-notes" hidden><p>People often forget column exists. Show them a vertical navbar example as a use case for column.</p></aside>
+  </section>
+
+  <!-- SLIDE 5: justify-content -->
+  <section class="slide" data-slide="5">
+    <h2>↔️ justify-content</h2>
+    <p>Distributes items along the <strong>main axis</strong>. The most powerful spacing tool in your CSS toolkit.</p>
+    <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:15px">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(96,165,250,.2)">
+          <th style="padding:8px 12px;text-align:left;color:var(--accent);font-family:var(--font-mono)">Value</th>
+          <th style="padding:8px 12px;text-align:left;color:var(--text-dim)">Effect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>flex-start</code></td>
+          <td style="padding:6px 12px">Items packed at the start (default)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>center</code></td>
+          <td style="padding:6px 12px">Items centered — <span class="green">one-line centering!</span></td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>space-between</code></td>
+          <td style="padding:6px 12px">First at start, last at end, equal space in between</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>space-around</code></td>
+          <td style="padding:6px 12px">Equal space on all sides (edges get half-gap)</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 12px"><code>space-evenly</code></td>
+          <td style="padding:6px 12px">Exactly equal space everywhere</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="diagram-box" style="margin-top:6px">
+      <div style="display:flex;justify-content:space-between;background:#131722;border-radius:8px;padding:10px;width:100%">
+        <div class="box">Start</div>
+        <div class="box green">Middle</div>
+        <div class="box pink">End</div>
+      </div>
+      <div class="flex-label">↑ <code>justify-content: space-between</code></div>
+    </div>
+    <div class="slide-number">6 / 16</div>
+    <div class="progress-bar" style="width:37.5%"></div>
+    <aside class="speaker-notes" hidden><p>justify-content is the secret to navbar layouts — space-between for logo + nav links is the most common pattern on the web.</p></aside>
+  </section>
+
+  <!-- SLIDE 6: align-items -->
+  <section class="slide" data-slide="6">
+    <h2>↕️ align-items</h2>
+    <p>Aligns items along the <strong>cross axis</strong> (perpendicular to flex-direction).</p>
+    <div class="two-col" style="margin-top:8px">
+      <div>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(96,165,250,.2)">
+              <th style="padding:6px 10px;text-align:left;color:var(--accent);font-family:var(--font-mono)">Value</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--text-dim)">Effect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:4px 10px"><code>stretch</code></td><td style="padding:4px 10px">Fill container height (default)</td></tr>
+            <tr><td style="padding:4px 10px"><code>center</code></td><td style="padding:4px 10px">Vertically center 🎯</td></tr>
+            <tr><td style="padding:4px 10px"><code>flex-start</code></td><td style="padding:4px 10px">Align to top</td></tr>
+            <tr><td style="padding:4px 10px"><code>flex-end</code></td><td style="padding:4px 10px">Align to bottom</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:16px;margin-top:6px"><code>align-items: center</code> is the most common — perfect for vertical centering.</p>
+      </div>
+      <div>
+        <pre><span class="cm">/* The golden combo */</span>
+.container {
+  <span class="kw">display</span>: flex;
+  <span class="kw">justify-content</span>: center;
+  <span class="kw">align-items</span>: center;
+}
+
+<span class="cm">/* Perfectly centered! */</span></pre>
+        <p style="font-size:15px;color:var(--green)">← This is the #1 use case. Both axes centered in 3 lines.</p>
+      </div>
+    </div>
+    <div class="slide-number">7 / 16</div>
+    <div class="progress-bar" style="width:43.75%"></div>
+    <aside class="speaker-notes" hidden><p>The 'perfect centering' combo (justify-content + align-items both center) is a Flexbox superpower. Before Flexbox, this required display:table or position:absolute + transform hacks.</p></aside>
+  </section>
+
+  <!-- SLIDE 7: flex-wrap + gap -->
+  <section class="slide" data-slide="7">
+    <h2>📦 flex-wrap &amp; gap</h2>
+    <div class="two-col" style="margin-top:8px">
+      <div>
+        <h3 style="font-size:18px">flex-wrap</h3>
+        <p style="font-size:17px">By default, items <strong>shrink</strong> to fit one row. Add <code>flex-wrap: wrap</code> to let items overflow onto new lines — essential for responsive layouts.</p>
+        <pre><span class="kw">display</span>: flex;
+<span class="hl">flex-wrap</span>: wrap;   <span class="cm">/* allow wrapping */</span>
+gap: <span class="num">16px</span>;         <span class="cm">/* modern spacing */</span></pre>
+      </div>
+      <div>
+        <h3 style="font-size:18px">gap</h3>
+        <p style="font-size:17px">Sets space between items without margin hacks. Works on both rows and columns.</p>
+        <div class="diagram-box" style="min-height:80px">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;width:100%;background:#131722;padding:10px;border-radius:8px;justify-content:center">
+            <div class="box" style="width:50px">1</div>
+            <div class="box green" style="width:50px">2</div>
+            <div class="box pink" style="width:50px">3</div>
+            <div class="box orange" style="width:50px">4</div>
+            <div class="box" style="width:50px">5</div>
+          </div>
+        </div>
+        <div class="flex-label">Items wrap to new lines as space shrinks</div>
+      </div>
+    </div>
+    <p style="font-size:17px;margin-top:4px"><span class="orange">⚠ Note:</span> <code>gap</code> works <strong>only</strong> between flex items — no extra space before/after.</p>
+    <div class="slide-number">8 / 16</div>
+    <div class="progress-bar" style="width:50%"></div>
+    <aside class="speaker-notes" hidden><p>gap was added to flexbox in 2021 and is now broadly supported. Always prefer gap over margin hacks. flex-wrap: wrap is what makes a card grid responsive without media queries.</p></aside>
+  </section>
+
+  <!-- SLIDE 8: Navbar Walkthrough -->
+  <section class="slide" data-slide="8">
+    <h2>🏗️ Walkthrough: Build a Navbar</h2>
+    <p>Let's build a real navbar using everything we've learned.</p>
+    <div class="two-col" style="margin-top:8px">
+      <div>
+        <pre style="font-size:13px"><span class="cm">/* Step 1: HTML structure */</span>
+&lt;<span class="tag">nav</span> <span class="attr">class</span>=<span class="str">"navbar"</span>&gt;
+  &lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"logo"</span>&gt;MyApp&lt;/<span class="tag">div</span>&gt;
+  &lt;<span class="tag">ul</span> <span class="attr">class</span>=<span class="str">"nav-links"</span>&gt;
+    &lt;<span class="tag">li</span>&gt;&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="str">"#"</span>&gt;Home&lt;/<span class="tag">a</span>&gt;&lt;/<span class="tag">li</span>&gt;
+    &lt;<span class="tag">li</span>&gt;&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="str">"#"</span>&gt;Features&lt;/<span class="tag">a</span>&gt;&lt;/<span class="tag">li</span>&gt;
+    &lt;<span class="tag">li</span>&gt;&lt;<span class="tag">a</span> <span class="attr">href</span>=<span class="str">"#"</span>&gt;Pricing&lt;/<span class="tag">a</span>&gt;&lt;/<span class="tag">li</span>&gt;
+  &lt;/<span class="tag">ul</span>&gt;
+&lt;/<span class="tag">nav</span>&gt;
+
+<span class="cm">/* Step 2: Flexbox layout */</span>
+.navbar {
+  <span class="kw">display</span>: flex;
+  <span class="kw">justify-content</span>: space-between;
+  <span class="kw">align-items</span>: center;
+  <span class="kw">padding</span>: <span class="num">16px</span> <span class="num">32px</span>;
+  background: <span class="str">#1a1c27</span>;
+}
+
+.nav-links {
+  <span class="kw">display</span>: flex;
+  gap: <span class="num">24px</span>;          <span class="cm">/* space links apart */</span>
+  list-style: none;
+}</pre>
+      </div>
+      <div>
+        <div class="diagram-box" style="min-height:80px">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%;background:#1a1c27;border-radius:8px;padding:12px 16px">
+            <span style="font-weight:700;font-size:18px">MyApp</span>
+            <div style="display:flex;gap:16px;font-size:14px;color:var(--text-dim)">
+              <span>Home</span>
+              <span class="accent">Features</span>
+              <span>Pricing</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex-label">← Result: Logo left, links right →</div>
+        <p style="font-size:15px;margin-top:8px"><span class="green">✓</span> <code>justify-content: space-between</code> pushes logo and links to opposite ends.<br><span class="green">✓</span> <code>align-items: center</code> keeps everything vertically aligned.</p>
+      </div>
+    </div>
+    <div class="slide-number">9 / 16</div>
+    <div class="progress-bar" style="width:56.25%"></div>
+    <aside class="speaker-notes" hidden><p>Walk through this line by line. The navbar is the most universal Flexbox pattern — virtually every website uses it. Point out that .nav-links is ALSO a flex container nesting flex items (the li's).</p></aside>
+  </section>
+
+  <!-- SLIDE 9: Card Grid Walkthrough -->
+  <section class="slide" data-slide="9">
+    <h2>🗂️ Walkthrough: Card Grid</h2>
+    <p>A responsive card grid using <code>flex-wrap</code> and <code>gap</code>.</p>
+    <div class="two-col" style="margin-top:8px">
+      <div>
+        <pre style="font-size:13px"><span class="cm">/* HTML */</span>
+&lt;<span class="tag">section</span> <span class="attr">class</span>=<span class="str">"card-grid"</span>&gt;
+  &lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"card"</span>&gt;...&lt;/<span class="tag">div</span>&gt;
+  &lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"card"</span>&gt;...&lt;/<span class="tag">div</span>&gt;
+  &lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"card"</span>&gt;...&lt;/<span class="tag">div</span>&gt;
+  &lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"card"</span>&gt;...&lt;/<span class="tag">div</span>&gt;
+&lt;/<span class="tag">section</span>&gt;
+
+<span class="cm">/* CSS */</span>
+.<span class="hl">card-grid</span> {
+  <span class="kw">display</span>: flex;
+  <span class="kw">flex-wrap</span>: wrap;
+  gap: <span class="num">20px</span>;
+}
+
+.<span class="hl">card</span> {
+  flex: <span class="num">1 1 250px</span>;  <span class="cm">/* grow, shrink, basis */</span>
+  border: <span class="num">1px</span> solid <span class="str">#eee</span>;
+  border-radius: <span class="num">10px</span>;
+  padding: <span class="num">20px</span>;
+}</pre>
+      </div>
+      <div>
+        <div class="card-grid" style="gap:8px">
+          <div class="card" style="width:110px;padding:12px">
+            <div class="icon">📝</div>
+            <h4>Todo</h4>
+            <p>Track tasks</p>
+          </div>
+          <div class="card" style="width:110px;padding:12px">
+            <div class="icon">🔖</div>
+            <h4>Bookmarks</h4>
+            <p>Save links</p>
+          </div>
+          <div class="card" style="width:110px;padding:12px">
+            <div class="icon">🌤️</div>
+            <h4>Weather</h4>
+            <p>Forecast</p>
+          </div>
+          <div class="card" style="width:110px;padding:12px">
+            <div class="icon">📊</div>
+            <h4>Dashboard</h4>
+            <p>Analytics</p>
+          </div>
+        </div>
+        <div class="flex-label" style="margin-top:4px">Cards auto-wrap as container shrinks</div>
+        <p style="font-size:14px;margin-top:6px"><span class="accent">Key:</span> <code>flex: 1 1 250px</code> means items grow/shrink equally with a base width of 250px. Resize the browser — cards wrap automatically.</p>
+      </div>
+    </div>
+    <div class="slide-number">10 / 16</div>
+    <div class="progress-bar" style="width:62.5%"></div>
+    <aside class="speaker-notes" hidden><p>The flex shorthand (flex-grow, flex-shrink, flex-basis) is what makes Flexbox responsive without media queries. flex: 1 1 250px is the 'golden' responsive card pattern.</p></aside>
+  </section>
+
+  <!-- SLIDE 10: Flex Item Properties -->
+  <section class="slide" data-slide="10">
+    <h2>🔧 Flex Item Properties</h2>
+    <p>Properties that go on the <strong>children</strong> (the flex items), not the container.</p>
+    <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:15px">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(96,165,250,.2)">
+          <th style="padding:8px 12px;text-align:left;color:var(--accent);font-family:var(--font-mono)">Property</th>
+          <th style="padding:8px 12px;text-align:left;color:var(--text-dim)">What It Does</th>
+          <th style="padding:8px 12px;text-align:left;color:var(--text-dim)">Common Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>flex-grow</code></td>
+          <td style="padding:6px 12px">How much an item can grow (ratio)</td>
+          <td style="padding:6px 12px"><code>1</code> (all equal)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>flex-shrink</code></td>
+          <td style="padding:6px 12px">How much an item can shrink</td>
+          <td style="padding:6px 12px"><code>0</code> (don't shrink)<br><code>1</code> (allow shrink)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+          <td style="padding:6px 12px"><code>flex-basis</code></td>
+          <td style="padding:6px 12px">Starting size before grow/shrink</td>
+          <td style="padding:6px 12px"><code>250px</code> or <code>auto</code></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 12px"><code>align-self</code></td>
+          <td style="padding:6px 12px">Override cross-axis alignment for one item</td>
+          <td style="padding:6px 12px"><code>flex-end</code>, <code>center</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <pre style="margin-top:6px"><span class="cm">/* Shorthand: grow shrink basis */</span>
+.card { <span class="kw">flex</span>: <span class="num">1 1 250px</span>; }
+.logo { <span class="kw">flex</span>: <span class="num">0 0 auto</span>; }   <span class="cm">/* fixed, don't grow/shrink */</span>
+.spacer { <span class="kw">flex</span>: <span class="num">1</span>; }           <span class="cm">/* shorthand: flex: 1 1 0 */</span></pre>
+    <p style="font-size:16px;margin-top:4px"><span class="accent">Pro tip:</span> <code>flex: 1</code> on a single item makes it fill remaining space — great for search bars and spacers in a navbar.</p>
+    <div class="slide-number">11 / 16</div>
+    <div class="progress-bar" style="width:68.75%"></div>
+    <aside class="speaker-notes" hidden><p>Most people just use the flex shorthand. The individual properties are there for edge cases. align-self is less common but very useful for navbar layouts where one item needs to be at the bottom.</p></aside>
+  </section>
+
+  <!-- SLIDE 11: Common Layout Patterns -->
+  <section class="slide" data-slide="11">
+    <h2>🧩 Common Flexbox Patterns</h2>
+    <p>Three patterns you'll use daily as a junior dev:</p>
+    <div class="two-col" style="margin-top:8px;gap:20px">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:16px;border:1px solid rgba(96,165,250,.08)">
+        <h3 style="font-size:18px;margin-bottom:6px">1. Centered Hero</h3>
+        <pre style="font-size:12px;padding:10px;margin:0">.hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}</pre>
+        <p style="font-size:14px">One-line centering on both axes.</p>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--radius);padding:16px;border:1px solid rgba(96,165,250,.08)">
+        <h3 style="font-size:18px;margin-bottom:6px">2. Holy Grail</h3>
+        <pre style="font-size:12px;padding:10px;margin:0">.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.main {
+  display: flex;
+  flex: 1;          <span class="cm">/* fills space */</span>
+}</pre>
+        <p style="font-size:14px">Header + footer with content filling the middle.</p>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:16px;margin-top:8px;border:1px solid rgba(96,165,250,.08)">
+      <h3 style="font-size:18px;margin-bottom:6px">3. Sidebar + Content</h3>
+      <pre style="font-size:12px;padding:10px;margin:0">.layout {
+  display: flex;
+  gap: 24px;
+}
+.sidebar { flex: 0 0 250px; }   <span class="cm">/* fixed 250px */</span>
+.content { flex: 1; }           <span class="cm">/* takes rest */</span></pre>
+      <p style="font-size:14px">Fixed sidebar, fluid content area.</p>
+    </div>
+    <div class="slide-number">12 / 16</div>
+    <div class="progress-bar" style="width:75%"></div>
+    <aside class="speaker-notes" hidden><p>These three patterns form the backbone of most web layouts. If a student can wireframe a page using one of these three patterns in Flexbox, they're ready for Grid.</p></aside>
+  </section>
+
+  <!-- SLIDE 12: Exercise -->
+  <section class="slide" data-slide="12">
+    <h2>✏️ Practice Exercise</h2>
+    <p style="margin-bottom:8px">Build a <strong>product listing section</strong> with:</p>
+    <ul>
+      <li>A container with <code>display: flex</code> and <code>flex-wrap: wrap</code></li>
+      <li>Product cards with <code>flex: 1 1 200px</code></li>
+      <li>Each card has: title, price, and a "Add to Cart" button</li>
+      <li><code>justify-content: center</code> on the container</li>
+      <li><code>gap: 24px</code> between cards</li>
+      <li>Cards should be <code>align-self: flex-end</code> on the last row if rows are uneven</li>
+    </ul>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:12px 16px;margin-top:8px;border:1px solid rgba(96,165,250,.12)">
+      <p style="font-size:14px;margin:0"><span class="orange">💡 Hints:</span></p>
+      <ul style="font-size:14px;margin-top:4px">
+        <li>Start with a <code>&lt;section&gt;</code> container and 6 <code>&lt;div&gt;</code> cards</li>
+        <li>Give each card a fixed height so uneven rows are visible</li>
+        <li>Try changing <code>align-items</code> and see how card heights change</li>
+      </ul>
+    </div>
+    <div class="slide-number">13 / 16</div>
+    <div class="progress-bar" style="width:81.25%"></div>
+    <aside class="speaker-notes" hidden><p>This exercise tests wrapping, sizing, and alignment. The stretch behavior is important — students often don't realize align-items: stretch (the default) makes all items the same height. Give them 10-12 minutes for this.</p></aside>
+  </section>
+
+  <!-- SLIDE 13: Exercise Solution -->
+  <section class="slide" data-slide="13">
+    <h2>✅ Exercise Solution</h2>
+    <pre style="font-size:14px;margin-top:8px"><span class="cm">&lt;!-- HTML --&gt;</span>
+&lt;<span class="tag">section</span> <span class="attr">class</span>=<span class="str">"product-grid"</span>&gt;
+  &lt;<span class="tag">div</span> <span class="attr">class</span>=<span class="str">"product-card"</span>&gt;
+    &lt;<span class="tag">h3</span>&gt;Widget&lt;/<span class="tag">h3</span>&gt;
+    &lt;<span class="tag">p</span> <span class="attr">class</span>=<span class="str">"price"</span>&gt;$19.99&lt;/<span class="tag">p</span>&gt;
+    &lt;<span class="tag">button</span>&gt;Add to Cart&lt;/<span class="tag">button</span>&gt;
+  &lt;/<span class="tag">div</span>&gt;
+  <span class="cm">&lt;!-- Repeat for 5 more cards --&gt;</span>
+&lt;/<span class="tag">section</span>&gt;
+
+<span class="cm">/* CSS */</span>
+.product-grid {
+  <span class="kw">display</span>: flex;
+  <span class="kw">flex-wrap</span>: wrap;
+  <span class="kw">justify-content</span>: center;
+  gap: <span class="num">24px</span>;
+}
+.product-card {
+  <span class="kw">flex</span>: <span class="num">1 1 200px</span>;
+  <span class="kw">max-width</span>: <span class="num">280px</span>;
+  <span class="kw">padding</span>: <span class="num">20px</span>;
+  <span class="kw">border</span>: <span class="num">1px</span> solid <span class="str">#e0e0e0</span>;
+  <span class="kw">border-radius</span>: <span class="num">10px</span>;
+  <span class="kw">text-align</span>: center;
+}
+.price { <span class="kw">color</span>: <span class="str">#34d399</span>; <span class="kw">font-weight</span>: bold; }</pre>
+    <p style="font-size:16px;margin-top:6px"><span class="green">✓</span> Cards wrap responsively. <span class="green">✓</span> Equal sizing. <span class="green">✓</span> Centered layout without media queries.</p>
+    <div class="slide-number">14 / 16</div>
+    <div class="progress-bar" style="width:87.5%"></div>
+    <aside class="speaker-notes" hidden><p>Walk through the solution. Emphasize that max-width prevents cards from growing too wide on large screens — a common issue with flex-basis set to a percentage.</p></aside>
+  </section>
+
+  <!-- SLIDE 14: Common Pitfalls -->
+  <section class="slide" data-slide="14">
+    <h2>⚠️ Common Pitfalls</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <div style="background:var(--surface);border-left:3px solid var(--pink);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0">
+        <span class="pink" style="font-weight:600">Forgot display: flex</span> — Applying justify-content or align-items to a non-flex container does nothing. Always start with <code>display: flex</code>.
+      </div>
+      <div style="background:var(--surface);border-left:3px solid var(--orange);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0">
+        <span class="orange" style="font-weight:600">Mixing px and % in gap</span> — <code>gap</code> only accepts absolute units (<code>px</code>, <code>em</code>, <code>rem</code>) or <code>%</code> (which is <em>relative to container</em>, not individual items).
+      </div>
+      <div style="background:var(--surface);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0">
+        <span class="accent" style="font-weight:600">flex-direction: column + height</span> — For vertical layouts, the container needs an explicit <code>height</code> or <code>min-height</code> for <code>justify-content</code> to distribute space.
+      </div>
+      <div style="background:var(--surface);border-left:3px solid var(--green);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0">
+        <span class="green" style="font-weight:600">Children not flexing</span> — <code>flex: 1</code> means "take equal share of remaining space." If there's no remaining space (because content already fills the row), items won't grow visibly.
+      </div>
+    </div>
+    <div class="slide-number">15 / 16</div>
+    <div class="progress-bar" style="width:93.75%"></div>
+    <aside class="speaker-notes" hidden><p>Go through each pitfall slowly. The forgotten display:flex is the #1 mistake beginners make — they write justify-content on a div and wonder why nothing changes.</p></aside>
+  </section>
+
+  <!-- SLIDE 15: Summary -->
+  <section class="slide" data-slide="15">
+    <h2>🎯 Key Takeaways</h2>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:20px">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(96,165,250,.1)">
+        <p style="margin:0;font-size:20px;line-height:1.5"><span class="accent" style="font-weight:700">1.</span> <code>display: flex</code> turns any container into a flex container. Its children become flex items that you can arrange in rows or columns.</p>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(96,165,250,.1)">
+        <p style="margin:0;font-size:20px;line-height:1.5"><span class="accent" style="font-weight:700">2.</span> <code>justify-content</code> controls main-axis spacing; <code>align-items</code> controls cross-axis alignment. Together they replace every centering hack.</p>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(96,165,250,.1)">
+        <p style="margin:0;font-size:20px;line-height:1.5"><span class="accent" style="font-weight:700">3.</span> <code>flex-wrap: wrap</code> + <code>gap</code> + <code>flex: 1 1 &lt;base&gt;</code> creates responsive grids without media queries.</p>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(96,165,250,.1)">
+        <p style="margin:0;font-size:20px;line-height:1.5"><span class="accent" style="font-weight:700">4.</span> Flexbox powers three universal patterns: <strong>navbar</strong>, <strong>card grid</strong>, and <strong>centered hero</strong>. Master these and you're ready for real UI work.</p>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-size:18px">📅 <strong>Next up:</strong> Day 23 — CSS Grid. Flexbox is one-dimensional; Grid is two-dimensional. Together they cover <em>every</em> layout you'll need.</p>
+    <div class="slide-number">16 / 16</div>
+    <div class="progress-bar" style="width:100%"></div>
+    <aside class="speaker-notes" hidden><p>End with confidence — they now know 90% of what they'll use Flexbox for. The remaining 10% (order, align-content, gap edge cases) they can look up. Tomorrow's CSS Grid session builds naturally on today.</p></aside>
+  </section>
+</div>
+
+<button class="notes-toggle" id="notesToggle" onclick="toggleNotes()">📋 Notes</button>
+<div class="notes" id="notesPanel"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    const bar = slides[idx].querySelector('.progress-bar');
+    const num = slides[idx].querySelector('.slide-number');
+    current = idx;
+    location.hash = idx;
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const pct = ((current + 1) / total) * 100;
+    // Update all progress bars + slide numbers — show current across all
+    slides.forEach((s, i) => {
+      const bar = s.querySelector('.progress-bar');
+      const num = s.querySelector('.slide-number');
+      if (bar) bar.style.width = pct + '%';
+      if (num) num.textContent = (current + 1) + ' / ' + total;
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (current < total - 1) showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (current > 0) showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      const stage = document.getElementById('stage');
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        stage.requestFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      toggleNotes();
+    }
+  });
+
+  // Hash navigation
+  window.addEventListener('hashchange', () => {
+    const idx = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < total) showSlide(idx);
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && current < total - 1) showSlide(current + 1);
+      else if (diff < 0 && current > 0) showSlide(current - 1);
+    }
+  });
+
+  // Speaker notes
+  let notesOpen = false;
+  function toggleNotes() {
+    const panel = document.getElementById('notesPanel');
+    const activeSlide = slides[current];
+    const notes = activeSlide.querySelector('.speaker-notes');
+    notesOpen = !notesOpen;
+    panel.classList.toggle('open', notesOpen);
+    document.getElementById('notesToggle').textContent = notesOpen ? '✕ Notes' : '📋 Notes';
+    if (notesOpen && notes) {
+      panel.innerHTML = '<h4>Speaker Notes</h4>' + notes.innerHTML;
+    } else if (notesOpen) {
+      panel.innerHTML = '<h4>Speaker Notes</h4><p>No notes for this slide.</p>';
+    }
+  }
+
+  // Init from hash
+  const hashIdx = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(hashIdx) && hashIdx >= 0 && hashIdx < total) {
+    showSlide(hashIdx);
+  } else {
+    showSlide(0);
+  }
+</script>
+
+</body>
+</html>
