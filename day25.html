@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 25 — JS: Variables, Types, Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242837;
+    --border: #2e3349;
+    --text: #e4e6f0;
+    --text-dim: #8b8fa3;
+    --accent: #f0db4f;
+    --accent-glow: rgba(240, 219, 79, 0.12);
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #79c0ff;
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --slide-w: 1280px;
+    --slide-h: 720px;
+    --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    overflow: hidden;
+  }
+  body { display: flex; justify-content: center; align-items: center; }
+
+  /* ---- deck container ---- */
+  #deck {
+    position: relative;
+    width: min(100vw, 100vh * var(--slide-w) / var(--slide-h));
+    height: min(100vh, 100vw * var(--slide-h) / var(--slide-w));
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: 0 0 60px rgba(0,0,0,.5);
+  }
+
+  /* ---- slides ---- */
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 48px 64px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s ease;
+    overflow-y: auto;
+  }
+  .slide.active { opacity: 1; pointer-events: auto; z-index: 1; }
+
+  /* ---- progress bar ---- */
+  #progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 4px; z-index: 10;
+    background: var(--surface2);
+  }
+  #progress-bar {
+    height: 100%; width: 0%;
+    background: var(--accent);
+    transition: width .35s ease;
+  }
+  #counter {
+    position: absolute; bottom: 14px; right: 24px;
+    font-family: var(--font-mono); font-size: 13px;
+    color: var(--text-dim); z-index: 10; user-select: none;
+  }
+
+  /* ---- slide content ---- */
+  h1 { font-size: 44px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; color: var(--text); }
+  h2 { font-size: 32px; font-weight: 700; letter-spacing: -.01em; color: var(--accent); margin-bottom: 16px; }
+  h3 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  p, li { font-size: 20px; line-height: 1.6; color: var(--text-dim); }
+  ul, ol { padding-left: 28px; }
+  li { margin-bottom: 8px; }
+  strong { color: var(--text); font-weight: 600; }
+  code {
+    font-family: var(--font-mono); font-size: .9em;
+    background: var(--surface2); padding: 2px 8px; border-radius: 4px;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; overflow-x: auto; margin: 12px 0;
+  }
+  pre code {
+    background: none; padding: 0; font-size: 16px; line-height: 1.55;
+    color: var(--text);
+    tab-size: 2;
+  }
+  .hl { color: var(--green); }
+  .hl-yellow { color: var(--accent); }
+  .hl-purple { color: var(--purple); }
+  .hl-red { color: var(--red); }
+  .hl-cyan { color: var(--cyan); }
+  .hl-dim { color: var(--text-dim); }
+
+  /* ---- title slide ---- */
+  .slide.title {
+    justify-content: center; align-items: center; text-align: center;
+  }
+  .slide.title h1 { font-size: 56px; margin-bottom: 12px; }
+  .slide.title .subtitle {
+    font-size: 24px; color: var(--text-dim); font-weight: 400;
+  }
+  .slide.title .meta {
+    margin-top: 24px; font-size: 16px; color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+  .slide.title .badge {
+    display: inline-block; margin-bottom: 24px;
+    background: rgba(240, 219, 79, 0.12); color: var(--accent);
+    padding: 6px 18px; border-radius: 999px; font-size: 14px;
+    font-weight: 600; letter-spacing: .03em;
+    border: 1px solid rgba(240, 219, 79, 0.25);
+  }
+
+  /* ---- section break ---- */
+  .slide.section-break {
+    justify-content: center; align-items: center;
+    background: linear-gradient(135deg, var(--surface) 0%, #1a2520 100%);
+  }
+  .slide.section-break h2 { font-size: 48px; margin: 0; }
+
+  /* ---- two-column layout ---- */
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1;
+  }
+  .two-col .col { display: flex; flex-direction: column; }
+  .two-col .col h3 { font-size: 20px; margin-bottom: 10px; }
+  .two-col .col p, .two-col .col li { font-size: 17px; }
+
+  /* ---- code-only slide ---- */
+  .slide.code-slide { justify-content: center; }
+  .slide.code-slide h2 { margin-bottom: 16px; }
+  .slide.code-slide pre { margin: 8px 0; flex-shrink: 0; }
+
+  /* ---- exercise slide ---- */
+  .exercise-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-left: 4px solid var(--orange); border-radius: var(--radius);
+    padding: 20px 24px; margin: 12px 0;
+  }
+  .exercise-box .label {
+    font-size: 13px; font-weight: 700; letter-spacing: .05em;
+    color: var(--orange); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .hint-box {
+    background: rgba(240, 219, 79, 0.08); border: 1px solid rgba(240, 219, 79, 0.2);
+    border-radius: var(--radius); padding: 14px 18px; margin: 8px 0;
+  }
+  .hint-box .label {
+    font-size: 12px; font-weight: 700; letter-spacing: .05em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  /* ---- recap ---- */
+  .recap-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; flex: 1;
+    align-items: center;
+  }
+  .recap-card {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 28px 20px; border: 1px solid var(--border); text-align: center;
+  }
+  .recap-card .num {
+    font-size: 28px; font-weight: 700; color: var(--accent);
+    font-family: var(--font-mono); margin-bottom: 8px;
+  }
+  .recap-card p { font-size: 17px; margin: 0; }
+
+  /* ---- timeline ---- */
+  .timeline {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 12px;
+  }
+  .timeline-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 16px; background: var(--surface2);
+    border-radius: var(--radius); border: 1px solid var(--border);
+  }
+  .timeline-item .week {
+    font-family: var(--font-mono); font-size: 13px;
+    color: var(--accent); font-weight: 600; min-width: 60px;
+  }
+  .timeline-item .desc { font-size: 16px; color: var(--text-dim); }
+  .timeline-item .proj {
+    margin-left: auto; font-size: 13px; font-weight: 600;
+    color: var(--green); white-space: nowrap;
+  }
+
+  /* ---- output block ---- */
+  .output-box {
+    background: #0a0c12; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 18px; margin: 8px 0;
+    font-family: var(--font-mono); font-size: 15px;
+    color: var(--text-dim); border-left: 3px solid var(--green);
+  }
+  .output-box .label-out {
+    font-size: 11px; font-weight: 700; letter-spacing: .05em;
+    color: var(--green); text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  /* ---- responsive ---- */
+  @media (max-width: 700px) {
+    .slide { padding: 24px 20px; }
+    .slide.title h1 { font-size: 32px; }
+    .slide.title .subtitle { font-size: 18px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 22px; }
+    p, li { font-size: 16px; }
+    pre code { font-size: 13px; }
+    .two-col { grid-template-columns: 1fr; gap: 16px; }
+    .recap-grid { grid-template-columns: 1fr; gap: 12px; }
+    #counter { font-size: 11px; bottom: 8px; right: 12px; }
+    .slide.section-break h2 { font-size: 28px; }
+    .timeline-item { flex-wrap: wrap; }
+    .timeline-item .proj { margin-left: 0; }
+  }
+
+  /* ---- print ---- */
+  @media print {
+    #deck { width: 100%; height: auto; box-shadow: none; aspect-ratio: auto; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; break-after: page; padding: 40px; height: auto; min-height: 90vh; }
+    body { overflow: visible; display: block; background: #fff; }
+    #progress, #counter { display: none; }
+    :root { --bg: #fff; --surface: #fff; --surface2: #f3f4f6; --border: #d1d5db; --text: #111; --text-dim: #4b5563; --accent: #b8860b; --accent-glow: rgba(184,134,11,.08); }
+  }
+
+  /* ---- focus visible ---- */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="deck" role="region" aria-label="Presentation">
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 0: TITLE -->
+  <!-- ============================================================ -->
+  <section class="slide title active" data-slide="0" role="region" aria-label="Title slide">
+    <div class="badge">90-Day Co-op Prep Plan · Phase II · Week 5</div>
+    <h1>JavaScript: Variables, Types, Console</h1>
+    <p class="subtitle">let, const, primitive types, and console.log — your first JS building blocks</p>
+    <p class="meta">Day 25 · 60 min · Theme: JavaScript</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 1: OVERVIEW -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="1" role="region" aria-label="Overview">
+    <h2>Today's Plan</h2>
+    <p style="margin-bottom: 16px; font-size: 18px; color: var(--text-dim);">What you'll learn and do in the next 60 minutes.</p>
+    <ul>
+      <li><strong>Variables</strong> — declare values with <code>let</code> and <code>const</code></li>
+      <li><strong>Primitive types</strong> — strings, numbers, booleans, and how JS handles them</li>
+      <li><strong><code>console.log()</code></strong> — printing values to the browser DevTools</li>
+      <li><strong>Linking JS to HTML</strong> — connect a <code>.js</code> file to a web page</li>
+    </ul>
+    <div style="margin-top: 12px;">
+      <p style="font-size: 16px; color: var(--text-dim);">
+        <span style="color: var(--accent);">▸</span> Milestone: <strong>Project 2 (Bookmark Saver)</strong> starts after Week 6
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 2: PREREQUISITES -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="2" role="region" aria-label="Prerequisites">
+    <h2>Prerequisites</h2>
+    <p style="margin-bottom: 12px;">Before you start, make sure you have:</p>
+    <ul>
+      <li>A modern browser — <strong>Chrome</strong> or <strong>Firefox</strong> (both have DevTools)</li>
+      <li>A <strong>text editor</strong> — VS Code, Sublime, or even Notepad</li>
+      <li>Basic HTML structure — <code>&lt;!DOCTYPE html&gt;</code>, <code>&lt;html&gt;</code>, <code>&lt;body&gt;</code></li>
+      <li>Your terminal and working directory ready</li>
+    </ul>
+    <div class="hint-box" style="margin-top: 16px;">
+      <div class="label">💡 No JS experience needed</div>
+      <p style="font-size: 16px; margin: 0;">Today assumes zero JavaScript knowledge. Python experience helps but isn't required — the concepts map closely.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 3: SECTION BREAK – Variables -->
+  <!-- ============================================================ -->
+  <section class="slide section-break" data-slide="3" role="region" aria-label="Section: Variables">
+    <h2>Variables &nbsp;·&nbsp; <code>let</code> &amp; <code>const</code></h2>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 4: let and const -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="4" role="region" aria-label="let and const">
+    <h2>Declaring Variables: <code>let</code> vs <code>const</code></h2>
+    <p style="margin-bottom: 12px;">JavaScript has two main ways to declare variables. Pick the right one:</p>
+    <div class="two-col">
+      <div class="col">
+        <h3><code>let</code> — can be reassigned</h3>
+        <p>Use when the value <strong>changes</strong> over time: counters, accumulators, user input.</p>
+        <pre><code><span class="hl">let</span> score = 0;
+<span class="hl">let</span> playerName = <span class="hl-yellow">"Alice"</span>;
+
+score = 10;  <span class="hl-dim">// ✅ allowed — let can be reassigned</span></code></pre>
+      </div>
+      <div class="col">
+        <h3><code>const</code> — cannot be reassigned</h3>
+        <p>Use when the value <strong>stays the same</strong>: configs, fixed references, most things.</p>
+        <pre><code><span class="hl">const</span> pi = 3.14159;
+<span class="hl">const</span> siteName = <span class="hl-yellow">"Co-op Prep"</span>;
+
+pi = 3;  <span class="hl-red">// ❌ TypeError — const can't be reassigned</span></code></pre>
+      </div>
+    </div>
+    <p style="font-size: 17px; margin-top: 8px;"><strong>Rule of thumb:</strong> start with <code>const</code>. Only switch to <code>let</code> if you know the value will change. (<code>var</code> is legacy — don't use it.)</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 5: SECTION BREAK – Primitive Types -->
+  <!-- ============================================================ -->
+  <section class="slide section-break" data-slide="5" role="region" aria-label="Section: Primitive types">
+    <h2>Primitive Types &nbsp;·&nbsp; Strings, Numbers, Booleans</h2>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 6: Strings -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="6" role="region" aria-label="Strings">
+    <h2>Strings — text data</h2>
+    <p style="margin-bottom: 6px;">Strings hold text. Use single quotes <code>' '</code>, double quotes <code>" "</code>, or backticks <code>` `</code> (template literals).</p>
+    <pre><code><span class="hl">const</span> greeting = <span class="hl-yellow">"Hello, world!"</span>;
+<span class="hl">const</span> name = <span class="hl-yellow">'Alice'</span>;
+<span class="hl">const</span> message = <span class="hl-yellow">`Hi, </span><span class="hl">${</span>name<span class="hl">}</span><span class="hl-yellow">!`</span>;  <span class="hl-dim">// template literal — injects variables</span>
+
+<span class="hl-dim">// Common string operations:</span>
+console.log(greeting.length);       <span class="hl-dim">// 13 — number of characters</span>
+console.log(greeting.toUpperCase()); <span class="hl-dim">// "HELLO, WORLD!"</span>
+console.log(message);               <span class="hl-dim">// "Hi, Alice!"</span></code></pre>
+    <div class="hint-box" style="margin-top: 6px;">
+      <div class="label">💡 Template literals (backticks)</div>
+      <p style="font-size: 16px; margin: 0;"><code>`Hello ${name}`</code> — use <code>${ }</code> to embed any expression. Much cleaner than concatenation with <code>+</code>. Prefer backticks whenever you mix text and variables.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 7: Numbers -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="7" role="region" aria-label="Numbers">
+    <h2>Numbers — integers &amp; floats</h2>
+    <p style="margin-bottom: 6px;">JS has one number type for all numeric values. Basic math works as expected.</p>
+    <pre><code><span class="hl">const</span> age = 25;           <span class="hl-dim">// integer</span>
+<span class="hl">const</span> price = 19.99;      <span class="hl-dim">// floating-point</span>
+<span class="hl">const</span> negative = -5;
+
+<span class="hl-dim">// Arithmetic:</span>
+<span class="hl">const</span> sum = 10 + 5;      <span class="hl-dim">// 15</span>
+<span class="hl">const</span> diff = 10 - 5;     <span class="hl-dim">// 5</span>
+<span class="hl">const</span> product = 10 * 5;  <span class="hl-dim">// 50</span>
+<span class="hl">const</span> quotient = 10 / 3; <span class="hl-dim">// 3.3333...  (true division, not integer)</span>
+<span class="hl">const</span> remainder = 10 % 3; <span class="hl-dim">// 1  (modulo — "what's left over")</span></code></pre>
+    <p style="font-size: 17px;"><strong>Watch out:</strong> <code>0.1 + 0.2</code> is <code>0.30000000000000004</code> — floating-point precision is imperfect in every language.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 8: Booleans -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="8" role="region" aria-label="Booleans">
+    <h2>Booleans — true / false</h2>
+    <p style="margin-bottom: 12px;">Booleans are the simplest type: either <code>true</code> or <code>false</code>. They power conditionals and comparisons.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>Declaring booleans</h3>
+        <pre><code><span class="hl">const</span> isLoggedIn = <span class="hl-purple">true</span>;
+<span class="hl">const</span> isComplete = <span class="hl-purple">false</span>;
+
+<span class="hl">let</span> score = 85;
+<span class="hl">const</span> passed = score >= 60;  <span class="hl-dim">// true</span></code></pre>
+      </div>
+      <div class="col">
+        <h3>Comparison operators</h3>
+        <pre><code><span class="hl-dim">// These produce booleans:</span>
+10 &gt; 5    <span class="hl-dim">// true</span>
+10 === 5  <span class="hl-dim">// false  (strict equality)</span>
+10 !== 5  <span class="hl-dim">// true   (not equal)</span>
+"abc" &lt; "z" <span class="hl-dim">// true  (alphabetical)</span></code></pre>
+      </div>
+    </div>
+    <div class="hint-box" style="margin-top: 8px;">
+      <div class="label">⚠️ Always use <code>===</code>, never <code>==</code></div>
+      <p style="font-size: 16px; margin: 0;"><code>==</code> does <strong>type coercion</strong> (<code>5 == "5"</code> is <code>true</code>!). <code>===</code> checks <strong>type and value</strong>. Always use triple equals to avoid subtle bugs.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 9: console.log -->
+  <!-- ============================================================ -->
+  <section class="slide section-break" data-slide="9" role="region" aria-label="Section: console.log">
+    <h2>Console &nbsp;·&nbsp; <code>console.log()</code></h2>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 10: console.log deep dive -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="10" role="region" aria-label="Console.log usage">
+    <h2>Printing with <code>console.log()</code></h2>
+    <p style="margin-bottom: 6px;"><code>console.log()</code> prints values to the browser's Developer Tools console — the JS equivalent of <code>print()</code> in Python.</p>
+    <div class="two-col" style="gap: 20px;">
+      <div class="col">
+        <pre><code><span class="hl">const</span> name = <span class="hl-yellow">"Alice"</span>;
+<span class="hl">const</span> age = 22;
+
+console.log(name);         <span class="hl-dim">// "Alice"</span>
+console.log(age);          <span class="hl-dim">// 22</span>
+console.log(<span class="hl-yellow">"Hello"</span>, name); <span class="hl-dim">// "Hello Alice"</span>
+
+<span class="hl-dim">// Template literals work great:</span>
+console.log(<span class="hl-yellow">`</span><span class="hl">${</span>name<span class="hl">}</span><span class="hl-yellow"> is </span><span class="hl">${</span>age<span class="hl">}</span><span class="hl-yellow"> years old`</span>);
+<span class="hl-dim">// → "Alice is 22 years old"</span></code></pre>
+      </div>
+      <div class="col">
+        <pre><code><span class="hl-dim">// Multiple values:</span>
+console.log(<span class="hl-yellow">"Score:"</span>, 95, <span class="hl-yellow">"Name:"</span>, name);
+
+<span class="hl-dim">// Objects and arrays display interactively:</span>
+console.log({ name, age });
+
+<span class="hl-dim">// Type-checking helper:</span>
+console.log(typeof name);   <span class="hl-dim">// "string"</span>
+console.log(typeof age);    <span class="hl-dim">// "number"</span>
+console.log(typeof <span class="hl-purple">true</span>); <span class="hl-dim">// "boolean"</span></code></pre>
+      </div>
+    </div>
+    <p style="font-size: 17px;"><strong>Tip:</strong> Open DevTools with <kbd>F12</kbd> or <kbd>Ctrl+Shift+I</kbd> (Windows/Linux) / <kbd>Cmd+Opt+I</kbd> (Mac) to see your output.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 11: SECTION BREAK – HTML + JS -->
+  <!-- ============================================================ -->
+  <section class="slide section-break" data-slide="11" role="region" aria-label="Section: HTML + JS">
+    <h2>Linking JS to HTML</h2>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 12: Walkthrough – Create the project -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="12" role="region" aria-label="Walkthrough setup">
+    <h2>Walkthrough: Your First JS Project</h2>
+    <p style="margin-bottom: 10px; font-size: 18px;">Create a folder, an HTML file, and a JS file. Step by step.</p>
+    <div class="two-col" style="gap: 20px;">
+      <div class="col">
+        <h3>1. Project structure</h3>
+        <pre><code><span class="hl-dim">my-first-js/
+├── index.html
+└── script.js</span></code></pre>
+        <p style="font-size: 16px;">One folder, two files. The HTML loads the JS.</p>
+      </div>
+      <div class="col">
+        <h3>2. Terminal commands</h3>
+        <pre><code><span class="hl">$</span> mkdir my-first-js
+<span class="hl">$</span> cd my-first-js
+<span class="hl">$</span> touch index.html script.js</code></pre>
+        <p style="font-size: 16px;">Create the directory and both files.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 13: Walkthrough – HTML file -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="13" role="region" aria-label="HTML file">
+    <h2>3. Write <code>index.html</code></h2>
+    <p style="margin-bottom: 6px;">Standard HTML boilerplate — the <code>&lt;script&gt;</code> tag links the JS file.</p>
+    <pre><code><span class="hl-dim">&lt;!DOCTYPE html&gt;</span>
+&lt;html lang=<span class="hl-yellow">"en"</span>&gt;
+&lt;head&gt;
+  &lt;meta charset=<span class="hl-yellow">"UTF-8"</span>&gt;
+  &lt;title&gt;My First JS&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Open the Console!&lt;/h1&gt;
+  &lt;p&gt;Press F12 to see JavaScript output.&lt;/p&gt;
+
+  &lt;!-- <span class="hl">This one line links script.js</span> --&gt;
+  &lt;script src=<span class="hl-yellow">"script.js"</span>&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    <div class="hint-box" style="margin-top: 6px;">
+      <div class="label">⚠️ Put <code>&lt;script&gt;</code> at the end of <code>&lt;body&gt;</code></div>
+      <p style="font-size: 16px; margin: 0;">Scripts in <code>&lt;head&gt;</code> run <strong>before</strong> the page renders — they can't access HTML elements that don't exist yet. Placing it just before <code>&lt;/body&gt;</code> ensures the DOM is ready. (We'll learn <code>defer</code> and <code>DOMContentLoaded</code> later.)</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 14: Walkthrough – JS file -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="14" role="region" aria-label="JS file">
+    <h2>4. Write <code>script.js</code></h2>
+    <p style="margin-bottom: 6px;">Your first JavaScript file — declare variables and log them.</p>
+    <pre><code><span class="hl-dim">// script.js — my first JS code</span>
+
+<span class="hl-dim">// Strings</span>
+<span class="hl">const</span> greeting = <span class="hl-yellow">"Hello, co-op prep!"</span>;
+<span class="hl">const</span> name = <span class="hl-yellow">'Alice'</span>;
+<span class="hl">const</span> intro = <span class="hl-yellow">`</span><span class="hl">${</span>greeting<span class="hl">}</span><span class="hl-yellow"> I'm </span><span class="hl">${</span>name<span class="hl">}</span><span class="hl-yellow">`</span>;
+
+<span class="hl-dim">// Numbers</span>
+<span class="hl">let</span> score = 0;
+<span class="hl">const</span> maxScore = 100;
+score = 85;  <span class="hl-dim">// reassigned — score changes</span>
+
+<span class="hl-dim">// Booleans</span>
+<span class="hl">const</span> passed = score >= 60;
+<span class="hl">let</span> isComplete = <span class="hl-purple">false</span>;
+
+<span class="hl-dim">// Log everything to the console</span>
+console.log(intro);
+console.log(<span class="hl-yellow">"Score:"</span>, score, <span class="hl-yellow">"/"</span>, maxScore);
+console.log(<span class="hl-yellow">"Passed?"</span>, passed);
+console.log(<span class="hl-yellow">"Type of score:"</span>, typeof score);</code></pre>
+    <p style="font-size: 17px;"><strong>Now open <code>index.html</code></strong> in your browser and check the DevTools console (F12 → Console tab).</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 15: Expected Output -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="15" role="region" aria-label="Expected output">
+    <h2>5. Verify — what you should see</h2>
+    <p style="margin-bottom: 8px;">If everything is set up correctly, the DevTools Console will show:</p>
+    <div class="output-box">
+      <div class="label-out">▼ Console Output</div>
+      Hello, co-op prep! I'm Alice<br>
+      Score: 85 / 100<br>
+      Passed? true<br>
+      Type of score: number
+    </div>
+    <p style="font-size: 17px; margin-top: 8px;">If you see nothing:</p>
+    <ul style="font-size: 17px;">
+      <li>Did you save <code>script.js</code>?</li>
+      <li>Is the <code>&lt;script src="script.js"&gt;</code> tag at the <strong>end</strong> of <code>&lt;body&gt;</code>?</li>
+      <li>Refresh the page — some browsers cache old files</li>
+    </ul>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 16: Exercises -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="16" role="region" aria-label="Exercises">
+    <h2>Practice Exercises</h2>
+    <p style="margin-bottom: 6px; font-size: 18px;">Try these on your own. Solutions are on the next slide.</p>
+
+    <div class="exercise-box">
+      <div class="label">Exercise 1 · Budget calculator</div>
+      <p style="font-size: 17px;">Declare <code>const</code> variables for your monthly income and rent. Calculate <code>remaining</code> as <code>income - rent</code>. Log all three values. Use a template literal for at least one log.</p>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">Exercise 2 · Grade checker</div>
+      <p style="font-size: 17px;">Create <code>let</code> variables for your name and a numeric grade. Declare booleans: <code>passing</code> (grade >= 60) and <code>honours</code> (grade >= 80). Log everything with labels.</p>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">Exercise 3 · Type explorer</div>
+      <p style="font-size: 17px;">Create at least 5 variables of different types. Log each one along with <code>typeof</code>. Try: a number, a string, a boolean, an empty value (<code>null</code>), and an undefined variable.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 17: Exercise Solutions -->
+  <!-- ============================================================ -->
+  <section class="slide code-slide" data-slide="17" role="region" aria-label="Exercise solutions">
+    <h2>Exercise Solutions</h2>
+    <p style="margin-bottom: 6px; font-size: 16px; color: var(--text-dim);">Don't peek until you've tried!</p>
+    <div class="two-col" style="gap: 16px;">
+      <div class="col">
+        <h3>Ex.1 — Budget</h3>
+        <pre style="font-size: 13px;"><code><span class="hl">const</span> income = 2500;
+<span class="hl">const</span> rent = 900;
+<span class="hl">const</span> remaining = income - rent;
+console.log(<span class="hl-yellow">`Income: $</span><span class="hl">${</span>income<span class="hl">}</span><span class="hl-yellow">, Rent: $</span><span class="hl">${</span>rent<span class="hl">}</span><span class="hl-yellow">`</span>);
+console.log(<span class="hl-yellow">`Remaining: $</span><span class="hl">${</span>remaining<span class="hl">}</span><span class="hl-yellow">`</span>);</code></pre>
+      </div>
+      <div class="col">
+        <h3>Ex.2 — Grade</h3>
+        <pre style="font-size: 13px;"><code><span class="hl">let</span> studentName = <span class="hl-yellow">"Alice"</span>;
+<span class="hl">let</span> grade = 85;
+<span class="hl">const</span> passing = grade >= 60;
+<span class="hl">const</span> honours = grade >= 80;
+console.log(<span class="hl-yellow">`</span><span class="hl">${</span>studentName<span class="hl">}</span><span class="hl-yellow"> scored </span><span class="hl">${</span>grade<span class="hl">}</span><span class="hl-yellow">`</span>);
+console.log(<span class="hl-yellow">"Passing:"</span>, passing, <span class="hl-yellow">"Honours:"</span>, honours);</code></pre>
+      </div>
+    </div>
+    <div class="hint-box" style="margin-top: 6px;">
+      <div class="label">Ex.3 — Type explorer</div>
+      <p style="font-size: 15px; margin: 0;"><code>console.log(42, typeof 42)</code> → <code>42 "number"</code>. Try <code>null</code> (typeof returns <code>"object"</code> — a famous JS quirk!), and a variable you declare without assigning anything (<code>let x;</code> → <code>typeof x</code> is <code>"undefined"</code>).</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 18: Milestones -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="18" role="region" aria-label="Milestones">
+    <h2>Your Co-op Project Milestones</h2>
+    <p style="margin-bottom: 10px;">Everything you're learning builds toward these portfolio projects:</p>
+    <div class="timeline">
+      <div class="timeline-item">
+        <span class="week">Wk 3</span>
+        <span class="desc">CLI Todo List · <span style="color: var(--text-dim);">First real project, pure Python + Git (done!)</span></span>
+        <span class="proj">Project 1</span>
+      </div>
+      <div class="timeline-item">
+        <span class="week">Wk 6</span>
+        <span class="desc">Bookmark Saver · <span style="color: var(--text-dim);">Data persistence, file I/O, JSON — coming soon!</span></span>
+        <span class="proj">Project 2</span>
+      </div>
+      <div class="timeline-item">
+        <span class="week">Wk 8</span>
+        <span class="desc">Weather Dashboard · <span style="color: var(--text-dim);">API calls, JSON parsing, env vars</span></span>
+        <span class="proj">Project 3</span>
+      </div>
+      <div class="timeline-item">
+        <span class="week">Wk 12</span>
+        <span class="desc">Full-Stack App · <span style="color: var(--text-dim);">Database, frontend, deployment</span></span>
+        <span class="proj">Project 5</span>
+      </div>
+    </div>
+    <p style="font-size: 16px; color: var(--text-dim); margin-top: 12px;">Today's JS foundations are the building blocks for every frontend project to come.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 19: Summary -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="19" role="region" aria-label="Summary">
+    <h2>Key Takeaways</h2>
+    <div class="recap-grid">
+      <div class="recap-card">
+        <div class="num">const &amp; let</div>
+        <p><code>const</code> for values that don't change, <code>let</code> for values that do. Always use <code>const</code> by default.</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">3 Primitive Types</div>
+        <p>Strings (<code>' '</code> / <code>" "</code> / <code>` `</code>), numbers (ints and floats, one type), and booleans (<code>true</code> / <code>false</code>).</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">console.log()</div>
+        <p>Your debugging best friend. Use <code>&lt;script src="file.js"&gt;</code> to connect JS to HTML.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 20: Next Steps -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="20" role="region" aria-label="Next steps">
+    <h2>Next Up</h2>
+    <p style="margin-bottom: 16px; font-size: 20px;">Coming this week:</p>
+    <ul>
+      <li><strong>Day 26</strong> — JS: Operators &amp; Conditionals (<code>if</code>, <code>else if</code>, <code>===</code>, <code>&gt;</code>, <code>&amp;&amp;</code>, <code>||</code>)</li>
+      <li><strong>Day 27</strong> — JS: Functions (<code>function</code>, parameters, return values)</li>
+      <li><strong>Day 28</strong> — JS: Arrays &amp; Loops (<code>[]</code>, <code>for</code>, <code>while</code>, array methods)</li>
+      <li><strong>Day 29</strong> — JS: DOM Manipulation (<code>document.getElementById</code>, events)</li>
+      <li><strong>Week 6</strong> — <span style="color: var(--accent);">Project 2: Bookmark Saver</span> — your first JS + HTML project!</li>
+    </ul>
+    <div style="margin-top: 20px; text-align: center;">
+      <p style="font-size: 18px; color: var(--text);">You just wrote your first JavaScript. Every senior dev started here. 🚀</p>
+    </div>
+  </section>
+
+</div>
+
+<div id="progress"><div id="progress-bar"></div></div>
+<div id="counter">1 / 21</div>
+
+<script>
+(function() {
+  'use strict';
+  var slides = document.querySelectorAll('.slide');
+  var progressBar = document.getElementById('progress-bar');
+  var counter = document.getElementById('counter');
+  var current = 0;
+
+  function showSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= slides.length) index = slides.length - 1;
+    current = index;
+    for (var i = 0; i < slides.length; i++) {
+      slides[i].classList.toggle('active', i === current);
+    }
+    var pct = ((current + 1) / slides.length) * 100;
+    progressBar.style.width = pct + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    window.location.hash = current;
+  }
+
+  function next() { showSlide(current + 1); }
+  function prev() { showSlide(current - 1); }
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen().catch(function(){});
+      } else {
+        document.exitFullscreen().catch(function(){});
+      }
+    } else if (e.key === 'Home') {
+      e.preventDefault(); showSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); showSlide(slides.length - 1);
+    }
+  });
+
+  // Restore from hash on load
+  if (window.location.hash) {
+    var n = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < slides.length) { current = n; }
+  }
+  showSlide(current);
+
+  // Touch swipe support
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    var diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next();
+      else prev();
+    }
+  });
+})();
+</script>
+</body>
+</html>
