@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 26 - Functions, Arrays & Loops</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-alt: #1c2333;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --accent-glow: rgba(88,166,255,0.15);
+  --accent-secondary: #3fb950;
+  --accent-warm: #d29922;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-muted: #484f58;
+  --code-bg: #1c2333;
+  --code-text: #c9d1d9;
+  --keyword: #ff7b72;
+  --string: #a5d6ff;
+  --function: #d2a8ff;
+  --number: #79c0ff;
+  --comment: #8b949e;
+  --radius: 12px;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #000;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#presentation {
+  position: relative;
+  width: min(100vw, calc(100vh * var(--slide-w) / var(--slide-h)));
+  height: min(100vh, calc(100vw * var(--slide-h) / var(--slide-w)));
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 64px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Progress bar */
+#progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.35s ease;
+  z-index: 100;
+}
+
+/* Slide counter */
+#counter {
+  position: absolute;
+  bottom: 14px;
+  right: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  z-index: 100;
+  letter-spacing: 0.5px;
+}
+
+/* Speaker notes toggle */
+#notes-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+#notes-toggle:hover { opacity: 1; }
+
+#notes-panel {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 800px;
+  z-index: 150;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: none;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-height: 160px;
+  overflow-y: auto;
+}
+#notes-panel.visible { display: block; }
+#notes-panel h4 { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
+
+/* Slide content styles */
+h1 {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+h1 .accent { color: var(--accent); }
+h1 .warm { color: var(--accent-warm); }
+h1 .secondary { color: var(--accent-secondary); }
+
+h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  letter-spacing: -0.3px;
+}
+h2 .accent { color: var(--accent); }
+
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+p, li {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+li { margin-bottom: 4px; }
+strong { color: var(--text); font-weight: 600; }
+code.inline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  background: var(--surface-alt);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--function);
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 16px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--code-text);
+  tab-size: 2;
+}
+pre .kw { color: var(--keyword); }
+pre .fn { color: var(--function); }
+pre .str { color: var(--string); }
+pre .num { color: var(--number); }
+pre .cm { color: var(--comment); font-style: italic; }
+pre .arrow { color: var(--accent-warm); }
+pre .builtin { color: #79c0ff; }
+pre .highlight { background: rgba(88,166,255,0.12); display: inline-block; width: 100%; }
+
+.subtitle {
+  font-size: 20px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.meta {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 4px;
+}
+
+/* Title slide special */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide h1 { font-size: 56px; margin-bottom: 16px; }
+.title-slide .meta { margin-top: 24px; }
+.title-slide .subtitle { font-size: 22px; }
+
+/* Content layout */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  flex: 1;
+  align-content: center;
+}
+.col { display: flex; flex-direction: column; gap: 8px; }
+
+.badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.badge.blue { background: var(--accent-glow); color: var(--accent); }
+.badge.green { background: rgba(63,185,80,0.12); color: var(--accent-secondary); }
+.badge.warm { background: rgba(210,153,34,0.12); color: var(--accent-warm); }
+.badge.purple { background: rgba(210,168,255,0.12); color: var(--function); }
+
+.ulist {
+  list-style: none;
+  padding: 0;
+}
+.ulist li {
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 8px;
+}
+.ulist li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+.ulist.check li::before { content: "✓"; color: var(--accent-secondary); }
+
+.tip-box {
+  background: var(--accent-glow);
+  border: 1px solid rgba(88,166,255,0.25);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 12px 0;
+}
+.tip-box p { font-size: 15px; color: var(--text); }
+.tip-box .label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+
+.exercise-box {
+  background: rgba(210,153,34,0.08);
+  border: 1px solid rgba(210,153,34,0.25);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 12px 0;
+}
+.exercise-box h4 { color: var(--accent-warm); font-size: 14px; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
+.exercise-box p, .exercise-box li { font-size: 15px; }
+
+.milestone {
+  background: rgba(210,168,255,0.08);
+  border: 1px solid rgba(210,168,255,0.2);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.milestone .icon { font-size: 18px; }
+.milestone p { font-size: 14px; margin: 0; }
+
+/* Diagrams / visual boxes */
+.func-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.func-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.func-card h4 { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); margin-bottom: 8px; }
+
+.array-viz {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.array-cell {
+  width: 60px;
+  height: 60px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  color: var(--text);
+  position: relative;
+}
+.array-cell .index {
+  position: absolute;
+  bottom: -18px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.array-cell.highlight {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+.array-brace {
+  font-size: 32px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  h1 { font-size: 28px; }
+  h1.title-slide { font-size: 32px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 15px; }
+  pre { font-size: 12px; padding: 10px 12px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .func-compare { grid-template-columns: 1fr; }
+  .array-cell { width: 44px; height: 44px; font-size: 13px; }
+  #notes-panel { width: 92%; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div id="presentation">
+  <!-- ============ SLIDE 0: TITLE ============ -->
+  <section class="slide title-slide active" data-slide="0">
+    <h1><span class="accent">Day 26</span> · Functions,<br>Arrays & Loops</h1>
+    <p class="subtitle">JavaScript fundamentals for co-op prep</p>
+    <p class="meta">Week 5 · Phase II · JS Core · ⏱ 60 min</p>
+    <p class="meta" style="margin-top:6px;color:var(--text-muted)">90-Day Co-op Prep Plan</p>
+  </section>
+
+  <!-- ============ SLIDE 1: OVERVIEW ============ -->
+  <section class="slide" data-slide="1">
+    <div class="content-area">
+      <span class="badge blue">Overview</span>
+      <h2>Today's Learning Plan <span class="accent">· 60 min</span></h2>
+      <div class="two-col" style="grid-template-columns:1.2fr 0.8fr">
+        <div class="col">
+          <ul class="ulist">
+            <li><strong>Function declarations</strong> — the classic way</li>
+            <li><strong>Arrow functions</strong> — concise modern syntax</li>
+            <li><strong>Array methods</strong> — <code class="inline">push</code>, <code class="inline">pop</code>, <code class="inline">length</code></li>
+            <li><strong><code class="inline">for</code> loops</strong> — classic iteration</li>
+            <li><strong><code class="inline">while</code> loops</strong> — condition-based looping</li>
+            <li><strong>Combining them</strong> — loop over arrays with functions</li>
+          </ul>
+        </div>
+        <div class="col">
+          <div class="tip-box">
+            <p class="label">🎯 Prerequisites</p>
+            <p style="font-size:14px">Variables, data types, basic operators. Comfortable with <code class="inline">let</code> and <code class="inline">const</code>.</p>
+          </div>
+          <div class="tip-box" style="border-color:rgba(63,185,80,0.3);background:rgba(63,185,80,0.08)">
+            <p class="label" style="color:var(--accent-secondary)">📦 Project Milestone</p>
+            <p style="font-size:14px"><strong>Project 2</strong> (Bookmark Saver) coming after <strong>Week 6</strong> — today's skills are essential for it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 2: FUNCTION DECLARATIONS ============ -->
+  <section class="slide" data-slide="2">
+    <div class="content-area">
+      <span class="badge blue">Concept 1/5</span>
+      <h2>Function Declarations</h2>
+      <p>A <strong>function declaration</strong> defines a reusable block of code with a name. It's hoisted — you can call it before it appears in the file.</p>
+      <pre>function greet(name) {               <span class="cm">// ← declaration</span>
+  return `Hello, <span class="str">${name}</span>!`;      <span class="cm">// ← template literal</span>
+}
+
+console.log(greet(<span class="str">"Alice"</span>));        <span class="cm">// → "Hello, Alice!"</span>
+console.log(greet(<span class="str">"Bob"</span>));          <span class="cm">// → "Hello, Bob!"</span></pre>
+      <div class="tip-box">
+        <p>🔑 <strong>Key points:</strong> <code class="inline">function</code> keyword · <code class="inline">return</code> sends a value back · parameters go in <code class="inline">()</code> · body in <code class="inline">{}</code></p>
+      </div>
+    </div>
+    <aside><h4>Speaker notes</h4><p>Function declarations are hoisted — JS moves them to the top at runtime, so you can call them before the line they're written on. Mention this is different from function expressions and arrow functions.</p></aside>
+  </section>
+
+  <!-- ============ SLIDE 3: ARROW FUNCTIONS ============ -->
+  <section class="slide" data-slide="3">
+    <div class="content-area">
+      <span class="badge warm">Concept 2/5</span>
+      <h2>Arrow Functions <span class="warm">⇒</span></h2>
+      <p>A shorter syntax using <code class="inline">=></code>. No <code class="inline">function</code> keyword. Great for callbacks and one-liners.</p>
+      <div class="two-col">
+        <div class="col">
+          <div class="func-card">
+            <h4>Function Declaration</h4>
+            <pre style="margin:0;font-size:13px">function double(x) {
+  return x * 2;
+}</pre>
+          </div>
+        </div>
+        <div class="col">
+          <div class="func-card">
+            <h4>Arrow Function</h4>
+            <pre style="margin:0;font-size:13px">const double = <span class="fn">(x)</span> <span class="arrow">=></span> x * 2;
+
+<span class="cm">// With block body:</span>
+const double = <span class="fn">(x)</span> <span class="arrow">=></span> {
+  return x * 2;
+};</pre>
+          </div>
+        </div>
+      </div>
+      <div class="tip-box" style="margin-top:4px">
+        <p>💡 <strong>Rules of thumb:</strong> One param → parens optional: <code class="inline">x => x*2</code>. No params → <code class="inline">() => ...</code>. Implicit return without <code class="inline">{}</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 4: ARRAYS - PUSH, POP, LENGTH ============ -->
+  <section class="slide" data-slide="4">
+    <div class="content-area">
+      <span class="badge purple">Concept 3/5</span>
+      <h2>Arrays · <span class="secondary">push</span>, <span class="warm">pop</span>, <span class="accent">length</span></h2>
+      <p>Arrays store ordered lists. Three essential methods to manage them:</p>
+      <div class="two-col" style="grid-template-columns:1.2fr 0.8fr">
+        <div class="col">
+          <pre>const tasks = [<span class="str">"study"</span>, <span class="str">"code"</span>];
+
+tasks.<span class="builtin">push</span>(<span class="str">"review"</span>);              <span class="cm">// add to end</span>
+<span class="cm">// tasks → ["study", "code", "review"]</span>
+
+tasks.<span class="builtin">pop</span>();                       <span class="cm">// remove from end</span>
+<span class="cm">// tasks → ["study", "code"]</span>
+
+console.log(tasks.<span class="builtin">length</span>);           <span class="cm">// → 2</span></pre>
+        </div>
+        <div class="col">
+          <div style="display:flex;flex-direction:column;gap:8px;justify-content:center;flex:1">
+            <div class="array-viz">
+              <span class="array-brace">[</span>
+              <div class="array-cell"><span>"study"</span><span class="index">0</span></div>
+              <div class="array-cell"><span>"code"</span><span class="index">1</span></div>
+              <span class="array-brace">]</span>
+            </div>
+            <p style="font-size:14px;color:var(--text-dim)"><strong style="color:var(--text)">.length</strong> = 2 (one more than last index)</p>
+            <p style="font-size:14px;color:var(--text-dim)"><code class="inline">push</code> adds → <code class="inline">pop</code> removes → both at the <strong>end</strong> (LIFO pattern)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 5: FOR LOOPS ============ -->
+  <section class="slide" data-slide="5">
+    <div class="content-area">
+      <span class="badge green">Concept 4/5</span>
+      <h2>The <span class="secondary">for</span> Loop</h2>
+      <p>Repeat code a known number of times. Three parts: <strong>initializer</strong> · <strong>condition</strong> · <strong>increment</strong>.</p>
+      <div class="two-col">
+        <div class="col">
+          <pre><span class="cm">// Count 0 → 4</span>
+<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">5</span>; i++) {
+  console.log(i);
+}
+<span class="cm">// → 0  1  2  3  4</span>
+
+<span class="cm">// Loop over array</span>
+const fruits = [<span class="str">"🍎"</span>, <span class="str">"🍊"</span>, <span class="str">"🍋"</span>];
+<span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; fruits.length; i++) {
+  console.log(fruits[i]);
+}</pre>
+        </div>
+        <div class="col">
+          <pre><span class="cm">// Anatomy</span>
+<span class="kw">for</span> (
+  <span class="kw">let</span> i = <span class="num">0</span>;    <span class="cm">// ① start here</span>
+  i &lt; <span class="num">5</span>;       <span class="cm">// ② check condition</span>
+  i++           <span class="cm">// ③ run after each pass</span>
+) {
+  <span class="cm">// ④ body</span>
+}</pre>
+          <div class="tip-box" style="margin:4px 0 0">
+            <p>💡 <code class="inline">i++</code> means <code class="inline">i = i + 1</code>. Start at 0, stop before 5 → 5 iterations.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 6: WHILE LOOPS ============ -->
+  <section class="slide" data-slide="6">
+    <div class="content-area">
+      <span class="badge warm">Concept 5/5</span>
+      <h2>The <span class="warm">while</span> Loop</h2>
+      <p>Run <strong>while</strong> a condition is true. Perfect when you don't know the exact number of iterations ahead of time.</p>
+      <div class="two-col">
+        <div class="col">
+          <pre><span class="cm">// Countdown with while</span>
+<span class="kw">let</span> count = <span class="num">5</span>;
+<span class="kw">while</span> (count &gt; <span class="num">0</span>) {
+  console.log(count);
+  count--;              <span class="cm">// ← don't forget!</span>
+}
+<span class="cm">// → 5  4  3  2  1</span>
+
+<span class="cm">// Keep going until a condition</span>
+<span class="kw">let</span> num = <span class="num">1</span>;
+<span class="kw">while</span> (num &lt; <span class="num">100</span>) {
+  num *= <span class="num">2</span>;
+}
+console.log(num);       <span class="cm">// → 128</span></pre>
+        </div>
+        <div class="col">
+          <div class="func-card" style="border-color:var(--accent-warm)">
+            <h4 style="color:var(--accent-warm)">⚠️ Infinite Loop Pitfall</h4>
+            <pre style="margin:0;font-size:13px"><span class="cm">// BAD — never updates condition:</span>
+<span class="kw">let</span> x = <span class="num">0</span>;
+<span class="kw">while</span> (x &lt; <span class="num">5</span>) {
+  console.log(<span class="str">"forever"</span>);
+  <span class="cm">// x never changes!</span>
+}
+
+<span class="cm">// FIX — update the variable:</span>
+<span class="kw">let</span> x = <span class="num">0</span>;
+<span class="kw">while</span> (x &lt; <span class="num">5</span>) {
+  console.log(x);
+  x++;  <span class="cm">// ✓</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 7: COMBINING THEM ============ -->
+  <section class="slide" data-slide="7">
+    <div class="content-area">
+      <span class="badge green">Putting It Together</span>
+      <h2>Functions + Arrays + Loops</h2>
+      <p>Bring it all together — write functions that operate on arrays using loops.</p>
+      <pre><span class="cm">// Function: calculate total from an array of numbers</span>
+<span class="kw">function</span> <span class="fn">sumArray</span>(numbers) {
+  <span class="kw">let</span> total = <span class="num">0</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; numbers.length; i++) {
+    total += numbers[i];
+  }
+  <span class="kw">return</span> total;
+}
+
+<span class="cm">// Arrow function version</span>
+const <span class="fn">sumArray</span> = (numbers) <span class="arrow">=></span> {
+  <span class="kw">let</span> total = <span class="num">0</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> n of numbers) {
+    total += n;
+  }
+  <span class="kw">return</span> total;
+};
+
+console.log(<span class="fn">sumArray</span>([<span class="num">5</span>, <span class="num">10</span>, <span class="num">15</span>]));  <span class="cm">// → 30</span></pre>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <div class="tip-box" style="flex:1;margin:0">
+          <p class="label">💡 <code class="inline">for...of</code></p>
+          <p style="font-size:14px">Iterates <em>values</em>, not indices. Cleaner when you don't need the index.</p>
+        </div>
+        <div class="tip-box" style="flex:1;margin:0;border-color:rgba(63,185,80,0.3)">
+          <p class="label" style="color:var(--accent-secondary)">📌 Pattern</p>
+          <p style="font-size:14px">Function takes array → loop processes each element → return result.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 8: CODE-ALONG WALKTHROUGH ============ -->
+  <section class="slide" data-slide="8">
+    <div class="content-area">
+      <span class="badge blue">Walkthrough</span>
+      <h2>Build: Task Manager <span class="accent">→</span></h2>
+      <p>Let's build a mini task tracker using everything we've learned.</p>
+      <pre><span class="cm">// Step 1: Start with an empty array</span>
+const tasks = [];
+
+<span class="cm">// Step 2: Function to add a task</span>
+<span class="kw">function</span> <span class="fn">addTask</span>(task) {
+  tasks.<span class="builtin">push</span>(task);
+  console.log(`Added: <span class="str">${task}</span>`);
+}
+
+<span class="cm">// Step 3: Function to list all tasks</span>
+<span class="kw">function</span> <span class="fn">listTasks</span>() {
+  console.log(`Tasks (<span class="str">${tasks.length}</span> total):`);
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; tasks.length; i++) {
+    console.log(`  <span class="str">${i + 1}</span>. <span class="str">${tasks[i]}</span>`);
+  }
+}
+
+<span class="cm">// Step 4: Try it</span>
+<span class="fn">addTask</span>(<span class="str">"Review arrow functions"</span>);
+<span class="fn">addTask</span>(<span class="str">"Practice array methods"</span>);
+<span class="fn">listTasks</span>();
+<span class="cm">// → Tasks (2 total):
+//     1. Review arrow functions
+//     2. Practice array methods</span></pre>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 9: PRACTICE EXERCISES ============ -->
+  <section class="slide" data-slide="9">
+    <div class="content-area">
+      <span class="badge warm">✏️ Practice</span>
+      <h2>Exercises to Try</h2>
+      <p style="margin-bottom:12px">Open your browser console (<kbd style="background:var(--surface);padding:2px 6px;border-radius:3px;font-family:monospace">F12</kbd>) and try these:</p>
+      <div class="two-col">
+        <div class="col">
+          <div class="exercise-box" style="flex:1">
+            <h4>Exercise 1 — Filter Evens</h4>
+            <p>Write a function <code class="inline">filterEvens(arr)</code> that returns a new array with only even numbers from the input.</p>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:6px">💡 Hint: Use push() + a loop. <code class="inline">number % 2 === 0</code> checks for even.</p>
+          </div>
+          <div class="exercise-box" style="flex:1">
+            <h4>Exercise 2 — Countdown</h4>
+            <p>Write a function <code class="inline">countdown(n)</code> that uses a <code class="inline">while</code> loop to log n down to 0, then logs <code class="inline">"Blast off!"</code>.</p>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:6px">💡 Hint: <code class="inline">while (n >= 0) { ... n--; }</code></p>
+          </div>
+        </div>
+        <div class="col">
+          <div class="exercise-box" style="flex:1">
+            <h4>Exercise 3 — Array Reverser</h4>
+            <p>Write a function <code class="inline">reverse(arr)</code> that returns a new array with elements in reverse order. Don't use <code class="inline">.reverse()</code>!</p>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:6px">💡 Hint: Loop from <code class="inline">arr.length-1</code> down to 0. Push each element.</p>
+          </div>
+          <div class="exercise-box" style="flex:1;border-color:var(--accent-secondary)">
+            <h4 style="color:var(--accent-secondary)">🌟 Stretch — To-Do List</h4>
+            <p>Build the Task Manager from the walkthrough <strong>as an arrow function</strong> version. Add a <code class="inline">removeLast()</code> function that uses <code class="inline">pop()</code>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 10: SOLUTIONS (REVEAL) ============ -->
+  <section class="slide" data-slide="10">
+    <div class="content-area">
+      <span class="badge green">Solutions</span>
+      <h2>Exercise Solutions <span class="secondary">✓</span></h2>
+      <p><strong>Try first!</strong> Check your answers after you've attempted each one.</p>
+      <div class="two-col" style="grid-template-columns:1fr 1fr">
+        <div class="col">
+          <pre style="font-size:12px"><span class="cm">// Ex 1 — Filter Evens</span>
+<span class="kw">function</span> <span class="fn">filterEvens</span>(arr) {
+  const evens = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; arr.length; i++) {
+    <span class="kw">if</span> (arr[i] % <span class="num">2</span> === <span class="num">0</span>) {
+      evens.push(arr[i]);
+    }
+  }
+  <span class="kw">return</span> evens;
+}
+
+<span class="cm">// Ex 2 — Countdown</span>
+<span class="kw">function</span> <span class="fn">countdown</span>(n) {
+  <span class="kw">while</span> (n &gt;= <span class="num">0</span>) {
+    console.log(n);
+    n--;
+  }
+  console.log(<span class="str">"Blast off!"</span>);
+}</pre>
+        </div>
+        <div class="col">
+          <pre style="font-size:12px"><span class="cm">// Ex 3 — Array Reverser</span>
+<span class="kw">function</span> <span class="fn">reverse</span>(arr) {
+  const reversed = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = arr.length - <span class="num">1</span>; i &gt;= <span class="num">0</span>; i--) {
+    reversed.push(arr[i]);
+  }
+  <span class="kw">return</span> reversed;
+}
+
+<span class="cm">// 🌟 Stretch — Arrow version</span>
+const <span class="fn">addTask</span> = (task) <span class="arrow">=></span> {
+  tasks.push(task);
+  console.log(`Added: <span class="str">${task}</span>`);
+};
+const <span class="fn">removeLast</span> = () <span class="arrow">=></span> {
+  <span class="kw">return</span> tasks.pop();
+};</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 11: SUMMARY ============ -->
+  <section class="slide" data-slide="11">
+    <div class="content-area">
+      <span class="badge purple">Summary</span>
+      <h2>Key Takeaways <span class="function">📝</span></h2>
+      <div class="two-col" style="grid-template-columns:1fr 1fr">
+        <div class="col">
+          <ul class="ulist check">
+            <li><strong>Function declarations</strong> use <code class="inline">function name() {}</code> and are hoisted</li>
+            <li><strong>Arrow functions</strong> use <code class="inline">() => {}</code> — concise, no <code class="inline">function</code> keyword</li>
+            <li><strong>Arrays</strong> — <code class="inline">push()</code> adds, <code class="inline">pop()</code> removes, <code class="inline">length</code> tells size</li>
+            <li><strong><code class="inline">for</code> loop</strong> — <code class="inline">for (let i=0; i&lt;n; i++)</code> for counted iteration</li>
+            <li><strong><code class="inline">while</code> loop</strong> — <code class="inline">while (cond) {}</code> — always update the condition!</li>
+          </ul>
+        </div>
+        <div class="col">
+          <div class="milestone">
+            <span class="icon">🎯</span>
+            <p><strong>Project 2 (Bookmark Saver)</strong> — after Week 6. You'll use arrays to store bookmarks, functions to add/remove/search, and loops to display them.</p>
+          </div>
+          <div class="milestone" style="border-color:var(--accent-secondary)">
+            <span class="icon">📅</span>
+            <p><strong>Tomorrow:</strong> DOM Manipulation — bringing your JS to the browser!</p>
+          </div>
+          <div style="margin-top:auto;text-align:right">
+            <p style="font-size:13px;color:var(--text-muted)">Day 26 · 90-Day Co-op Prep</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside><h4>Speaker notes</h4><p>The Bookmark Saver project is coming soon — arrays and functions are the backbone. Encourage learners to practice these patterns daily until they feel automatic.</p></aside>
+  </section>
+
+  <div id="progress"></div>
+  <div id="counter">1 / 12</div>
+  <button id="notes-toggle">📝 Notes</button>
+  <div id="notes-panel"></div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const notesToggle = document.getElementById('notes-toggle');
+  const notesPanel = document.getElementById('notes-panel');
+  let current = 0;
+  let notesVisible = false;
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= total) return;
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    location.hash = idx;
+    updateNotes();
+  }
+
+  function updateNotes() {
+    const aside = slides[current].querySelector('aside');
+    if (aside && notesVisible) {
+      notesPanel.innerHTML = '<h4>Speaker Notes</h4>' + aside.innerHTML;
+      notesPanel.classList.add('visible');
+    } else {
+      notesPanel.classList.remove('visible');
+    }
+  }
+
+  notesToggle.addEventListener('click', () => {
+    notesVisible = !notesVisible;
+    if (notesVisible) updateNotes();
+    else notesPanel.classList.remove('visible');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } else if (e.key === 'n' || e.key === 'N') {
+      notesToggle.click();
+    }
+  });
+
+  // Hash-based navigation
+  if (location.hash) {
+    const n = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < total) goTo(n);
+  }
+
+  // Init
+  goTo(0);
+})();
+</script>
+</body>
+</html>
