@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 27 — JS: DOM Manipulation | 90-Day Co-op Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1219;
+  --surface: #1a1f2e;
+  --surface2: #242b3d;
+  --border: #2d3648;
+  --text: #e2e8f0;
+  --text-dim: #8892a8;
+  --accent: #f59e0b;
+  --accent-glow: rgba(245,158,11,0.15);
+  --green: #34d399;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --code-bg: #131826;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --ratio: calc(720/1280);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #080b12;
+  font-family: var(--font-body);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+#stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: min(100vw, calc(100vh / var(--ratio)));
+  height: min(100vh, calc(100vw * var(--ratio)));
+  background: var(--bg);
+  border-radius: 8px;
+  overflow-y: auto;
+  padding: 48px 64px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  box-shadow: 0 4px 48px rgba(0,0,0,0.5);
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: var(--surface); border-radius: 3px; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Progress bar */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  z-index: 999;
+}
+#slide-counter {
+  position: fixed;
+  bottom: 20px;
+  right: 28px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  z-index: 999;
+  background: rgba(15,18,25,0.8);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+#slide-counter span { color: var(--accent); }
+
+/* Typography */
+h1 { font-size: 48px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 16px; }
+h3 { font-size: 22px; font-weight: 600; margin-bottom: 10px; color: var(--accent); }
+p, li { font-size: 18px; line-height: 1.6; color: var(--text); }
+p + p { margin-top: 12px; }
+a { color: var(--accent); text-decoration: none; }
+.tag {
+  display: inline-block;
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* Code */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: auto;
+  tab-size: 2;
+  color: #e2e8f0;
+  margin: 10px 0;
+}
+code { font-family: var(--font-mono); font-size: 15px; }
+.inline-code {
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 15px;
+  color: var(--accent);
+}
+.highlight { background: rgba(245,158,11,0.15); border-left: 3px solid var(--accent); padding-left: 14px; }
+
+/* Syntax colors */
+.kw { color: #c084fc; }   /* keyword */
+.fn { color: #60a5fa; }   /* function */
+.str { color: #34d399; }  /* string */
+.cm { color: #6b7280; font-style: italic; } /* comment */
+.num { color: #f59e0b; }  /* number */
+.pr { color: #f472b6; }   /* property */
+
+/* Lists */
+ul, ol { padding-left: 24px; margin: 8px 0; }
+li { margin-bottom: 6px; }
+
+/* Content spacing */
+.content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.content-top { flex: 1; display: flex; flex-direction: column; }
+.body-text { max-width: 800px; }
+
+/* Two column */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  flex: 1;
+  align-items: start;
+  margin-top: 8px;
+}
+.col { min-width: 0; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0;
+}
+.card-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+/* Title slide */
+.title-slide { text-align: center; align-items: center; justify-content: center; }
+.title-slide .day-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #0f1219;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+}
+.title-slide h1 { font-size: 56px; margin-bottom: 12px; }
+.title-slide .subtitle { font-size: 22px; color: var(--text-dim); font-weight: 400; max-width: 600px; margin: 0 auto; }
+.title-slide .meta { margin-top: 36px; font-size: 15px; color: var(--text-dim); }
+
+/* Info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 10px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.info-box.goal { border-left-color: var(--green); }
+.info-box.caution { border-left-color: var(--red); }
+
+/* Exercise list */
+.exercise-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 10px 0;
+}
+.exercise-item .task { font-weight: 600; margin-bottom: 4px; }
+.exercise-item .hint { font-size: 15px; color: var(--text-dim); }
+
+/* Numbered steps */
+.step { margin: 6px 0; padding-left: 0; list-style: none; counter-reset: step; }
+.step li { counter-increment: step; margin-bottom: 8px; padding-left: 36px; position: relative; }
+.step li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: 2px;
+  width: 26px; height: 26px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent);
+}
+
+/* Footer */
+.footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+}
+.footer .updated { font-family: var(--font-mono); font-size: 12px; }
+
+/* Responsive */
+@media (max-width: 720px) {
+  .slide { padding: 28px 24px; border-radius: 0; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 15px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .title-slide h1 { font-size: 32px; }
+  .title-slide .subtitle { font-size: 17px; }
+  pre { font-size: 12px; padding: 12px; }
+  #slide-counter { bottom: 10px; right: 14px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="slide-counter"><span id="current-slide">1</span> / <span id="total-slides">11</span></div>
+
+<div id="stage">
+
+<!-- SLIDE 1 — Title -->
+<section class="slide active" data-slide="0">
+  <div class="content title-slide" style="justify-content:center;">
+    <div class="day-badge">DAY 27 · WEEK 5</div>
+    <h1>JS: DOM Manipulation</h1>
+    <p class="subtitle">Select elements, read &amp; write content, and change pages dynamically with vanilla JavaScript</p>
+    <div class="meta">
+      <span>Phase II — JavaScript</span> &nbsp;·&nbsp; <span>⏱ 60 min</span>
+    </div>
+  </div>
+  <div class="footer"><span>90-Day Co-op Prep</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 2 — Overview -->
+<section class="slide" data-slide="1">
+  <h2>📋 What You'll Learn Today</h2>
+  <div class="content-top" style="justify-content:center;">
+    <div class="info-box goal" style="margin-bottom:18px;">
+      <strong>Goal:</strong> By the end of this session, you'll be able to select any element on a page, read or change its content, and build a simple live-editing interface.
+    </div>
+    <div class="two-col" style="margin-top:4px;">
+      <div class="col">
+        <div class="card-label">Learning Objectives</div>
+        <ul>
+          <li>Understand what the DOM is and how the browser represents HTML</li>
+          <li>Select elements with <code class="inline-code">getElementById</code> and <code class="inline-code">querySelector</code></li>
+          <li>Modify text with <code class="inline-code">.textContent</code></li>
+          <li>Insert HTML safely with <code class="inline-code">.innerHTML</code> (and know the risks)</li>
+          <li>Build a mini live-preview editor</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="card-label">Prerequisites</div>
+        <ul>
+          <li>Basic HTML: elements, attributes, ids &amp; classes</li>
+          <li>JS variables, functions, event listeners (Day 25-26)</li>
+          <li>A browser with DevTools (F12 / right-click → Inspect)</li>
+        </ul>
+        <div class="card" style="margin-top:14px;">
+          <span style="color:var(--text-dim);font-size:14px;">
+            <strong>Milestone check:</strong> Project 1 (CLI Todo List) ✅ after Week 3<br>
+            <strong>Next up:</strong> Project 2 (Bookmark Saver) after Week 6
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Overview</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 3 — What is the DOM? -->
+<section class="slide" data-slide="2">
+  <h2>🌳 What Is the DOM?</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>The <strong>Document Object Model (DOM)</strong> is the browser's tree-shaped representation of your HTML. Every tag becomes a <em>node</em> you can read, write, or delete with JavaScript.</p>
+    <div class="two-col" style="margin-top:12px;">
+      <div class="col">
+        <div class="card-label">HTML Source</div>
+        <pre><code><span class="cm">&lt;!-- static file --&gt;</span>
+&lt;div id=<span class="str">"app"</span>&gt;
+  &lt;h1&gt;<span class="str">Hello</span>&lt;/h1&gt;
+  &lt;p <span class="pr">class</span>=<span class="str">"desc"</span>&gt;<span class="str">World</span>&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+      </div>
+      <div class="col">
+        <div class="card-label">DOM Tree (in memory)</div>
+        <pre><code>document
+ └─ div#app
+     ├─ h1       <span class="cm">// "Hello"</span>
+     └─ p.desc   <span class="cm">// "World"</span></code></pre>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:6px;">
+      <strong>Key insight:</strong> <code class="inline-code">document</code> is a global JS object. Everything on the page lives inside it. When you change the DOM, the page <em>immediately</em> re-renders — no refresh needed.
+    </div>
+  </div>
+  <div class="footer"><span>Concept · The DOM</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 4 — Selecting Elements -->
+<section class="slide" data-slide="3">
+  <h2>🎯 Selecting Elements</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>Before you can change an element, you need a reference to it. Two methods cover 95% of real use:</p>
+    <div class="two-col" style="margin-top:8px;">
+      <div class="col">
+        <div class="card-label"><code>getElementById</code></div>
+        <pre><code><span class="cm">// HTML: &lt;h1 id="title"&gt;...&lt;/h1&gt;</span>
+<span class="kw">const</span> title = document
+  .getElementById(<span class="str">"title"</span>);
+
+<span class="cm">// ✅ returns one element or null</span>
+<span class="cm">// 🏁 fastest selector — use for IDs</span></code></pre>
+        <p style="font-size:15px;margin-top:4px;">🔑 IDs must be unique on the page. Direct, fast, simple.</p>
+      </div>
+      <div class="col">
+        <div class="card-label"><code>querySelector</code></div>
+        <pre><code><span class="cm">// HTML: &lt;p class="desc"&gt;...&lt;/p&gt;</span>
+<span class="kw">const</span> desc = document
+  .querySelector(<span class="str">".desc"</span>);
+
+<span class="cm">// ✅ any CSS selector: #id, .class, tag</span>
+<span class="cm">// returns FIRST match or null</span>
+<span class="cm">// querySelectorAll → NodeList</span></code></pre>
+        <p style="font-size:15px;margin-top:4px;">🔍 Use when you don't have an ID or need CSS selector power.</p>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:4px;">
+      <strong>Rule of thumb:</strong> Have an ID? → <code class="inline-code">getElementById</code>. Using a class/tag/attribute? → <code class="inline-code">querySelector</code>.
+    </div>
+  </div>
+  <div class="footer"><span>Concept · Selecting elements</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 5 — Walkthrough: Select + Inspect -->
+<section class="slide" data-slide="4">
+  <h2>🧪 Walkthrough: Select &amp; Inspect Elements</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>Open your browser DevTools Console (<kbd>F12</kbd> → Console tab) on any page and try these:</p>
+    <ol class="step" style="margin-top:10px;">
+      <li>Open <code class="inline-code">dev.to</code> or <code class="inline-code">example.com</code></li>
+      <li>Type <code class="inline-code">document.getElementById("__next")</code> — see the root div?</li>
+      <li>Type <code class="inline-code">document.querySelector("h1")</code> — first heading appears</li>
+      <li>Type <code class="inline-code">document.querySelectorAll("p").length</code> — count paragraphs</li>
+      <li>Store a reference: <code class="inline-code">const el = document.querySelector("h1"); el.textContent</code></li>
+    </ol>
+    <div class="info-box" style="margin-top:10px;">
+      <strong>Expected output:</strong> You'll see DOM element objects in the console — expand them to explore properties like <code class="inline-code">.id</code>, <code class="inline-code">.className</code>, and <code class="inline-code">.textContent</code>.
+    </div>
+  </div>
+  <div class="footer"><span>Walkthrough · Selecting</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 6 — textContent vs innerHTML -->
+<section class="slide" data-slide="5">
+  <h2>📝 textContent vs innerHTML</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>Two ways to read/write content — but they behave <strong>very</strong> differently:</p>
+    <div class="two-col" style="margin-top:8px;">
+      <div class="col">
+        <div class="card-label"><code>.textContent</code> ✅ Safe</div>
+        <pre><code><span class="kw">const</span> el = document
+  .getElementById(<span class="str">"output"</span>);
+
+<span class="cm">// Read (strips all HTML tags)</span>
+<span class="fn">console</span>.log(el.textContent);
+
+<span class="cm">// Write (treated as plain text)</span>
+el.textContent = <span class="str">"Hello &lt;b&gt;World&lt;/b&gt;"</span>;
+<span class="cm">// → shows: "Hello &lt;b&gt;World&lt;/b&gt;" literally</span></code></pre>
+        <p style="font-size:15px;margin-top:2px;">🛡️ Escapes HTML — no XSS risk. Always prefer this for user-submitted text.</p>
+      </div>
+      <div class="col">
+        <div class="card-label"><code>.innerHTML</code> ⚠️ Powerful</div>
+        <pre><code>el.innerHTML = <span class="str">"Hello &lt;b&gt;World&lt;/b&gt;"</span>;
+<span class="cm">// → shows: "Hello <b>World</b>"</span>
+
+<span class="cm">// Read (returns raw HTML string)</span>
+<span class="fn">console</span>.log(el.innerHTML);
+
+<span class="cm">// ⚠️ DANGER with user input:</span>
+el.innerHTML = userInput;
+<span class="cm">// userInput="&lt;script&gt;stealCookies()&lt;/script&gt;"</span>
+<span class="cm">// → XSS attack!</span></code></pre>
+      </div>
+    </div>
+    <div class="info-box caution" style="margin-top:4px;">
+      <strong>🚨 XSS warning:</strong> Never use <code class="inline-code">innerHTML</code> with data from users, URLs, or APIs. If you need HTML (e.g., formatting), sanitize it first or use DOM methods like <code class="inline-code">document.createElement</code>.
+    </div>
+  </div>
+  <div class="footer"><span>Concept · textContent vs innerHTML</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 7 — Walkthrough: Building a Live Editor -->
+<section class="slide" data-slide="6">
+  <h2>🛠️ Walkthrough: Live Preview Editor</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>Let's build a mini editor — type in a box, see the preview update instantly.</p>
+    <pre style="margin:8px 0;"><code><span class="cm">&lt;!-- HTML structure --&gt;</span>
+&lt;input <span class="pr">id</span>=<span class="str">"nameInput"</span>
+       <span class="pr">placeholder</span>=<span class="str">"Your name"</span> /&gt;
+&lt;h2 <span class="pr">id</span>=<span class="str">"greeting"</span>&gt;Hello, guest&lt;/h2&gt;
+
+<span class="cm">&lt;!-- JS --&gt;</span>
+&lt;script&gt;
+  <span class="kw">const</span> input = document
+    .getElementById(<span class="str">"nameInput"</span>);
+  <span class="kw">const</span> greeting = document
+    .getElementById(<span class="str">"greeting"</span>);
+
+  input.addEventListener(<span class="str">"input"</span>, () =&gt; {
+    greeting.textContent =
+      <span class="str">"Hello, "</span> + input.value || <span class="str">"guest"</span>;
+  });
+&lt;/script&gt;</code></pre>
+    <div class="info-box goal">
+      <strong>Try it:</strong> Copy this into a .html file and open it in a browser. Type in the input — the heading changes instantly. This is DOM manipulation in action!
+    </div>
+  </div>
+  <div class="footer"><span>Walkthrough · Live Editor</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 8 — innerHTML Use Case: Dynamic Lists -->
+<section class="slide" data-slide="7">
+  <h2>📋 innerHTML Use Case: Dynamic Lists</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>When you control the template string completely (no user input), <code class="inline-code">innerHTML</code> is perfect for rendering structured content:</p>
+    <div class="two-col" style="margin-top:6px;">
+      <div class="col">
+        <div class="card-label">HTML</div>
+        <pre><code>&lt;ul <span class="pr">id</span>=<span class="str">"todoList"</span>&gt;&lt;/ul&gt;
+&lt;button <span class="pr">id</span>=<span class="str">"addBtn"</span>&gt;
+  Add Task
+&lt;/button&gt;</code></pre>
+      </div>
+      <div class="col">
+        <div class="card-label">JS (safe — no user HTML)</div>
+        <pre><code><span class="kw">let</span> tasks = [<span class="str">"Learn DOM"</span>, <span class="str">"Build project"</span>];
+<span class="kw">const</span> list = document
+  .getElementById(<span class="str">"todoList"</span>);
+
+<span class="kw">function</span> <span class="fn">render</span>() {
+  list.innerHTML = tasks
+    .map(t =&gt; <span class="str">`&lt;li&gt;`</span> + t + <span class="str">`&lt;/li&gt;`</span>)
+    .join(<span class="str">""</span>);
+}
+render(); <span class="cm">// initial draw</span></code></pre>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:4px;">
+      ✅ <strong>Safe because:</strong> we control the template — <code class="inline-code">tasks</code> array values are plain strings from our own code, not from a user text input. <strong>Unsafe:</strong> <code class="inline-code">list.innerHTML = userInput</code>.
+    </div>
+  </div>
+  <div class="footer"><span>Concept · Dynamic Lists</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 9 — Changing Multiple Elements -->
+<section class="slide" data-slide="8">
+  <h2>🔄 Changing Multiple Elements</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p>Use <code class="inline-code">querySelectorAll</code> + a loop to update groups of elements at once:</p>
+    <div class="two-col" style="margin-top:8px;">
+      <div class="col">
+        <pre><code><span class="cm">/* HTML */</span>
+&lt;p <span class="pr">class</span>=<span class="str">"price"</span>&gt;$10&lt;/p&gt;
+&lt;p <span class="pr">class</span>=<span class="str">"price"</span>&gt;$25&lt;/p&gt;
+&lt;p <span class="pr">class</span>=<span class="str">"price"</span>&gt;$15&lt;/p&gt;</code></pre>
+      </div>
+      <div class="col">
+        <pre><code><span class="cm">// Add discount: -20%</span>
+<span class="kw">const</span> prices = document
+  .querySelectorAll(<span class="str">".price"</span>);
+
+prices.forEach(<span class="pr">p</span> =&gt; {
+  <span class="kw">const</span> val = <span class="fn">parseFloat</span>(
+    p.textContent.replace(<span class="str">"$"</span>, <span class="str">""</span>)
+  );
+  p.textContent = <span class="str">`$</span><span class="str">${(val * 0.8).toFixed(2)}</span><span class="str">`</span>;
+});
+<span class="cm">// → $8.00, $20.00, $12.00</span></code></pre>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:4px;">
+      <strong>💡 Pattern:</strong> Select → iterate → update. Same approach works for adding classes, toggling visibility, or changing styles.
+    </div>
+  </div>
+  <div class="footer"><span>Concept · Bulk updates</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 10 — Practice Exercises -->
+<section class="slide" data-slide="9">
+  <h2>✏️ Practice Exercises</h2>
+  <div class="content-top" style="justify-content:center;">
+    <p style="margin-bottom:8px;">Create a new <code class="inline-code">.html</code> file and try each exercise. Solutions on the next slide →</p>
+
+    <div class="two-col" style="gap:20px;">
+      <div class="col">
+        <div class="exercise-item">
+          <div class="task">1. Click Counter</div>
+          <div class="hint">A button showing "Clicked 0 times". Each click increments the number. Use <code class="inline-code">getElementById</code> + <code class="inline-code">textContent</code> + <code class="inline-code">addEventListener</code>.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="task">2. Theme Switcher</div>
+          <div class="hint">Two buttons: "Dark" and "Light". Clicking changes the page background and text color. Use <code class="inline-code">querySelector("body")</code> and <code class="inline-code">element.style</code>.</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="exercise-item">
+          <div class="task">3. Comment Preview</div>
+          <div class="hint">A textarea + a preview div. As the user types, show the text in the preview. Bonus: auto-count characters. <strong>Use <code class="inline-code">textContent</code></strong> (not innerHTML!) for safety.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="task">4. Item Lister</div>
+          <div class="hint">An input + "Add" button. Each click adds a new <code class="inline-code">&lt;li&gt;</code> to a <code class="inline-code">&lt;ul&gt;</code>. Use <code class="inline-code">document.createElement("li")</code> and <code class="inline-code">appendChild</code> instead of innerHTML.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Exercises · 20 min</span><span class="updated">2026-06-16</span></div>
+</section>
+
+<!-- SLIDE 11 — Summary & Next Steps -->
+<section class="slide" data-slide="10">
+  <h2>📌 Summary &amp; Next Steps</h2>
+  <div class="content-top" style="justify-content:center;">
+    <div class="two-col" style="gap:24px;">
+      <div class="col">
+        <div class="card-label">3 Key Takeaways</div>
+        <div class="info-box goal" style="margin-bottom:10px;">
+          <strong>1. Select first, then manipulate.</strong><br>
+          Use <code class="inline-code">getElementById</code> (IDs) or <code class="inline-code">querySelector</code> (any CSS selector) to get a reference.
+        </div>
+        <div class="info-box goal" style="margin-bottom:10px;">
+          <strong>2. textContent for text, innerHTML only for trusted HTML.</strong><br>
+          When in doubt, <code class="inline-code">textContent</code>. Never put user input into <code class="inline-code">innerHTML</code>.
+        </div>
+        <div class="info-box goal">
+          <strong>3. DOM changes are instant.</strong><br>
+          No refresh, no render call. Set <code class="inline-code">.textContent</code> and the page updates immediately.
+        </div>
+      </div>
+      <div class="col">
+        <div class="card-label">Coming Up</div>
+        <div class="card" style="margin-bottom:10px;">
+          <strong>Day 28:</strong> DOM events — click, submit, keyboard, event bubbling
+        </div>
+        <div class="card" style="margin-bottom:10px;">
+          <strong>Day 29:</strong> Creating &amp; removing elements dynamically
+        </div>
+        <div class="card">
+          <strong>Project 2 (Week 6):</strong> Bookmark Saver — save, display, and delete bookmarks. DOM skills are the foundation.
+        </div>
+        <div style="margin-top:12px; text-align:center; padding:12px; background:var(--accent-glow); border-radius:8px; border:1px solid var(--accent);">
+          <span style="font-size:15px;">💪 <strong>Practice every day.</strong> Open DevTools, poke at pages, break things. That's how you learn the DOM.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Summary · Day 27 Complete</span><span class="updated">2026-06-16</span></div>
+</section>
+
+</div><!-- /stage -->
+
+<script>
+(function(){
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  document.getElementById('total-slides').textContent = total;
+  const currentSpan = document.getElementById('current-slide');
+  const progressBar = document.getElementById('progress-bar');
+  let idx = 0;
+
+  function showSlide(i) {
+    if (i < 0 || i >= total) return;
+    idx = i;
+    slides.forEach((s, ix) => s.classList.toggle('active', ix === idx));
+    currentSpan.textContent = idx + 1;
+    progressBar.style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = idx + 1;
+  }
+
+  // Hash on load
+  if (window.location.hash) {
+    const n = parseInt(window.location.hash.slice(1), 10);
+    if (n >= 1 && n <= total) showSlide(n - 1);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      showSlide(idx + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      showSlide(idx - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+      else document.exitFullscreen();
+    } else if (e.key === 'n') {
+      document.querySelectorAll('aside.note').forEach(n => n.style.display = n.style.display === 'block' ? 'none' : 'block');
+    }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 60) {
+      dx < 0 ? showSlide(idx + 1) : showSlide(idx - 1);
+    }
+  });
+
+  showSlide(0);
+})();
+</script>
+</body>
+</html>
