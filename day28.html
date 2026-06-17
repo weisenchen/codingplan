@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 28 — JS: Events &amp; Event Handlers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242736;
+  --border: #2e3245;
+  --text: #e2e4ed;
+  --text-muted: #8b8fa8;
+  --accent: #f7df1e;
+  --accent-dim: #c7b000;
+  --accent-bg: rgba(247, 223, 30, 0.08);
+  --green: #4ade80;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --radius: 12px;
+  --mono: 'DM Mono', 'Fira Code', 'Consolas', monospace;
+  --sans: 'Outfit', 'Inter', system-ui, sans-serif;
+  --slide-w: min(100vw, calc(100vh * 16 / 9));
+  --slide-h: min(100vh, calc(100vw * 9 / 16));
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #080a0f;
+  font-family: var(--sans);
+  color: var(--text);
+  overflow: hidden;
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+#deck {
+  position: relative;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: 4px;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex; flex-direction: column;
+  padding: 48px 64px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1; pointer-events: auto;
+  z-index: 2;
+}
+.progress {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px; background: var(--border); z-index: 10;
+}
+.progress-bar {
+  height: 100%; background: var(--accent);
+  transition: width 0.3s ease;
+}
+.slide-counter {
+  position: absolute;
+  bottom: 12px; right: 20px;
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text-muted); z-index: 10;
+}
+/* Slide typography */
+h1 {
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+h2 {
+  font-size: clamp(22px, 3vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+}
+h3 {
+  font-size: clamp(18px, 2vw, 28px);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+p, li { font-size: clamp(15px, 1.4vw, 20px); line-height: 1.6; color: var(--text-muted); }
+strong { color: var(--text); font-weight: 600; }
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--surface);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: clamp(13px, 1.1vw, 16px);
+  line-height: 1.55;
+  margin: 10px 0;
+}
+pre code {
+  background: none; padding: 0; border-radius: 0;
+  color: var(--text);
+}
+.highlight { background: var(--accent-bg); border-left: 3px solid var(--accent); }
+ul { list-style: none; padding: 0; }
+li { position: relative; padding-left: 24px; margin-bottom: 6px; }
+li::before {
+  content: '';
+  position: absolute; left: 4px; top: 10px;
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+/* Title slide */
+.title-slide {
+  justify-content: center; align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, var(--bg) 0%, #1a1d10 100%);
+}
+.title-slide h1 {
+  font-size: clamp(36px, 5vw, 72px);
+  background: linear-gradient(135deg, var(--accent) 0%, #fff6a0 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.title-slide .subtitle {
+  font-family: var(--mono);
+  font-size: clamp(14px, 1.4vw, 22px);
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+.title-slide .meta {
+  margin-top: 32px;
+  font-size: clamp(13px, 1.1vw, 18px);
+  color: var(--text-muted);
+}
+.title-slide .meta span { color: var(--accent-dim); }
+/* Section break */
+.section-break {
+  justify-content: center; align-items: center;
+  text-align: center;
+  background: var(--surface);
+}
+.section-break h2 {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+/* Two-column layout */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  flex: 1;
+  align-items: start;
+}
+.cols-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  flex: 1;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.card h3 { font-size: clamp(15px, 1.2vw, 20px); margin-bottom: 8px; }
+.card p, .card li { font-size: clamp(13px, 1vw, 16px); }
+/* Exercise slide */
+.exercise-box {
+  background: var(--surface);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 10px 0;
+}
+.exercise-box h3 { color: var(--blue); }
+.hint-box {
+  background: var(--surface);
+  border: 1px dashed var(--text-muted);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 8px;
+}
+.hint-box h4 { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+/* Checkmark takeaways */
+.takeaway { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+.takeaway .icon { font-size: 20px; color: var(--green); flex-shrink: 0; margin-top: 2px; }
+/* Next steps badge */
+.badge {
+  display: inline-block;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--accent-dim);
+}
+/* Scrollbar */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 28px 20px; }
+  .cols, .cols-3 { grid-template-columns: 1fr; gap: 14px; }
+  pre { padding: 12px 14px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- ===== SLIDE 0: Title ===== -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>Events &amp; Event Handlers</h1>
+  <div class="subtitle">Day 28 — 90-Day Co-op Prep</div>
+  <div class="meta"><span>Week 5</span> &middot; Phase II &middot; JavaScript</div>
+  <div class="meta" style="margin-top:8px">⏱ 60 minutes</div>
+</section>
+
+<!-- ===== SLIDE 1: Overview ===== -->
+<section class="slide" data-slide="1">
+  <h2>📋 What You'll Learn Today</h2>
+  <div class="cols" style="margin-top:16px;">
+    <div class="card">
+      <h3>🎯 Objectives</h3>
+      <ul>
+        <li>Understand the <strong>event-driven</strong> programming model</li>
+        <li>Use <code>addEventListener</code> to respond to user actions</li>
+        <li>Handle <strong>click</strong> and <strong>input</strong> events</li>
+        <li>Build an interactive <strong>click counter</strong> button</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📌 Prerequisites</h3>
+      <ul>
+        <li>Basic HTML structure (you know what <code>&lt;button&gt;</code> is)</li>
+        <li>JavaScript fundamentals: variables, functions, DOM selection</li>
+        <li>Familiarity with <code>document.querySelector</code></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 2: Section — Events ===== -->
+<section class="slide section-break" data-slide="2">
+  <h2>What Are Events?</h2>
+  <p style="color:var(--text-muted);margin-top:12px;max-width:560px;margin-inline:auto;">
+    The browser tells your code when something happens.
+  </p>
+</section>
+
+<!-- ===== SLIDE 3: Concept — Events ===== -->
+<section class="slide" data-slide="3">
+  <h2>⚡ The Event-Driven Model</h2>
+  <p style="margin-bottom:14px;">JavaScript in the browser sits idle until the user <strong>does something</strong> — then it reacts.</p>
+  <div class="cols" style="margin-top:10px;">
+    <div class="card">
+      <h3>Common Events</h3>
+      <table style="width:100%;font-family:var(--mono);font-size:clamp(12px,1vw,15px);">
+        <tr><td style="color:var(--accent);padding:4px 0;">click</td><td style="color:var(--text-muted);padding:4px 0;">mouse click</td></tr>
+        <tr><td style="color:var(--accent);padding:4px 0;">input</td><td style="color:var(--text-muted);padding:4px 0;">text field changes</td></tr>
+        <tr><td style="color:var(--accent);padding:4px 0;">submit</td><td style="color:var(--text-muted);padding:4px 0;">form submitted</td></tr>
+        <tr><td style="color:var(--accent);padding:4px 0;">keydown</td><td style="color:var(--text-muted);padding:4px 0;">key pressed</td></tr>
+        <tr><td style="color:var(--accent);padding:4px 0;">mouseover</td><td style="color:var(--text-muted);padding:4px 0;">hover over element</td></tr>
+        <tr><td style="color:var(--accent);padding:4px 0;">scroll</td><td style="color:var(--text-muted);padding:4px 0;">page/element scrolled</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>The Analogy</h3>
+      <p style="font-size:clamp(13px,1vw,16px);">A restaurant: the kitchen doesn't cook until the <strong>waiter rings a bell</strong>. The bell is the <strong>event</strong>. The chef is the <strong>handler</strong>.</p>
+      <pre style="margin-top:10px;font-size:clamp(11px,0.9vw,14px);">// "When the button rings, run this"
+button.addEventListener('click', () => {
+  console.log('Order up! 🍳');
+});</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 4: addEventListener ===== -->
+<section class="slide" data-slide="4">
+  <h2>🔌 <code>addEventListener</code></h2>
+  <p style="margin-bottom:10px;">The standard way to register an event handler.</p>
+  <pre><span style="color:var(--accent);">element</span>.addEventListener(<span style="color:var(--green);">'event-type'</span>, <span style="color:var(--blue);">handlerFunction</span>);</pre>
+  <div class="cols" style="margin-top:12px;">
+    <div class="card">
+      <h3>Parts</h3>
+      <ul>
+        <li><strong>element</strong> — the DOM node to listen on</li>
+        <li><strong>'event-type'</strong> — string like <code>'click'</code></li>
+        <li><strong>handlerFunction</strong> — runs when the event fires</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Two ways to write the handler</h3>
+      <pre style="font-size:clamp(11px,0.9vw,14px);">// Inline arrow function
+btn.addEventListener('click', () => {
+  alert('Clicked!');
+});</pre>
+      <pre style="font-size:clamp(11px,0.9vw,14px);margin-top:6px;">// Named function (reusable)
+function handleClick() {
+  alert('Clicked!');
+}
+btn.addEventListener('click', handleClick);</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 5: Click Events ===== -->
+<section class="slide" data-slide="5">
+  <h2>🖱️ Click Events</h2>
+  <p style="margin-bottom:10px;">The most common event — fires when a user clicks an element.</p>
+  <pre><span style="color:purple;opacity:0.5;">// Get the button</span>
+<span style="color:var(--accent);">const btn</span> = document.querySelector(<span style="color:var(--green);">'#myButton'</span>);
+
+<span style="color:purple;opacity:0.5;">// Listen for clicks</span>
+btn.addEventListener(<span style="color:var(--green);">'click'</span>, () => {
+  <span style="color:var(--accent);">console.log</span>(<span style="color:var(--green);">'Button was clicked!'</span>);
+});</pre>
+  <div class="card" style="margin-top:10px;">
+    <h3>⚠️ Common Pitfall</h3>
+    <p style="font-size:clamp(13px,1vw,16px);">Don't call the function in the listener — that runs it <em>immediately</em>:</p>
+    <pre style="font-size:clamp(12px,1vw,15px);"><span style="color:var(--red);">// ❌ Wrong — runs handleClick right now</span>
+btn.addEventListener('click', <strong style="color:var(--red);">handleClick()</strong>);
+
+<span style="color:var(--green);">// ✅ Correct — passes the function reference</span>
+btn.addEventListener('click', handleClick);</pre>
+  </div>
+</section>
+
+<!-- ===== SLIDE 6: Input Events ===== -->
+<section class="slide" data-slide="6">
+  <h2>⌨️ Input Events</h2>
+  <p style="margin-bottom:10px;">Fires every time the value of an <code>&lt;input&gt;</code>, <code>&lt;textarea&gt;</code>, or <code>&lt;select&gt;</code> changes.</p>
+  <div class="cols" style="margin-top:8px;">
+    <div class="card">
+      <h3><code>'input'</code> event</h3>
+      <p style="font-size:clamp(13px,1vw,16px);">Fires on <strong>every keystroke</strong> — real-time.</p>
+      <pre style="font-size:clamp(11px,0.9vw,14px);">const input = document.querySelector('#name');
+
+input.addEventListener(<span style="color:var(--green);">'input'</span>, (event) => {
+  <span style="color:var(--accent);">console.log</span>(event.target.value);
+  <span style="color:purple;opacity:0.5;">// logs after each character typed</span>
+});</pre>
+    </div>
+    <div class="card">
+      <h3><code>'change'</code> event</h3>
+      <p style="font-size:clamp(13px,1vw,16px);">Fires when the user <strong>commits</strong> the change (blur or Enter).</p>
+      <pre style="font-size:clamp(11px,0.9vw,14px);">input.addEventListener(<span style="color:var(--green);">'change'</span>, (event) => {
+  <span style="color:var(--accent);">console.log</span>(<span style="color:var(--green);">'Final value:'</span>, event.target.value);
+  <span style="color:purple;opacity:0.5;">// fires after user clicks away</span>
+});</pre>
+    </div>
+  </div>
+  <div class="card" style="margin-top:8px;">
+    <p style="font-size:clamp(13px,1vw,16px);"><strong>💡 Tip:</strong> Use <code>'input'</code> for live preview (search-as-you-type). Use <code>'change'</code> when you only care about the final value (form validation after blur).</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 7: Section — Walkthrough ===== -->
+<section class="slide section-break" data-slide="7">
+  <h2>Walkthrough</h2>
+  <p style="color:var(--text-muted);margin-top:12px;">Build a button that counts clicks</p>
+</section>
+
+<!-- ===== SLIDE 8: Walkthrough — Step 1-4 ===== -->
+<section class="slide" data-slide="8">
+  <h2>🛠️ Click Counter — HTML &amp; JS</h2>
+  <p style="margin-bottom:8px;">Create <code>counter.html</code> — follow along:</p>
+
+  <div class="cols" style="margin-top:6px;">
+    <div>
+      <h3 style="font-size:clamp(14px,1.2vw,18px);">1. HTML Structure</h3>
+      <pre style="font-size:clamp(11px,0.9vw,14px);"><span style="color:purple;opacity:0.5;">&lt;!-- counter.html --&gt;</span>
+<span style="color:var(--blue);">&lt;h1&gt;</span>Click Counter<span style="color:var(--blue);">&lt;/h1&gt;</span>
+<span style="color:var(--blue);">&lt;p&gt;</span>You've clicked <span style="color:var(--blue);">&lt;span</span> <span style="color:var(--accent);">id=</span><span style="color:var(--green);">"count"</span><span style="color:var(--blue);">&gt;</span>0<span style="color:var(--blue);">&lt;/span&gt;</span> times<span style="color:var(--blue);">&lt;/p&gt;</span>
+<span style="color:var(--blue);">&lt;button</span> <span style="color:var(--accent);">id=</span><span style="color:var(--green);">"clickBtn"</span><span style="color:var(--blue);">&gt;</span>Click me<span style="color:var(--blue);">&lt;/button&gt;</span></pre>
+
+      <h3 style="font-size:clamp(14px,1.2vw,18px);margin-top:8px;">2. Select Elements</h3>
+      <pre style="font-size:clamp(11px,0.9vw,14px);"><span style="color:var(--accent);">const</span> countDisplay = document.querySelector(<span style="color:var(--green);">'#count'</span>);
+<span style="color:var(--accent);">const</span> button = document.querySelector(<span style="color:var(--green);">'#clickBtn'</span>);
+<span style="color:var(--accent);">let</span> clickCount = 0;</pre>
+    </div>
+
+    <div>
+      <h3 style="font-size:clamp(14px,1.2vw,18px);">3. Add Event Listener</h3>
+      <pre style="font-size:clamp(11px,0.9vw,14px);">button.addEventListener(<span style="color:var(--green);">'click'</span>, () => {
+  clickCount++;
+  countDisplay.textContent = clickCount;
+});</pre>
+
+      <h3 style="font-size:clamp(14px,1.2vw,18px);margin-top:8px;">4. Expected Behavior</h3>
+      <p style="font-size:clamp(12px,1vw,15px);">Every click increments the counter. The <code>&lt;span&gt;</code> updates <strong>immediately</strong> — no page reload needed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 9: Walkthrough — Full Code ===== -->
+<section class="slide" data-slide="9">
+  <h2>📄 Click Counter — Full Solution</h2>
+  <pre style="font-size:clamp(12px,1vw,15px);max-height:60%;"><span style="color:purple;opacity:0.5;">&lt;!DOCTYPE html&gt;</span>
+<span style="color:var(--blue);">&lt;html&gt;</span>
+<span style="color:var(--blue);">&lt;head&gt;&lt;title&gt;</span>Click Counter<span style="color:var(--blue);">&lt;/title&gt;&lt;/head&gt;</span>
+<span style="color:var(--blue);">&lt;body&gt;</span>
+  <span style="color:var(--blue);">&lt;h1&gt;</span>Click Counter<span style="color:var(--blue);">&lt;/h1&gt;</span>
+  <span style="color:var(--blue);">&lt;p&gt;</span>Clicked <span style="color:var(--blue);">&lt;span</span> <span style="color:var(--accent);">id=</span><span style="color:var(--green);">"count"</span><span style="color:var(--blue);">&gt;</span>0<span style="color:var(--blue);">&lt;/span&gt;</span> times<span style="color:var(--blue);">&lt;/p&gt;</span>
+  <span style="color:var(--blue);">&lt;button</span> <span style="color:var(--accent);">id=</span><span style="color:var(--green);">"clickBtn"</span><span style="color:var(--blue);">&gt;</span>Click me<span style="color:var(--blue);">&lt;/button&gt;</span>
+
+  <span style="color:var(--blue);">&lt;script&gt;</span>
+    <span style="color:var(--accent);">const</span> countDisplay = document.querySelector(<span style="color:var(--green);">'#count'</span>);
+    <span style="color:var(--accent);">const</span> button = document.querySelector(<span style="color:var(--green);">'#clickBtn'</span>);
+    <span style="color:var(--accent);">let</span> clickCount = 0;
+
+    button.addEventListener(<span style="color:var(--green);">'click'</span>, () => {
+      clickCount++;
+      countDisplay.textContent = clickCount;
+    });
+  <span style="color:var(--blue);">&lt;/script&gt;</span>
+<span style="color:var(--blue);">&lt;/body&gt;&lt;/html&gt;</span></pre>
+  <div class="card" style="margin-top:8px;padding:10px 16px;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:20px;">▶</span>
+    <p style="font-size:clamp(13px,1vw,16px);">Open in browser — the counter updates <strong>live</strong> on every click.</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 10: Live Input Demo ===== -->
+<section class="slide" data-slide="10">
+  <h2>🔁 Live Input Preview</h2>
+  <p style="margin-bottom:10px;">Combine <code>'input'</code> events with click events for a richer interaction.</p>
+
+  <pre style="font-size:clamp(11px,0.9vw,14px);"><span style="color:var(--accent);">const</span> nameInput = document.querySelector(<span style="color:var(--green);">'#nameInput'</span>);
+<span style="color:var(--accent);">const</span> greeting = document.querySelector(<span style="color:var(--green);">'#greeting'</span>);
+
+<span style="color:purple;opacity:0.5;">// Update greeting as user types</span>
+nameInput.addEventListener(<span style="color:var(--green);">'input'</span>, (e) => {
+  greeting.textContent = <span style="color:var(--green);">`Hello, ${e.target.value}!`</span>;
+});
+
+<span style="color:purple;opacity:0.5;">// Bonus: clear button</span>
+document.querySelector(<span style="color:var(--green);">'#clearBtn'</span>).addEventListener(<span style="color:var(--green);">'click'</span>, () => {
+  nameInput.value = <span style="color:var(--green);">''</span>;
+  greeting.textContent = <span style="color:var(--green);">'Hello!'</span>;
+  nameInput.focus();
+});</pre>
+
+  <div class="card" style="margin-top:8px;">
+    <p style="font-size:clamp(13px,1vw,16px);"><strong>💡 Key insight:</strong> The <code>event</code> object (first parameter to the handler) carries <code>event.target</code> — the element that fired the event. Use it to read <code>.value</code> from inputs.</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 11: Section — Exercises ===== -->
+<section class="slide section-break" data-slide="11">
+  <h2>✏️ Practice Exercises</h2>
+  <p style="color:var(--text-muted);margin-top:12px;">Try these on your own</p>
+</section>
+
+<!-- ===== SLIDE 12: Exercise 1 ===== -->
+<section class="slide" data-slide="12">
+  <h2>🏋️ Exercise 1 — Double Counter</h2>
+  <div class="exercise-box">
+    <h3>Task</h3>
+    <p style="margin-top:4px;">Extend the click counter: add a <strong>Reset</strong> button that sets the count back to 0, and a <strong>+5</strong> button that adds 5 at once.</p>
+    <ul style="margin-top:8px;">
+      <li>Three buttons: "Click me", "+5", "Reset"</li>
+      <li>Each button should use its own <code>addEventListener</code></li>
+      <li>The span should update after every action</li>
+    </ul>
+  </div>
+  <div class="hint-box">
+    <h4>💡 Hint</h4>
+    <p>You can attach <code>addEventListener</code> to <strong>any</strong> element, not just one. Each button gets its own listener — they just share the same <code>clickCount</code> variable.</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 13: Exercise 2 ===== -->
+<section class="slide" data-slide="13">
+  <h2>🏋️ Exercise 2 — Character Counter</h2>
+  <div class="exercise-box">
+    <h3>Task</h3>
+    <p style="margin-top:4px;">Build a text input with a live character count below it.</p>
+    <ul style="margin-top:8px;">
+      <li>An <code>&lt;input type="text"&gt;</code> field</li>
+      <li>A <code>&lt;p&gt;</code> that shows: <code>"N / 100 characters"</code></li>
+      <li>Use the <code>'input'</code> event to update the count on every keystroke</li>
+      <li><strong>Bonus:</strong> turn the number <span style="color:var(--red);">red</span> when it exceeds 100</li>
+    </ul>
+  </div>
+  <div class="hint-box">
+    <h4>💡 Hint</h4>
+    <p><code>event.target.value.length</code> gives you the current character count. Use a conditional to change the color: <code>if (len &gt; 100) { ... }</code></p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 14: Exercise 3 ===== -->
+<section class="slide" data-slide="14">
+  <h2>🏋️ Exercise 3 — Light Switch</h2>
+  <div class="exercise-box">
+    <h3>Task</h3>
+    <p style="margin-top:4px;">Create a toggle that switches a background color between light and dark.</p>
+    <ul style="margin-top:8px;">
+      <li>A <code>&lt;div&gt;</code> acting as the "room" (give it an ID)</li>
+      <li>A button that says "Toggle Light"</li>
+      <li>On each click, toggle the div's background between <code>#222</code> (dark) and <code>#fff8e7</code> (light)</li>
+      <li>The button text should update: "Turn on" / "Turn off"</li>
+    </ul>
+  </div>
+  <div class="hint-box">
+    <h4>💡 Hint</h4>
+    <p>Use <code>element.style.backgroundColor</code> or <code>classList.toggle('dark')</code>. Track the state with a boolean <code>let isLight = false;</code></p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 15: Summary ===== -->
+<section class="slide" data-slide="15">
+  <h2>🎯 Key Takeaways</h2>
+  <div style="margin-top:20px;max-width:680px;margin-inline:auto;">
+    <div class="takeaway">
+      <div class="icon">✓</div>
+      <div><strong>Events drive interactivity</strong> — the browser fires events (click, input, keydown, etc.) and your code responds via handlers.</div>
+    </div>
+    <div class="takeaway">
+      <div class="icon">✓</div>
+      <div><strong>addEventListener</strong> is the standard way to register handlers — pass the event type as a string and a callback function.</div>
+    </div>
+    <div class="takeaway">
+      <div class="icon">✓</div>
+      <div><strong>The event object</strong> carries data — <code>event.target</code> tells you which element fired the event; <code>event.target.value</code> reads input content.</div>
+    </div>
+    <div class="takeaway">
+      <div class="icon">✓</div>
+      <div><strong>'input' vs 'change'</strong> — use <code>'input'</code> for real-time updates (live preview) and <code>'change'</code> for final values (form commit).</div>
+    </div>
+    <div class="takeaway">
+      <div class="icon">✓</div>
+      <div><strong>Never call the handler</strong> — pass the function reference, not the result of calling it (<code>btn.addEventListener('click', fn)</code> not <code>fn()</code>).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 16: Next Steps ===== -->
+<section class="slide" data-slide="16">
+  <h2>🔜 What's Next</h2>
+  <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px;max-width:620px;">
+    <div class="card">
+      <h3>Tomorrow — Day 29</h3>
+      <p><strong>DOM Manipulation</strong> — creating elements, inserting HTML, traversing the DOM tree.</p>
+    </div>
+    <div class="card">
+      <h3>Project Preview</h3>
+      <p><span class="badge">Project 2</span> <strong>Bookmark Saver</strong> — a browser app that saves &amp; displays bookmarks using localStorage. Coming <strong>after Week 6</strong>.</p>
+      <p style="margin-top:6px;font-size:clamp(12px,1vw,16px);">Use what you learn this week (events + DOM) to build it.</p>
+    </div>
+    <div class="card">
+      <h3>Practice Until Next Time</h3>
+      <ul>
+        <li>Add a double-click listener (<code>'dblclick'</code>) to any element</li>
+        <li>Experiment with <code>'mouseenter'</code> and <code>'mouseleave'</code></li>
+        <li>Read MDN: <a href="https://developer.mozilla.org/en-US/docs/Web/Events" style="color:var(--accent);" target="_blank">Event reference</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Progress bar -->
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="slide-counter" id="slideCounter">1 / 17</div>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+  const counter = document.getElementById('slideCounter');
+  const bar = document.getElementById('progressBar');
+
+  function show(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + total;
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = idx;
+  }
+
+  function next() { if (current < total - 1) show(current + 1); }
+  function prev() { if (current > 0) show(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.body.requestFullscreen(); else document.exitFullscreen(); }
+    if (e.key === 'n' || e.key === 'N') { document.querySelectorAll('.speaker-note').forEach(n => n.style.display = n.style.display === 'block' ? 'none' : 'block'); }
+  });
+
+  // restore from hash
+  const hash = parseInt(window.location.hash.slice(1), 10);
+  if (!isNaN(hash) && hash >= 0 && hash < total) show(hash);
+  else show(0);
+
+  // touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+  });
+})();
+</script>
+
+</body>
+</html>
