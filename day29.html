@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 29 — JS: Objects, JSON, Fetch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-alt: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88, 166, 255, 0.15);
+      --green: #3fb950;
+      --orange: #d29922;
+      --pink: #f778ba;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --slide-w: 1280px;
+      --slide-h: 720px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #0a0c10;
+      font-family: var(--font-display);
+      color: var(--text);
+      overflow: hidden;
+    }
+    /* Presentation container */
+    .presentation {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    /* Slide stage */
+    .stage {
+      position: relative;
+      width: var(--slide-w); height: var(--slide-h);
+      max-width: 100vw; max-height: 100vh;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: var(--bg);
+      border-radius: 0;
+    }
+    /* Individual slides */
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      padding: 48px 64px;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      overflow-y: auto;
+    }
+    .slide.active {
+      opacity: 1; visibility: visible;
+      z-index: 2;
+    }
+    /* Progress bar */
+    .progress-bar {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: var(--border); z-index: 10;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 0%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+    /* Slide counter */
+    .slide-counter {
+      position: absolute; bottom: 14px; right: 24px;
+      font-family: var(--font-mono); font-size: 13px;
+      color: var(--text-dim); z-index: 10;
+      user-select: none;
+    }
+    /* Typography */
+    h1 {
+      font-size: 48px; font-weight: 700; line-height: 1.15;
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: 32px; font-weight: 600; line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    h3 {
+      font-size: 22px; font-weight: 600; margin-bottom: 14px;
+    }
+    p, li {
+      font-size: 20px; line-height: 1.55; color: var(--text-dim);
+    }
+    ul { list-style: none; padding: 0; }
+    ul li {
+      padding-left: 24px; position: relative; margin-bottom: 8px;
+    }
+    ul li::before {
+      content: ''; position: absolute; left: 0; top: 12px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); opacity: 0.7;
+    }
+    ul li strong { color: var(--text); }
+    code {
+      font-family: var(--font-mono); font-size: 17px;
+      background: var(--surface-alt); padding: 2px 8px;
+      border-radius: 4px; color: var(--orange);
+    }
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px 24px;
+      margin: 12px 0; overflow-x: auto;
+    }
+    pre code {
+      background: none; padding: 0; color: var(--text);
+      font-size: 15px; line-height: 1.6;
+    }
+    .hl-keyword { color: var(--pink); }
+    .hl-string { color: var(--green); }
+    .hl-fn { color: var(--accent); }
+    .hl-comment { color: var(--text-dim); font-style: italic; }
+    .hl-number { color: var(--orange); }
+    .hl-const { color: #7ee787; }
+    /* Layout helpers */
+    .center {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; height: 100%;
+    }
+    .grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      flex: 1; min-height: 0;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 24px;
+    }
+    .tag {
+      display: inline-block;
+      font-family: var(--font-mono); font-size: 13px;
+      background: var(--accent-glow); color: var(--accent);
+      padding: 2px 12px; border-radius: 20px;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 14px; font-weight: 500;
+      padding: 4px 14px; border-radius: 20px;
+      margin-bottom: 6px;
+    }
+    .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+    .badge-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+    .badge-blue { background: var(--accent-glow); color: var(--accent); }
+    .steps { counter-reset: step; }
+    .step {
+      counter-increment: step; padding-left: 48px;
+      position: relative; margin-bottom: 14px;
+    }
+    .step::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 0;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent); color: var(--bg);
+      font-family: var(--font-mono); font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step p { font-size: 18px; color: var(--text-dim); }
+    .step p strong { color: var(--text); }
+    .objective-list li { font-size: 19px; margin-bottom: 12px; }
+    .objective-list li::before { background: var(--green); }
+    /* Exercise boxes */
+    .exercise-box {
+      background: rgba(63,185,80,0.06);
+      border: 1px solid rgba(63,185,80,0.25);
+      border-radius: 10px; padding: 20px 24px; margin-top: 16px;
+    }
+    .exercise-box h3 { color: var(--green); font-size: 18px; margin-bottom: 10px; }
+    .exercise-box p { font-size: 17px; }
+    .hint {
+      background: rgba(210,153,34,0.08);
+      border: 1px solid rgba(210,153,34,0.2);
+      border-radius: 8px; padding: 12px 18px; margin-top: 8px;
+    }
+    .hint p { font-size: 16px; color: var(--orange); }
+    .hint code { font-size: 15px; }
+
+    /* Title slide */
+    .title-slide .center { gap: 8px; }
+    .title-slide h1 {
+      font-size: 56px; background: linear-gradient(135deg, var(--accent), #a371f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-slide .subtitle {
+      font-size: 22px; color: var(--text-dim); margin-top: 4px;
+    }
+    .title-slide .meta {
+      font-family: var(--font-mono); font-size: 14px;
+      color: var(--text-dim); margin-top: 24px;
+    }
+    .title-slide .pill {
+      display: inline-flex; gap: 6px; margin-top: 16px;
+    }
+    .title-slide .pill span {
+      padding: 4px 14px; border-radius: 20px;
+      font-size: 13px; font-family: var(--font-mono);
+      background: var(--surface-alt); color: var(--text-dim);
+    }
+
+    /* Recap slide */
+    .recap-list { margin-top: 12px; }
+    .recap-list li {
+      font-size: 22px; margin-bottom: 18px; padding-left: 36px;
+    }
+    .recap-list li::before {
+      width: 12px; height: 12px; top: 14px;
+      background: var(--green);
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 700px) {
+      .slide { padding: 24px 20px; }
+      h1 { font-size: 30px; }
+      h2 { font-size: 22px; }
+      h3 { font-size: 18px; }
+      p, li { font-size: 16px; }
+      code { font-size: 14px; }
+      pre { padding: 14px; }
+      pre code { font-size: 13px; }
+      .grid-2 { grid-template-columns: 1fr; gap: 16px; }
+      .title-slide h1 { font-size: 34px; }
+      .stage { border-radius: 0; }
+      .step p { font-size: 15px; }
+      .objective-list li { font-size: 16px; }
+    }
+
+    /* Scrollbar styling for slide overflow */
+    .slide::-webkit-scrollbar { width: 6px; }
+    .slide::-webkit-scrollbar-track { background: transparent; }
+    .slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Print */
+    @media print {
+      body { overflow: visible; }
+      .presentation { display: block; height: auto; }
+      .stage { max-width: 100%; height: auto; aspect-ratio: unset; }
+      .slide { position: relative; opacity: 1; visibility: visible; page-break-after: always; height: auto; min-height: 720px; }
+      .progress-bar, .slide-counter { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="presentation">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 0 — Title -->
+    <section class="slide title-slide active" data-slide="0">
+      <div class="center">
+        <div class="pill">
+          <span>Day 29</span>
+          <span>Week 5</span>
+          <span>Phase II</span>
+        </div>
+        <h1>JS: Objects, JSON, Fetch</h1>
+        <p class="subtitle">JavaScript objects · dot/bracket notation · JSON · fetching APIs</p>
+        <p class="meta">90-Day Co-op Prep Plan · 60 min</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 1 — Prerequisites -->
+    <section class="slide" data-slide="1">
+      <span class="tag">Prerequisites</span>
+      <h2>Before You Start</h2>
+      <p style="margin-bottom:20px;">You should already be comfortable with:</p>
+      <ul>
+        <li><strong>Variables &amp; data types</strong> — <code>let</code>, <code>const</code>, strings, numbers, booleans</li>
+        <li><strong>Functions</strong> — declaring, calling, returning values</li>
+        <li><strong>Arrays</strong> — creation, indexing, <code>.push()</code>, <code>.length</code></li>
+        <li><strong>Basic DOM</strong> — <code>document.querySelector()</code>, <code>.textContent</code></li>
+      </ul>
+      <div class="hint" style="margin-top:20px;">
+        <p>⚠️ You'll need a browser with dev tools open. <code>Ctrl+Shift+I</code> to open.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 — Learning Objectives -->
+    <section class="slide" data-slide="2">
+      <span class="tag">Objectives</span>
+      <h2>By the End of This Lesson You Will</h2>
+      <ul class="objective-list">
+        <li><strong>Create</strong> and access JavaScript objects using dot and bracket notation</li>
+        <li><strong>Convert</strong> between JS objects and JSON strings with <code>JSON.stringify</code> / <code>JSON.parse</code></li>
+        <li><strong>Fetch</strong> data from a public API using the <code>fetch()</code> function</li>
+        <li><strong>Display</strong> fetched data in a web page using DOM manipulation</li>
+      </ul>
+    </section>
+
+    <!-- SLIDE 3 — JS Objects (dot notation) -->
+    <section class="slide" data-slide="3">
+      <span class="tag">Concept · Objects</span>
+      <h2>JavaScript Objects — Dot Notation</h2>
+      <p style="margin-bottom:16px;">Objects store key-value pairs. Keys are strings (called <em>properties</em>), values can be any type.</p>
+      <pre><code><span class="hl-comment">// Create an object literal</span>
+<span class="hl-keyword">const</span> book = {
+  title:  <span class="hl-string">"The Pragmatic Programmer"</span>,
+  author: <span class="hl-string">"Hunt & Thomas"</span>,
+  pages:  352,
+  isRead: <span class="hl-keyword">false</span>
+};
+
+<span class="hl-comment">// Access with dot notation</span>
+<span class="hl-fn">console</span>.log(book.title);     <span class="hl-comment">// "The Pragmatic Programmer"</span>
+<span class="hl-fn">console</span>.log(book.pages);    <span class="hl-comment">// 352</span>
+
+<span class="hl-comment">// Modify a property</span>
+book.isRead = <span class="hl-keyword">true</span>;
+
+<span class="hl-comment">// Add a new property</span>
+book.rating = <span class="hl-number">4.8</span>;</code></pre>
+      <p>Dot notation is clean and preferred — <strong>when you know the property name at write time</strong>.</p>
+    </section>
+
+    <!-- SLIDE 4 — Bracket Notation -->
+    <section class="slide" data-slide="4">
+      <span class="tag">Concept · Objects</span>
+      <h2>Bracket Notation — Dynamic Keys</h2>
+      <p style="margin-bottom:16px;">Use bracket notation when the property name is dynamic, computed, or has special characters.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Dot notation</h3>
+          <pre style="margin:0;"><code><span class="hl-keyword">const</span> user = { name: <span class="hl-string">"Alice"</span> };
+user.name;   <span class="hl-comment">// "Alice"</span>
+
+<span class="hl-comment">// ❌ Fails with dynamic key</span>
+<span class="hl-keyword">let</span> key = <span class="hl-string">"name"</span>;
+user.key;    <span class="hl-comment">// undefined</span></code></pre>
+        </div>
+        <div class="card">
+          <h3>Bracket notation</h3>
+          <pre style="margin:0;"><code><span class="hl-keyword">const</span> user = { name: <span class="hl-string">"Alice"</span> };
+user[<span class="hl-string">"name"</span>]; <span class="hl-comment">// "Alice"</span>
+
+<span class="hl-comment">// ✅ Dynamic key from variable</span>
+<span class="hl-keyword">let</span> key = <span class="hl-string">"name"</span>;
+user[key];   <span class="hl-comment">// "Alice"</span></code></pre>
+        </div>
+      </div>
+      <p style="margin-top:12px;">Also required for keys with spaces / hyphens: <code>user["first name"]</code></p>
+    </section>
+
+    <!-- SLIDE 5 — JSON.stringify / JSON.parse -->
+    <section class="slide" data-slide="5">
+      <span class="tag">Concept · JSON</span>
+      <h2>JSON — JavaScript Object Notation</h2>
+      <p style="margin-bottom:8px;">JSON is a lightweight text format for storing and transmitting data. It looks like a JS object but all keys <strong>must</strong> be in double quotes.</p>
+      <div class="grid-2" style="margin-top:12px;">
+        <div class="card">
+          <h3><code>JSON.stringify()</code></h3>
+          <p style="font-size:16px;margin-bottom:8px;">Convert JS object → JSON string</p>
+          <pre style="margin:0;"><code><span class="hl-keyword">const</span> obj = { name: <span class="hl-string">"Alice"</span>, age: <span class="hl-number">25</span> };
+<span class="hl-keyword">const</span> json = <span class="hl-fn">JSON.stringify</span>(obj);
+<span class="hl-comment">// '{"name":"Alice","age":25}'</span>
+
+<span class="hl-fn">console</span>.log(<span class="hl-keyword">typeof</span> json);
+<span class="hl-comment">// "string" ← it's text now!</span></code></pre>
+        </div>
+        <div class="card">
+          <h3><code>JSON.parse()</code></h3>
+          <p style="font-size:16px;margin-bottom:8px;">Convert JSON string → JS object</p>
+          <pre style="margin:0;"><code><span class="hl-keyword">const</span> json = <span class="hl-string">'{"name":"Bob","age":30}'</span>;
+<span class="hl-keyword">const</span> obj = <span class="hl-fn">JSON.parse</span>(json);
+
+<span class="hl-fn">console</span>.log(obj.name);
+<span class="hl-comment">// "Bob" ← it's an object again!</span></code></pre>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:17px;">💡 This is how data travels across the internet — APIs send JSON strings, your code <code>parse</code>s them into objects.</p>
+    </section>
+
+    <!-- SLIDE 6 — fetch() API -->
+    <section class="slide" data-slide="6">
+      <span class="tag">Walkthrough</span>
+      <h2>Fetching Data with <code>fetch()</code></h2>
+      <p style="margin-bottom:10px;"><code>fetch(url)</code> returns a <strong>Promise</strong>. We use <code>await</code> (inside <code>async</code>) to wait for the response.</p>
+      <pre><code><span class="hl-comment">// Get a random cat fact from a free API</span>
+<span class="hl-keyword">async function</span> <span class="hl-fn">getCatFact</span>() {
+  <span class="hl-keyword">const</span> res = <span class="hl-keyword">await</span> <span class="hl-fn">fetch</span>(
+    <span class="hl-string">"https://catfact.ninja/fact"</span>
+  );
+  <span class="hl-keyword">const</span> data = <span class="hl-keyword">await</span> res.json();
+  <span class="hl-fn">console</span>.log(data.fact);
+}
+
+<span class="hl-fn">getCatFact</span>();
+<span class="hl-comment">// → "A cat's tail contains nearly 10% of all..."</span></code></pre>
+      <div class="steps" style="margin-top:8px;">
+        <div class="step"><p><strong>fetch(url)</strong> — sends the HTTP request</p></div>
+        <div class="step"><p><strong>response.json()</strong> — parses the JSON body into a JS object</p></div>
+        <div class="step"><p><strong>data</strong> — now you can access any property like <code>data.fact</code></p></div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 — Display fetched data -->
+    <section class="slide" data-slide="7">
+      <span class="tag">Walkthrough</span>
+      <h2>Displaying API Data in the DOM</h2>
+      <p style="margin-bottom:10px;">Bring fetch results into your page:</p>
+      <pre><code><span class="hl-comment">&lt;!-- HTML --&gt;</span>
+&lt;<span class="hl-keyword">button</span> id=<span class="hl-string">"loadBtn"</span>&gt;Get a Fact!&lt;/<span class="hl-keyword">button</span>&gt;
+&lt;<span class="hl-keyword">p</span> id=<span class="hl-string">"factDisplay"</span>&gt;&lt;/<span class="hl-keyword">p</span>&gt;
+
+&lt;<span class="hl-keyword">script</span>&gt;
+  <span class="hl-keyword">const</span> btn = document.<span class="hl-fn">getElementById</span>(<span class="hl-string">"loadBtn"</span>);
+  <span class="hl-keyword">const</span> display = document.<span class="hl-fn">getElementById</span>(<span class="hl-string">"factDisplay"</span>);
+
+  btn.<span class="hl-fn">addEventListener</span>(<span class="hl-string">"click"</span>, <span class="hl-keyword">async</span> () =&gt; {
+    <span class="hl-keyword">const</span> res = <span class="hl-keyword">await</span> <span class="hl-fn">fetch</span>(<span class="hl-string">"https://catfact.ninja/fact"</span>);
+    <span class="hl-keyword">const</span> data = <span class="hl-keyword">await</span> res.<span class="hl-fn">json</span>();
+    display.textContent = data.fact;
+  });
+&lt;/<span class="hl-keyword">script</span>&gt;</code></pre>
+      <p>Click the button → fetch → parse → display. This is the <strong>core pattern</strong> of almost every web app.</p>
+    </section>
+
+    <!-- SLIDE 8 — Error handling -->
+    <section class="slide" data-slide="8">
+      <span class="tag">Concept</span>
+      <h2>Handling Fetch Errors</h2>
+      <p style="margin-bottom:10px;">Network requests can fail. Always handle errors with <code>try/catch</code>:</p>
+      <pre><code><span class="hl-keyword">async function</span> <span class="hl-fn">getData</span>(url) {
+  <span class="hl-keyword">try</span> {
+    <span class="hl-keyword">const</span> res = <span class="hl-keyword">await</span> <span class="hl-fn">fetch</span>(url);
+    <span class="hl-keyword">if</span> (!res.ok) {
+      <span class="hl-keyword">throw new</span> <span class="hl-fn">Error</span>(
+        <span class="hl-string">`HTTP ${res.status}: ${res.statusText}`</span>
+      );
+    }
+    <span class="hl-keyword">const</span> data = <span class="hl-keyword">await</span> res.<span class="hl-fn">json</span>();
+    <span class="hl-keyword">return</span> data;
+  } <span class="hl-keyword">catch</span> (err) {
+    <span class="hl-fn">console</span>.error(<span class="hl-string">"Fetch failed:"</span>, err.message);
+    display.textContent = <span class="hl-string">"⚠️ Could not load data. Try again later."</span>;
+  }
+}</code></pre>
+      <p>Always check <code>res.ok</code> — <code>fetch()</code> only rejects on network failure, not on 404 or 500!</p>
+    </section>
+
+    <!-- SLIDE 9 — Exercise -->
+    <section class="slide" data-slide="9">
+      <span class="tag">Practice</span>
+      <h2>Try It Yourself</h2>
+      <div class="exercise-box">
+        <h3>📝 Exercise 1: Build a User Card</h3>
+        <p>Create a page that fetches a random user from <code>https://randomuser.me/api/</code> and displays their name, email, and profile picture.</p>
+      </div>
+      <div class="exercise-box">
+        <h3>📝 Exercise 2: Weather Lookup</h3>
+        <p>Use <code>https://api.open-meteo.com/v1/forecast?latitude=43.65&longitude=-79.38&current_weather=true</code> (Toronto coords). Parse the JSON and display the current temperature.</p>
+      </div>
+      <div class="hint">
+        <p><strong>Stuck?</strong> Start with <code>async function load()</code>, <code>await fetch(url)</code>, then <code>console.log()</code> the parsed data before touching the DOM.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 10 — Recap -->
+    <section class="slide" data-slide="10">
+      <span class="tag">Summary</span>
+      <h2>Today's Takeaways</h2>
+      <ul class="recap-list">
+        <li><strong>Objects</strong> group related data with key-value pairs — access via <code>obj.key</code> (dot) or <code>obj["key"]</code> (bracket)</li>
+        <li><strong>JSON</strong> is the wire format — use <code>JSON.stringify()</code> to send, <code>JSON.parse()</code> to receive</li>
+        <li><strong>fetch()</strong> + <code>await response.json()</code> is the standard pattern for consuming public APIs</li>
+        <li><strong>Always handle errors</strong> — <code>try/catch</code> and check <code>response.ok</code></li>
+      </ul>
+      <div style="margin-top:24px; padding:16px 20px; background: var(--surface); border-radius:8px; border:1px solid var(--border);">
+        <p style="font-size:17px;">📌 <strong>Projects milestone:</strong> You're building toward <strong>Project 2: Bookmark Saver</strong> (after Week 6) — this fetch+display pattern is its core!</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 11 — Next Steps / Closing -->
+    <section class="slide" data-slide="11">
+      <div class="center">
+        <h2 style="background:linear-gradient(135deg,var(--green),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Great Work Today!</h2>
+        <p class="subtitle" style="margin-bottom:24px;">Day 29 ✅ · Up next: DOM manipulation &amp; events</p>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+          <p style="font-size:17px;color:var(--text-dim);">🔁 Practice today's exercises until <code>fetch()</code> feels automatic</p>
+          <p style="font-size:17px;color:var(--text-dim);">📂 Tomorrow: deeper into DOM APIs and event-driven UIs</p>
+          <p style="font-size:17px;color:var(--text-dim);">🚀 <strong>Week 6</strong> → Project 2: Bookmark Saver</p>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /stage -->
+
+  <div class="progress-bar"><div class="progress-bar-fill" id="progressFill"></div></div>
+  <div class="slide-counter" id="slideCounter">1 / 12</div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const progressFill = document.getElementById('progressFill');
+  const counter = document.getElementById('slideCounter');
+  let current = 0;
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(idx, total - 1));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    progressFill.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    window.location.hash = '#' + idx;
+  }
+
+  // Hash on load
+  function initFromHash() {
+    const h = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(h) && h >= 0 && h < total) showSlide(h);
+    else showSlide(0);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      // no speaker notes in this deck
+    }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 60) {
+      diff < 0 ? showSlide(current + 1) : showSlide(current - 1);
+    }
+  }, { passive: true });
+
+  initFromHash();
+  window.addEventListener('hashchange', initFromHash);
+})();
+</script>
+</body>
+</html>
