@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 30 — Review + Catch-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --orange: #d9534f;
+  --code-bg: #1c2128;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #010409;
+  font-family: var(--font-sans);
+  color: var(--text);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+.deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.slide {
+  position: absolute;
+  width: min(96vw, calc(100vh * 16 / 9));
+  height: min(90vh, calc(100vw * 9 / 16));
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Progress bar */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 100;
+  transition: width 0.3s ease;
+}
+.slide-counter {
+  position: fixed;
+  bottom: 16px;
+  right: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  z-index: 100;
+}
+
+/* Typography */
+h1 {
+  font-family: var(--font-sans);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+h2 {
+  font-family: var(--font-sans);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+  color: var(--accent);
+}
+h3 {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+p, li {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text);
+}
+p { margin-bottom: 12px; }
+.text-dim { color: var(--text-dim); }
+
+/* Tags / badges */
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  margin-right: 8px;
+  letter-spacing: 0.02em;
+}
+.tag-green { background: rgba(63,185,80,0.15); color: var(--green); }
+.tag-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.tag-orange { background: rgba(217,83,79,0.15); color: var(--orange); }
+
+/* Code */
+pre, code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+code {
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+pre code { background: transparent; padding: 0; border-radius: 0; }
+.hl { color: var(--green); }
+.hl-kw { color: #ff7b72; }
+.hl-str { color: #a5d6ff; }
+.hl-num { color: #79c0ff; }
+.hl-cmt { color: var(--text-dim); font-style: italic; }
+
+/* Lists */
+ul, ol { padding-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 6px; }
+ul li::marker { color: var(--accent); }
+
+/* Columns */
+.cols { display: flex; gap: 24px; flex: 1; }
+.col { flex: 1; }
+.col-2 { flex: 2; }
+
+/* Cards */
+.card {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+/* Button / demo elements */
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--accent); }
+
+/* Flashcard */
+.flashcard {
+  background: var(--code-bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+}
+.flashcard:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.flashcard .front { font-size: 18px; font-weight: 600; }
+.flashcard .back { display: none; font-size: 16px; color: var(--green); }
+.flashcard.flipped .front { display: none; }
+.flashcard.flipped .back { display: block; }
+
+/* Checkbox */
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+.check-item::before {
+  content: "☐";
+  font-size: 20px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.check-item.done::before {
+  content: "☑";
+  color: var(--green);
+}
+
+/* Title slide */
+.title-slide {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.title-slide h1 { font-size: 52px; margin-bottom: 8px; }
+.title-slide .subtitle {
+  font-size: 22px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}
+.title-slide .meta {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.title-slide .phase-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: rgba(88,166,255,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(88,166,255,0.25);
+  margin-bottom: 20px;
+}
+
+/* Section break */
+.section-break {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+}
+.section-break h2 {
+  font-size: 36px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+/* Exercise toggle */
+.exercise-hint {
+  font-size: 14px;
+  color: var(--text-dim);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: color 0.15s;
+}
+.exercise-hint:hover { color: var(--accent); }
+.exercise-solution {
+  display: none;
+  margin-top: 10px;
+}
+.exercise-solution.show { display: block; }
+
+/* Recap grid */
+.recap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+  flex: 1;
+}
+.recap-item {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.recap-num {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.recap-label {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* Mobile responsive */
+@media (max-width: 700px) {
+  .slide { padding: 28px 24px; width: 96vw; height: auto; min-height: min(90vh, calc(100vw * 9 / 16)); }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 15px; }
+  pre { font-size: 12px; padding: 12px 14px; }
+  .cols { flex-direction: column; gap: 12px; }
+  .title-slide h1 { font-size: 34px; }
+  .recap-grid { grid-template-columns: 1fr; }
+}
+
+/* Print */
+@media print {
+  body { background: #fff; overflow: visible; }
+  .slide { opacity: 1 !important; position: relative !important; width: 100%; height: auto; page-break-after: always; border: none; box-shadow: none; }
+  .progress-bar, .slide-counter { display: none; }
+  :root { --bg: #fff; --surface: #fff; --text: #000; --text-dim: #555; --code-bg: #f5f5f5; --border: #ddd; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <span class="phase-badge">Week 5 · Phase II</span>
+  <h1>Day 30: Review + Catch-up</h1>
+  <div class="subtitle">Re-type JS Exercises · DOM &amp; Array Flashcards<br>Close any gaps before Phase III</div>
+  <div class="meta">90-Day Co-op Prep Plan · 2026-06-19</div>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>📋 Today's Plan</h2>
+  <p style="font-size:18px;margin-bottom:16px;">A dedicated review day to lock in fundamentals and clear any backlog.</p>
+  <div class="cols">
+    <div class="col">
+      <div class="card">
+        <div class="card-title">⏱ 60 min</div>
+        <ul style="margin:0;">
+          <li><strong>10m</strong> — JS Array Methods flashcards</li>
+          <li><strong>10m</strong> — DOM Methods flashcards</li>
+          <li><strong>20m</strong> — Re-type JS exercises (muscle memory)</li>
+          <li><strong>10m</strong> — Practice exercises</li>
+          <li><strong>10m</strong> — Catch-up / backlog review</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-title">🎯 Objectives</div>
+        <ul style="margin:0;">
+          <li>Recall 10+ array methods from memory</li>
+          <li>Recall 8+ DOM properties/methods</li>
+          <li>Re-type 3 JS exercises from scratch</li>
+          <li>Identify &amp; fill knowledge gaps</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="text-dim" style="font-size:14px;margin-top:auto;">Project 1 (CLI Todo List) — ✅ Complete · Project 2 (Bookmark Saver) — coming after Week 6</p>
+</section>
+
+<!-- SLIDE 2: Section break - Array Methods -->
+<section class="slide section-break" data-slide="2">
+  <span class="tag">Flashcards</span>
+  <h2>JavaScript Array Methods</h2>
+  <p class="text-dim" style="font-size:17px;">Know these cold — they're in every interview and every project</p>
+</section>
+
+<!-- SLIDE 3: Array methods flashcards -->
+<section class="slide" data-slide="3">
+  <h2>Array Methods — Flashcards</h2>
+  <p class="text-dim" style="margin-bottom:12px;">Click each card to reveal the answer. Say the method name + what it returns before clicking.</p>
+  <div class="cols">
+    <div class="col">
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Creates a new array with elements that pass a test</div>
+        <div class="back"><code>.filter()</code> → new array</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Transforms every element, returns new array</div>
+        <div class="back"><code>.map()</code> → new array</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Reduces array to a single value (left-to-right)</div>
+        <div class="back"><code>.reduce()</code> → single value</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Returns first element passing a test</div>
+        <div class="back"><code>.find()</code> → element | undefined</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Tests whether all elements pass a test</div>
+        <div class="back"><code>.every()</code> → boolean</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Tests whether at least one element passes</div>
+        <div class="back"><code>.some()</code> → boolean</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Adds elements to the end of an array</div>
+        <div class="back"><code>.push()</code> → new length</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Removes the last element</div>
+        <div class="back"><code>.pop()</code> → removed element</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Returns a shallow copy of a portion</div>
+        <div class="back"><code>.slice()</code> → new array</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Changes contents by removing/replacing elements</div>
+        <div class="back"><code>.splice()</code> → array of removed items</div>
+      </div>
+    </div>
+  </div>
+  <p class="text-dim" style="font-size:13px;margin-bottom:0;">Bonus: <code>.flatMap()</code> · <code>.toSorted()</code> · <code>.with()</code> (ES2023)</p>
+</section>
+
+<!-- SLIDE 4: Section break - DOM Methods -->
+<section class="slide section-break" data-slide="4">
+  <span class="tag">Flashcards</span>
+  <h2>DOM Methods &amp; Properties</h2>
+  <p class="text-dim" style="font-size:17px;">The browser API you'll use on every front-end project</p>
+</section>
+
+<!-- SLIDE 5: DOM flashcards -->
+<section class="slide" data-slide="5">
+  <h2>DOM Methods — Flashcards</h2>
+  <p class="text-dim" style="margin-bottom:12px;">Say the method/property and what it returns before clicking.</p>
+  <div class="cols">
+    <div class="col">
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Select first element matching a CSS selector</div>
+        <div class="back"><code>document.querySelector()</code> → Element | null</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Select all elements matching a CSS selector</div>
+        <div class="back"><code>document.querySelectorAll()</code> → NodeList</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Create a new HTML element</div>
+        <div class="back"><code>document.createElement()</code> → Element</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Add a child element to a parent</div>
+        <div class="back"><code>parent.appendChild()</code> → child Element</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Remove a child from its parent</div>
+        <div class="back"><code>parent.removeChild()</code> · <code>el.remove()</code></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Read or set the text inside an element</div>
+        <div class="back"><code>el.textContent</code> → string</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Read or set inner HTML (use carefully)</div>
+        <div class="back"><code>el.innerHTML</code> → string</div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Set a CSS property on an element</div>
+        <div class="back"><code>el.style.property = "value"</code></div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Add, remove, or toggle a CSS class</div>
+        <div class="back"><code>el.classList.add()</code> · <code>.remove()</code> · <code>.toggle()</code></div>
+      </div>
+      <div class="flashcard" onclick="this.classList.toggle('flipped')">
+        <div class="front">Attach an event listener to an element</div>
+        <div class="back"><code>el.addEventListener(type, callback)</code></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: Section break - Re-type exercises -->
+<section class="slide section-break" data-slide="6">
+  <span class="tag">Muscle Memory</span>
+  <h2>Re-type JS Exercises</h2>
+  <p class="text-dim" style="font-size:17px;">Type them out, don't copy-paste. Your fingers learn as much as your brain.</p>
+</section>
+
+<!-- SLIDE 7: Re-type exercise 1 - map/filter -->
+<section class="slide" data-slide="7">
+  <h2>✍️ Exercise 1: Array Transform Pipeline</h2>
+  <p class="text-dim">Re-type this from memory. Close your laptop, look away, then write it.</p>
+  <pre><code><span class="hl-kw">const</span> users = [
+  { name: <span class="hl-str">"Alice"</span>, age: 24, active: <span class="hl-kw">true</span> },
+  { name: <span class="hl-str">"Bob"</span>, age: 17, active: <span class="hl-kw">false</span> },
+  { name: <span class="hl-str">"Carol"</span>, age: 31, active: <span class="hl-kw">true</span> },
+];
+
+<span class="hl-cmt">// Get names of active users over 18, uppercased</span>
+<span class="hl-kw">const</span> result = users
+  .filter(u => u.active && u.age >= <span class="hl-num">18</span>)
+  .map(u => u.name.toUpperCase());
+
+<span class="hl-cmt">// Expected: ["ALICE", "CAROL"]</span>
+console.log(result);</code></pre>
+  <div class="card" style="margin-top:4px;">
+    <div class="card-title">💡 How to practice</div>
+    <p style="margin:0;font-size:15px;">1. Read the code once → 2. Hide the panel (scroll up) → 3. Type it from memory → 4. Compare. Repeat until flawless.</p>
+  </div>
+</section>
+
+<!-- SLIDE 8: Re-type exercise 2 - DOM creation -->
+<section class="slide" data-slide="8">
+  <h2>✍️ Exercise 2: Build a List from Data</h2>
+  <p class="text-dim">This pattern appears in every front-end project. Type it until it's automatic.</p>
+  <pre><code><span class="hl-kw">const</span> items = [<span class="hl-str">"Learn JS"</span>, <span class="hl-str">"Build projects"</span>, <span class="hl-str">"Apply to co-op"</span>];
+<span class="hl-kw">const</span> list = document.createElement(<span class="hl-str">"ul"</span>);
+
+items.forEach(text => {
+  <span class="hl-kw">const</span> li = document.createElement(<span class="hl-str">"li"</span>);
+  li.textContent = text;
+  list.appendChild(li);
+});
+
+<span class="hl-cmt">// Attach to the page</span>
+document.body.appendChild(list);
+<span class="hl-cmt">// Note: el.append() can take multiple nodes/strings too!</span></code></pre>
+  <p class="text-dim" style="font-size:14px;">Variation: use <code>document.createDocumentFragment()</code> for performance when adding many items.</p>
+</section>
+
+<!-- SLIDE 9: Re-type exercise 3 - reduce -->
+<section class="slide" data-slide="9">
+  <h2>✍️ Exercise 3: reduce() Patterns</h2>
+  <p class="text-dim">The Swiss Army knife of array methods. Practice the two most common patterns.</p>
+  <pre><code><span class="hl-cmt">// Pattern 1: Sum</span>
+<span class="hl-kw">const</span> numbers = [<span class="hl-num">3</span>, <span class="hl-num">7</span>, <span class="hl-num">2</span>, <span class="hl-num">9</span>, <span class="hl-num">5</span>];
+<span class="hl-kw">const</span> sum = numbers.reduce((acc, n) => acc + n, <span class="hl-num">0</span>);
+<span class="hl-cmt">// sum → 26</span>
+
+<span class="hl-cmt">// Pattern 2: Group by property</span>
+<span class="hl-kw">const</span> people = [
+  { name: <span class="hl-str">"Alice"</span>, role: <span class="hl-str">"dev"</span> },
+  { name: <span class="hl-str">"Bob"</span>, role: <span class="hl-str">"design"</span> },
+  { name: <span class="hl-str">"Carol"</span>, role: <span class="hl-str">"dev"</span> },
+];
+<span class="hl-kw">const</span> grouped = people.reduce((acc, p) => {
+  (acc[p.role] ??= []).push(p);
+  <span class="hl-kw">return</span> acc;
+}, {});</code></pre>
+  <p class="text-dim" style="font-size:14px;">Try typing both patterns three times without looking.</p>
+</section>
+
+<!-- SLIDE 10: Practice exercises -->
+<section class="slide" data-slide="10">
+  <h2>🧪 Practice Exercises</h2>
+  <p>Try these on your own. Click <span class="exercise-hint" style="font-size:inherit;">"Show solution"</span> after attempting each.</p>
+
+  <div class="card">
+    <div class="card-title">Exercise A: getAdults(people)</div>
+    <p style="font-size:15px;">Write a function that takes an array of <code>{name, age}</code> objects and returns an array of names of people 18+.</p>
+    <span class="exercise-hint" onclick="this.nextElementSibling.classList.toggle('show');this.textContent=this.nextElementSibling.classList.contains('show')?'Hide solution':'Show solution'">Show solution</span>
+    <div class="exercise-solution">
+      <pre style="margin:0;"><code><span class="hl-kw">const</span> getAdults = people =>
+  people.filter(p => p.age >= <span class="hl-num">18</span>).map(p => p.name);</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Exercise B: Toggle Class</div>
+    <p style="font-size:15px;">Select an element by <code>#myBtn</code>. When clicked, toggle the class <code>"active"</code> on it.</p>
+    <span class="exercise-hint" onclick="this.nextElementSibling.classList.toggle('show');this.textContent=this.nextElementSibling.classList.contains('show')?'Hide solution':'Show solution'">Show solution</span>
+    <div class="exercise-solution">
+      <pre style="margin:0;"><code>document.getElementById(<span class="hl-str">"myBtn"</span>)
+  .addEventListener(<span class="hl-str">"click"</span>, e =>
+    e.currentTarget.classList.toggle(<span class="hl-str">"active"</span>)
+  );</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Exercise C: Shopping Cart Total</div>
+    <p style="font-size:15px;">Given <code>cart = [{item:"shirt", price:25,qty:2}, {item:"hat",price:15,qty:1}]</code>, compute the total using <code>reduce()</code>.</p>
+    <span class="exercise-hint" onclick="this.nextElementSibling.classList.toggle('show');this.textContent=this.nextElementSibling.classList.contains('show')?'Hide solution':'Show solution'">Show solution</span>
+    <div class="exercise-solution">
+      <pre style="margin:0;"><code><span class="hl-kw">const</span> total = cart.reduce((sum, item) =>
+  sum + item.price * item.qty, <span class="hl-num">0</span>);
+<span class="hl-cmt">// total → 65</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 11: Catch-up strategy -->
+<section class="slide" data-slide="11">
+  <h2>📌 Catch-up Strategy</h2>
+  <p>Missed any days? Here's how to close gaps efficiently:</p>
+  <div class="cols" style="margin-top:8px;">
+    <div class="col">
+      <div class="card">
+        <div class="card-title">🔍 Audit</div>
+        <ul style="margin:0;font-size:15px;">
+          <li>Check <code>codingplan/</code> for missing <code>dayN.html</code> files</li>
+          <li>Review the blueprint weekly topics</li>
+          <li>Flag days where you couldn't follow</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 Prioritize</div>
+        <ul style="margin:0;font-size:15px;">
+          <li>Core JS &gt; DOM &gt; projects &gt; extras</li>
+          <li>1 missed day ≈ 20 min review</li>
+          <li>3+ days → do a review block</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-title">⚡ Quick catch-up</div>
+        <ul style="margin:0;font-size:15px;">
+          <li>Re-type the code examples (fastest recall)</li>
+          <li>Do the exercises (don't skip)</li>
+          <li>Read the summary slide (3 min)</li>
+          <li>Mark it as "reviewed" and move on</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">📅 Upcoming</div>
+        <ul style="margin:0;font-size:15px;">
+          <li>Week 6 → Async JS (fetch, promises)</li>
+          <li>After Week 6 → <strong>Project 2: Bookmark Saver</strong></li>
+          <li>Solidify arrays &amp; DOM <em>now</em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 12: Summary -->
+<section class="slide" data-slide="12">
+  <h2>✅ Summary &amp; Next Steps</h2>
+  <div class="recap-grid" style="margin-top:4px;">
+    <div class="recap-item">
+      <div class="recap-num">1</div>
+      <div class="recap-label"><strong>Array Methods</strong><br>map, filter, reduce, find, some, every — methods that return new values vs. mutate</div>
+    </div>
+    <div class="recap-item">
+      <div class="recap-num">2</div>
+      <div class="recap-label"><strong>DOM API</strong><br>querySelector, createElement, textContent, classList, addEventListener — building blocks of every web app</div>
+    </div>
+    <div class="recap-item">
+      <div class="recap-num">3</div>
+      <div class="recap-label"><strong>Re-type > Re-read</strong><br>Typing code from memory builds real recall. Cover, write, check, repeat.</div>
+    </div>
+  </div>
+  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:auto;">
+    <p style="margin:0;font-size:16px;"><strong>Next session — Day 31:</strong> Advanced functions · Closures · <code>this</code> binding</p>
+    <p class="text-dim" style="font-size:13px;">Project 2 (Bookmark Saver) launches after Week 6 — get arrays &amp; DOM rock-solid this week.</p>
+  </div>
+</section>
+
+</div>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-counter" id="slideCounter"></div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const counter = document.getElementById('slideCounter');
+  const bar = document.getElementById('progressBar');
+  let current = 0;
+
+  function showSlide(idx) {
+    if (idx < 0 || idx >= total) return;
+    slides.forEach(s => s.classList.remove('active'));
+    slides[idx].classList.add('active');
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + total;
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    location.hash = idx;
+  }
+
+  function handleHash() {
+    const h = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(h) && h >= 0 && h < total && h !== current) showSlide(h);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      // speaker notes toggle placeholder
+      const notes = slides[current].querySelector('aside');
+      if (notes) notes.style.display = notes.style.display === 'block' ? 'none' : 'block';
+    }
+  });
+
+  // Touch swipe support
+  let touchX = 0;
+  document.addEventListener('touchstart', e => { touchX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchX;
+    if (Math.abs(dx) > 60) {
+      showSlide(current + (dx < 0 ? 1 : -1));
+    }
+  });
+
+  window.addEventListener('hashchange', handleHash);
+  if (location.hash) handleHash();
+
+  showSlide(0);
+})();
+</script>
+</body>
+</html>
