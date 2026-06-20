@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 31 — SQL: CREATE, INSERT, SELECT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #161822;
+  --accent: #3b82f6;
+  --accent-dim: #1e3a5f;
+  --accent-bright: #60a5fa;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --code-bg: #1a1d2e;
+  --code-border: #252840;
+  --border: #252840;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --keyword: #c084fc;
+  --string: #86efac;
+  --function: #60a5fa;
+  --comment: #64748b;
+  --type: #67e8f9;
+  --heading-font: 'Inter', system-ui, sans-serif;
+  --body-font: 'Inter', system-ui, sans-serif;
+  --code-font: 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: var(--body-font); color: var(--text); }
+#presentation {
+  position: relative;
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: min(96vw, calc(100vh * 16 / 9));
+  height: min(96vh, calc(100vw * 9 / 16));
+  background: var(--slide-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 48px 56px;
+  display: flex; flex-direction: column;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.slide.active { opacity: 1; visibility: visible; position: relative; }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: var(--accent);
+  transition: width 0.35s ease;
+  z-index: 100;
+}
+#slide-counter {
+  position: fixed; bottom: 20px; right: 24px;
+  font-family: var(--code-font); font-size: 13px;
+  color: var(--text-muted); z-index: 100;
+  background: rgba(15,17,23,0.7); padding: 4px 12px;
+  border-radius: 6px; border: 1px solid var(--border);
+}
+
+/* Typography */
+h1 { font-family: var(--heading-font); font-size: 42px; font-weight: 700; color: var(--text); line-height: 1.15; margin-bottom: 8px; }
+h2 { font-family: var(--heading-font); font-size: 28px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+h3 { font-family: var(--heading-font); font-size: 20px; font-weight: 600; color: var(--accent-bright); margin-bottom: 12px; }
+p { font-size: 18px; line-height: 1.6; color: var(--text-dim); margin-bottom: 12px; }
+.subtitle { font-size: 20px; color: var(--text-dim); font-weight: 400; margin-bottom: 12px; }
+.meta { font-size: 15px; color: var(--text-muted); font-family: var(--code-font); }
+
+/* Code */
+pre {
+  background: var(--code-bg); border: 1px solid var(--code-border);
+  border-radius: 8px; padding: 16px 20px; margin: 12px 0;
+  overflow-x: auto; font-family: var(--code-font); font-size: 15px;
+  line-height: 1.55;
+}
+code { font-family: var(--code-font); }
+pre .kw { color: var(--keyword); }  /* keyword */
+pre .str { color: var(--string); }   /* string */
+pre .fn { color: var(--function); }  /* function */
+pre .cm { color: var(--comment); }   /* comment */
+pre .ty { color: var(--type); }      /* type */
+pre .ac { color: var(--accent-bright); } /* accent */
+pre .ok { color: var(--success); }   /* success */
+pre .hl { background: rgba(59,130,246,0.15); display: inline-block; width: 100%; } /* highlight */
+
+/* Lists */
+ul, ol { font-size: 18px; color: var(--text-dim); line-height: 1.7; margin: 8px 0 12px 20px; }
+li { margin-bottom: 4px; }
+li strong { color: var(--text); }
+
+/* Tags */
+.tag {
+  display: inline-block; padding: 2px 10px; border-radius: 4px;
+  font-size: 13px; font-weight: 500; font-family: var(--code-font);
+  background: var(--accent-dim); color: var(--accent-bright); margin-right: 6px;
+}
+.tag.success { background: rgba(34,197,94,0.15); color: var(--success); }
+.tag.warning { background: rgba(245,158,11,0.15); color: var(--warning); }
+
+/* Slide-specific */
+.slide-center { justify-content: center; align-items: center; text-align: center; }
+.slide-center p { max-width: 640px; }
+
+.columns { display: flex; gap: 24px; flex: 1; }
+.columns > div { flex: 1; }
+
+.card {
+  background: var(--code-bg); border: 1px solid var(--code-border);
+  border-radius: 8px; padding: 16px;
+  margin-bottom: 12px;
+}
+.card h4 { font-size: 16px; font-weight: 600; color: var(--accent-bright); margin-bottom: 8px; }
+.card p, .card code { font-size: 15px; }
+
+.step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+.step-num {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 14px;
+  font-weight: 600; display: flex; align-items: center; justify-content: center;
+  font-family: var(--code-font);
+}
+.step-body { flex: 1; }
+.step-body p { font-size: 16px; margin-bottom: 4px; }
+.step-body pre { margin: 4px 0; }
+
+/* Output indicator */
+.output-indicator {
+  display: flex; gap: 8px; align-items: flex-start;
+  background: rgba(34,197,94,0.08); border-left: 3px solid var(--success);
+  padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 8px 0;
+}
+.output-indicator::before { content: '▶'; color: var(--success); font-family: var(--code-font); font-size: 14px; }
+.output-indicator p { font-size: 14px; font-family: var(--code-font); color: var(--text-dim); margin: 0; }
+
+/* Tip box */
+.tip {
+  background: rgba(59,130,246,0.08); border-left: 3px solid var(--accent);
+  padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 8px 0;
+}
+.tip p { font-size: 14px; color: var(--text-dim); margin: 0; }
+.tip strong { color: var(--accent-bright); }
+
+/* Keyboard nav hint */
+#nav-hint {
+  position: fixed; bottom: 20px; left: 24px;
+  font-size: 13px; color: var(--text-muted); z-index: 100;
+  background: rgba(15,17,23,0.7); padding: 4px 12px;
+  border-radius: 6px; border: 1px solid var(--border);
+  font-family: var(--code-font);
+}
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, ul, ol { font-size: 15px; }
+  pre { font-size: 13px; padding: 12px; }
+  .columns { flex-direction: column; }
+  #nav-hint { display: none; }
+}
+@media print {
+  body { background: #fff; }
+  .slide { background: #fff; border: 1px solid #ddd; box-shadow: none; position: relative !important; opacity: 1 !important; visibility: visible !important; page-break-after: always; height: auto; min-height: 50vh; }
+  #progress-bar, #slide-counter, #nav-hint { display: none; }
+  :root { --text: #1a1a2e; --text-dim: #444; --text-muted: #666; --slide-bg: #fff; --code-bg: #f5f5f8; --code-border: #ddd; --border: #ddd; --accent: #2563eb; --accent-bright: #2563eb; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="slide-counter">1 / 11</div>
+<div id="nav-hint">← → navigate · f fullscreen · n notes</div>
+
+<div id="presentation">
+
+<!-- SLIDE 1: Title -->
+<section class="slide slide-center active" data-slide="0">
+  <div>
+    <span class="tag">Week 6</span><span class="tag success">Phase II</span>
+    <h1 style="margin-top:16px;font-size:48px;">SQL: CREATE, INSERT, SELECT</h1>
+    <p class="subtitle">Day 31 — 90-Day Co-op Prep Plan</p>
+    <p style="margin-top:24px;font-size:15px;color:var(--text-muted);">
+      <span id="date-display"></span> · ⏱ 60 minutes
+    </p>
+  </div>
+  <aside><!-- Speaker: Welcome to Day 31. Today we start SQL — the language of databases. We'll use SQLite, which is built into most systems. No install beyond a single command. --></aside>
+</section>
+
+<!-- SLIDE 2: Learning Objectives -->
+<section class="slide" data-slide="1">
+  <h2>📋 Learning Objectives</h2>
+  <p style="margin-bottom:20px;">By the end of this session, you will be able to:</p>
+  <div class="columns">
+    <div>
+      <div class="card">
+        <h4>1. Install &amp; Run SQLite</h4>
+        <p>Set up SQLite on your machine and launch the interactive shell.</p>
+      </div>
+      <div class="card">
+        <h4>2. CREATE TABLE</h4>
+        <p>Define a database schema — columns, types, and constraints.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>3. INSERT Data</h4>
+        <p>Add rows to your tables with <code style="color:var(--keyword)">INSERT INTO</code>.</p>
+      </div>
+      <div class="card">
+        <h4>4. SELECT Queries</h4>
+        <p>Retrieve data with <code style="color:var(--keyword)">SELECT</code>, <code style="color:var(--keyword)">WHERE</code>, <code style="color:var(--keyword)">ORDER BY</code>, <code style="color:var(--keyword)">LIMIT</code>.</p>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <span class="tag">Prerequisites</span>
+    <span style="color:var(--text-dim);font-size:15px;">Terminal basics &bull; No prior SQL needed</span>
+  </div>
+  <aside><!-- Today is hands-on. Every concept is immediately followed by a command you type. Have a terminal window ready. --></aside>
+</section>
+
+<!-- SLIDE 3: Why SQL Matters -->
+<section class="slide" data-slide="2">
+  <h2>🎯 Why SQL Matters for Co-op</h2>
+  <p>SQL is the <strong>lingua franca</strong> of data. Every company with a database uses it — and that's almost every company.</p>
+  <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:180px;background:var(--code-bg);border:1px solid var(--code-border);border-radius:8px;padding:16px;">
+      <h4 style="color:var(--accent-bright);margin-bottom:6px;">🔍 Backend Dev</h4>
+      <p style="font-size:14px;">Every API endpoint that reads/writes data uses SQL under the hood.</p>
+    </div>
+    <div style="flex:1;min-width:180px;background:var(--code-bg);border:1px solid var(--code-border);border-radius:8px;padding:16px;">
+      <h4 style="color:var(--accent-bright);margin-bottom:6px;">📊 Data Analysis</h4>
+      <p style="font-size:14px;">"Can you pull me a report?" — that's a SQL query. Know it cold for interviews.</p>
+    </div>
+    <div style="flex:1;min-width:180px;background:var(--code-bg);border:1px solid var(--code-border);border-radius:8px;padding:16px;">
+      <h4 style="color:var(--accent-bright);margin-bottom:6px;">💼 Interview Screen</h4>
+      <p style="font-size:14px;">SQL is <strong>the most-tested</strong> technical skill in junior swe interviews.</p>
+    </div>
+  </div>
+  <div class="tip" style="margin-top:16px;">
+    <p><strong>Analogy:</strong> A database is a set of spreadsheets that can talk to each other. SQL is how you ask them questions.</p>
+  </div>
+  <aside><!-- SQL is everywhere. In co-op interviews for backend, data, and even generalist roles, SQL questions are the norm. Get comfortable with the basics today, and you'll have a foundation you can build on every week from here. --></aside>
+</section>
+
+<!-- SLIDE 4: Section Break — Installing SQLite -->
+<section class="slide slide-center" data-slide="3" style="background:#1a1d2e;">
+  <h2 style="font-size:32px;font-weight:700;">🔧 Installing SQLite</h2>
+  <p class="subtitle" style="font-size:18px;">It's probably already installed. Let's check.</p>
+  <div style="margin-top:20px;text-align:left;width:100%;max-width:600px;">
+    <pre><code>$ <span class="kw">which</span> sqlite3
+/usr/bin/sqlite3
+$ sqlite3 --version
+3.45.1 2024-01-30 16:01:20</code></pre>
+    <div class="tip">
+      <p>✅ SQLite ships with macOS and most Linux distros. No install needed.</p>
+    </div>
+    <p style="font-size:16px;margin-top:16px;">On Windows, download from <span style="color:var(--accent-bright)">sqlite.org/download.html</span> or use <code style="color:var(--function)">winget install SQLite.SQLite</code>.</p>
+  </div>
+  <aside><!-- SQLite is the world's most deployed database engine. It's embedded in every smartphone, browser, and most operating systems. For learning, it's perfect: zero setup, zero config, one file per database. --></aside>
+</section>
+
+<!-- SLIDE 5: CREATE TABLE -->
+<section class="slide" data-slide="4">
+  <h2>🏗️ CREATE TABLE — Defining Your Schema</h2>
+  <p>A table has a name and columns. Each column has a name, a type, and optional constraints.</p>
+
+  <div class="card">
+    <h4>Basic syntax:</h4>
+    <pre><code><span class="kw">CREATE TABLE</span> table_name (
+    column1 TYPE <span class="fn">constraints</span>,
+    column2 TYPE <span class="fn">constraints</span>,
+    ...
+);</code></pre>
+  </div>
+
+  <div class="card">
+    <h4>Example — a <code style="color:var(--accent-bright)">projects</code> table:</h4>
+    <pre><code><span class="kw">CREATE TABLE</span> projects (
+    id          <span class="ty">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
+    name        <span class="ty">TEXT</span>    <span class="kw">NOT NULL</span>,
+    description <span class="ty">TEXT</span>,
+    deadline    <span class="ty">TEXT</span>,
+    completed   <span class="ty">INTEGER</span> <span class="kw">DEFAULT</span> <span class="str">0</span>
+);</code></pre>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+    <span class="tag">INTEGER</span><span class="tag">TEXT</span><span class="tag">REAL</span><span class="tag">BLOB</span>
+    <span style="color:var(--text-muted);font-size:14px;line-height:28px;">— SQLite's 4 storage types</span>
+  </div>
+  <aside><!-- The PRIMARY KEY constraint uniquely identifies each row. NOT NULL means the column must have a value. DEFAULT sets a fallback value. INTEGER PRIMARY KEY in SQLite auto-increments. --></aside>
+</section>
+
+<!-- SLIDE 6: INSERT -->
+<section class="slide" data-slide="5">
+  <h2>📥 INSERT — Adding Data</h2>
+  <p>Add rows one at a time (or many at once).</p>
+
+  <div class="card">
+    <h4>INSERT a single row:</h4>
+    <pre><code><span class="kw">INSERT INTO</span> projects (name, description, deadline, completed)
+<span class="kw">VALUES</span> (<span class="str">'CLI Todo List'</span>, <span class="str">'A command-line task manager'</span>,
+        <span class="str">'2026-06-10'</span>, <span class="str">1</span>);</code></pre>
+  </div>
+
+  <div class="card">
+    <h4>INSERT multiple rows:</h4>
+    <pre><code><span class="kw">INSERT INTO</span> projects (name, description, deadline)
+<span class="kw">VALUES</span>
+    (<span class="str">'Bookmark Saver'</span>, <span class="str">'Save and tag bookmarks from CLI'</span>, <span class="str">'2026-07-05'</span>),
+    (<span class="str">'Weather Dashboard'</span>, <span class="str">'API-driven weather app'</span>,      <span class="str">'2026-07-19'</span>),
+    (<span class="str">'Full-Stack App'</span>, <span class="str">'Complete web app with auth'</span>,      <span class="str">'2026-09-06'</span>);</code></pre>
+  </div>
+
+  <div class="tip">
+    <p><strong>Tip:</strong> Column order in <code style="color:var(--keyword)">INSERT INTO</code> must match the <code style="color:var(--keyword)">VALUES</code> order. Omitted columns get <code>NULL</code> or their <code>DEFAULT</code>.</p>
+  </div>
+  <aside><!-- You can omit the column list if you're inserting values for ALL columns in table order: INSERT INTO projects VALUES (1, 'x', 'y', 'z', 0); But it's fragile — always include the column list for production code. --></aside>
+</section>
+
+<!-- SLIDE 7: SELECT Basics -->
+<section class="slide" data-slide="6">
+  <h2>🔍 SELECT — Asking Questions</h2>
+  <p>The most-used SQL command. You <code style="color:var(--keyword)">SELECT</code> columns you want <code style="color:var(--keyword)">FROM</code> a table.</p>
+
+  <div class="columns">
+    <div>
+      <div class="card">
+        <h4>All columns:</h4>
+        <pre style="font-size:13px;"><code><span class="kw">SELECT</span> * <span class="kw">FROM</span> projects;</code></pre>
+      </div>
+      <div class="card">
+        <h4>Specific columns:</h4>
+        <pre style="font-size:13px;"><code><span class="kw">SELECT</span> name, deadline <span class="kw">FROM</span> projects;</code></pre>
+      </div>
+      <div class="card">
+        <h4>With WHERE filter:</h4>
+        <pre style="font-size:13px;"><code><span class="kw">SELECT</span> name <span class="kw">FROM</span> projects
+<span class="kw">WHERE</span> completed = <span class="str">1</span>;</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>ORDER BY:</h4>
+        <pre style="font-size:13px;"><code><span class="kw">SELECT</span> name, deadline
+<span class="kw">FROM</span> projects
+<span class="kw">ORDER BY</span> deadline <span class="kw">DESC</span>;</code></pre>
+      </div>
+      <div class="card">
+        <h4>LIMIT:</h4>
+        <pre style="font-size:13px;"><code><span class="kw">SELECT</span> * <span class="kw">FROM</span> projects
+<span class="kw">LIMIT</span> <span class="str">2</span>;</code></pre>
+      </div>
+      <div class="card">
+        <h4>Combined:</h4>
+        <pre style="font-size:13px;"><code><span class="kw">SELECT</span> name, deadline
+<span class="kw">FROM</span> projects
+<span class="kw">WHERE</span> completed = <span class="str">0</span>
+<span class="kw">ORDER BY</span> deadline
+<span class="kw">LIMIT</span> <span class="str">2</span>;</code></pre>
+      </div>
+    </div>
+  </div>
+  <aside><!-- SELECT * is fine for exploration. In production code, always name the columns you want — it's faster, self-documenting, and resilient to schema changes. WHERE filters rows before ORDER BY and LIMIT. The order matters. --></aside>
+</section>
+
+<!-- SLIDE 8: Walkthrough — Full Session -->
+<section class="slide" data-slide="7">
+  <h2>💻 Walkthrough: Your First SQL Session</h2>
+  <p>Type each step in your terminal:</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <p>Launch SQLite with a new database file:</p>
+      <pre><code>$ sqlite3 coop_prep.db</code></pre>
+      <p style="font-size:14px;color:var(--text-muted);">You're now in the SQLite shell (<code style="color:var(--accent-bright)">sqlite&gt;</code> prompt).</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <p>Create a table:</p>
+      <pre><code><span class="hl">sqlite&gt; <span class="kw">CREATE TABLE</span> projects (</span>
+<span class="hl">   ...&gt;     id          <span class="ty">INTEGER</span> <span class="kw">PRIMARY KEY</span>,</span>
+<span class="hl">   ...&gt;     name        <span class="ty">TEXT</span>    <span class="kw">NOT NULL</span>,</span>
+<span class="hl">   ...&gt;     description <span class="ty">TEXT</span>,</span>
+<span class="hl">   ...&gt;     deadline    <span class="ty">TEXT</span>,</span>
+<span class="hl">   ...&gt;     completed   <span class="ty">INTEGER</span> <span class="kw">DEFAULT</span> <span class="str">0</span></span>
+<span class="hl">   ...&gt; );</span></code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <p>Verify with <code>.tables</code> and <code>.schema</code>:</p>
+      <pre><code>sqlite&gt; .tables
+projects
+sqlite&gt; .schema projects
+<span class="cm">-- CREATE TABLE projects (</span>
+<span class="cm">--     id INTEGER PRIMARY KEY,</span>
+<span class="cm">--     name TEXT NOT NULL,</span>
+<span class="cm">--     description TEXT,</span>
+<span class="cm">--     deadline TEXT,</span>
+<span class="cm">--     completed INTEGER DEFAULT 0</span>
+<span class="cm">-- );</span></code></pre>
+    </div>
+  </div>
+  <aside><!-- The .tables and .schema commands are SQLite-specific dot-commands, not SQL. They only work in the interactive shell. .quit exits. --></aside>
+</section>
+
+<!-- SLIDE 9: Walkthrough Continued -->
+<section class="slide" data-slide="8">
+  <h2>💻 Walkthrough Continued</h2>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <p>Insert 4 rows:</p>
+      <pre><code>sqlite&gt; <span class="kw">INSERT INTO</span> projects (name, description, deadline, completed)
+   ...&gt; <span class="kw">VALUES</span> (<span class="str">'CLI Todo List'</span>, <span class="str">'A CLI task manager'</span>, <span class="str">'2026-06-10'</span>, <span class="str">1</span>);
+sqlite&gt; <span class="kw">INSERT INTO</span> projects (name, description, deadline)
+   ...&gt; <span class="kw">VALUES</span> (<span class="str">'Bookmark Saver'</span>, <span class="str">'Save bookmarks from CLI'</span>, <span class="str">'2026-07-05'</span>);
+sqlite&gt; <span class="kw">INSERT INTO</span> projects (name, description, deadline)
+   ...&gt; <span class="kw">VALUES</span> (<span class="str">'Weather Dashboard'</span>, <span class="str">'Weather app with API'</span>, <span class="str">'2026-07-19'</span>);
+sqlite&gt; <span class="kw">INSERT INTO</span> projects (name, description, deadline)
+   ...&gt; <span class="kw">VALUES</span> (<span class="str">'Full-Stack App'</span>, <span class="str">'Web app with auth'</span>, <span class="str">'2026-09-06'</span>);</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <p>Run SELECT queries:</p>
+      <pre><code>sqlite&gt; <span class="kw">SELECT</span> * <span class="kw">FROM</span> projects;
+1|CLI Todo List|A CLI task manager|2026-06-10|1
+2|Bookmark Saver|Save bookmarks from CLI|2026-07-05|0
+3|Weather Dashboard|Weather app with API|2026-07-19|0
+4|Full-Stack App|Web app with auth|2026-09-06|0</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <p>Filter, sort, limit:</p>
+      <pre><code>sqlite&gt; <span class="kw">SELECT</span> name, deadline <span class="kw">FROM</span> projects
+   ...&gt; <span class="kw">WHERE</span> completed = <span class="str">0</span>
+   ...&gt; <span class="kw">ORDER BY</span> deadline
+   ...&gt; <span class="kw">LIMIT</span> <span class="str">2</span>;
+Bookmark Saver|2026-07-05
+Weather Dashboard|2026-07-19</code></pre>
+    </div>
+  </div>
+  <aside><!-- The vertical-bar output format is SQLite's default (list mode). You can switch to pretty columns with .mode column and turn headers on with .headers on. --></aside>
+</section>
+
+<!-- SLIDE 10: Exercises -->
+<section class="slide" data-slide="9">
+  <h2>✏️ Practice Exercises</h2>
+  <p style="margin-bottom:16px;">Try these on your own. Spend ~20 minutes.</p>
+
+  <div class="card" style="border-left:3px solid var(--accent);">
+    <h4>Exercise 1: Create a <code style="color:var(--accent-bright)">applications</code> table</h4>
+    <p>Columns: <code>id</code> (INTEGER PK), <code>company</code> (TEXT NOT NULL), <code>role</code> (TEXT), <code>date_applied</code> (TEXT), <code>status</code> (TEXT DEFAULT 'applied'). Insert 3 rows: one each for a company you'd apply to.</p>
+    <div class="tip">
+      <p><strong>Hint:</strong> <code>CREATE TABLE applications (...)</code> then <code>INSERT INTO applications (company, role) VALUES ('Google', 'SWE Intern');</code></p>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--warning);">
+    <h4>Exercise 2: Query practice</h4>
+    <p>Write a query that shows all applications sorted by <code>date_applied</code> newest-first. Then write one that shows only the 2 oldest applications.</p>
+    <div class="tip">
+      <p><strong>Hint:</strong> <code>ORDER BY date_applied DESC</code> and <code>LIMIT 2</code></p>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--success);">
+    <h4>Exercise 3 (Challenge): Combined query</h4>
+    <p>Show all applications where <code>status = 'applied'</code>, ordered by <code>date_applied</code> ascending, limited to 1 result.</p>
+  </div>
+
+  <p style="font-size:14px;color:var(--text-muted);margin-top:8px;">💡 Exit SQLite with <code>.quit</code></p>
+  <aside><!-- Solutions are on the next slide. Encourage learners to try first before peeking. The exercises mirror what they just learned but in a co-op-relevant context. --></aside>
+</section>
+
+<!-- SLIDE 11: Solutions -->
+<section class="slide" data-slide="10">
+  <h2>✅ Exercise Solutions</h2>
+
+  <div class="card">
+    <h4>Exercise 1 — Create & Insert</h4>
+    <pre><code><span class="kw">CREATE TABLE</span> applications (
+    id          <span class="ty">INTEGER</span> <span class="kw">PRIMARY KEY</span>,
+    company     <span class="ty">TEXT</span>    <span class="kw">NOT NULL</span>,
+    role        <span class="ty">TEXT</span>,
+    date_applied <span class="ty">TEXT</span>,
+    status      <span class="ty">TEXT</span>    <span class="kw">DEFAULT</span> <span class="str">'applied'</span>
+);
+<span class="kw">INSERT INTO</span> applications (company, role, date_applied)
+<span class="kw">VALUES</span>
+    (<span class="str">'Google'</span>,       <span class="str">'SWE Intern'</span>,     <span class="str">'2026-06-15'</span>),
+    (<span class="str">'Stripe'</span>,       <span class="str">'Backend Intern'</span>, <span class="str">'2026-06-16'</span>),
+    (<span class="str">'Shopify'</span>,      <span class="str">'Data Intern'</span>,    <span class="str">'2026-06-17'</span>);</code></pre>
+  </div>
+
+  <div class="card">
+    <h4>Exercise 2 — Sort & Limit</h4>
+    <pre><code><span class="cm">-- Newest first</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> applications <span class="kw">ORDER BY</span> date_applied <span class="kw">DESC</span>;
+<span class="cm">-- Two oldest</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> applications <span class="kw">ORDER BY</span> date_applied <span class="kw">LIMIT</span> <span class="str">2</span>;</code></pre>
+  </div>
+
+  <div class="card">
+    <h4>Exercise 3 — Filtered + Sorted + Limited</h4>
+    <pre><code><span class="kw">SELECT</span> company, role, date_applied
+<span class="kw">FROM</span> applications
+<span class="kw">WHERE</span> status = <span class="str">'applied'</span>
+<span class="kw">ORDER BY</span> date_applied
+<span class="kw">LIMIT</span> <span class="str">1</span>;</code></pre>
+  </div>
+  <aside><!-- Walk through each solution. Note that ORDER BY without ASC/DESC defaults to ASC (ascending). LIMIT without ORDER BY is not well-defined — always pair them. --></aside>
+</section>
+
+<!-- SLIDE 12: Summary -->
+<section class="slide slide-center" data-slide="11">
+  <div>
+    <h2>📌 Key Takeaways</h2>
+    <div style="text-align:left;max-width:580px;margin:24px auto;">
+      <div style="display:flex;gap:14px;margin-bottom:16px;align-items:flex-start;">
+        <span style="color:var(--accent-bright);font-size:24px;flex-shrink:0;">1</span>
+        <p style="margin:0;font-size:17px;"><strong>CREATE TABLE</strong> defines your schema — columns, types, constraints. Get this right and everything else follows.</p>
+      </div>
+      <div style="display:flex;gap:14px;margin-bottom:16px;align-items:flex-start;">
+        <span style="color:var(--accent-bright);font-size:24px;flex-shrink:0;">2</span>
+        <p style="margin:0;font-size:17px;"><strong>INSERT INTO</strong> adds rows. Always name the columns; omit for auto-increment PK and defaults.</p>
+      </div>
+      <div style="display:flex;gap:14px;margin-bottom:16px;align-items:flex-start;">
+        <span style="color:var(--accent-bright);font-size:24px;flex-shrink:0;">3</span>
+        <p style="margin:0;font-size:17px;"><strong>SELECT</strong> with <code>WHERE</code> + <code>ORDER BY</code> + <code>LIMIT</code> is your core query pattern. Practice combining them until it's automatic.</p>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <span style="color:var(--accent-bright);font-size:24px;flex-shrink:0;">4</span>
+        <p style="margin:0;font-size:17px;"><strong>SQLite</strong> is your learning sandbox. It's everywhere, zero-setup, and SQL you write here transfers to PostgreSQL, MySQL, etc.</p>
+      </div>
+    </div>
+    <p style="color:var(--text-muted);font-size:15px;margin-top:20px;">Day 32: SQL Joins — connecting tables together 🔗</p>
+  </div>
+  <aside><!-- Today was the foundation. Next session we join tables, which is where SQL gets really powerful. The exercises you just did are the exact patterns that show up in interviews. Practice writing them without looking at notes. --></aside>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const progressBar = document.getElementById('progress-bar');
+  const counter = document.getElementById('slide-counter');
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(idx, total - 1));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    progressBar.style.width = ((current + 1) / total * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + total;
+    window.location.hash = 'slide' + (current + 1);
+  }
+
+  // Hash navigation
+  function slideFromHash() {
+    const m = window.location.hash.match(/^#slide(\d+)$/);
+    if (m) { const idx = parseInt(m[1], 10) - 1; if (idx >= 0 && idx < total) showSlide(idx); }
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); showSlide(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); showSlide(current - 1); }
+    else if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+    else if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
+    else if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+    else if (e.key === 'End') { e.preventDefault(); showSlide(total - 1); }
+  });
+
+  // Speaker notes toggle
+  let notesVisible = false;
+  function toggleNotes() {
+    const activeSlide = document.querySelector('.slide.active');
+    if (!activeSlide) return;
+    const aside = activeSlide.querySelector('aside');
+    if (!aside) return;
+    notesVisible = !notesVisible;
+    if (notesVisible) {
+      aside.style.display = 'block';
+      aside.style.position = 'fixed';
+      aside.style.bottom = '60px';
+      aside.style.left = '50%';
+      aside.style.transform = 'translateX(-50%)';
+      aside.style.maxWidth = '600px';
+      aside.style.width = '90%';
+      aside.style.background = '#1e293b';
+      aside.style.color = '#cbd5e1';
+      aside.style.padding = '16px 20px';
+      aside.style.borderRadius = '8px';
+      aside.style.border = '1px solid #334155';
+      aside.style.fontSize = '14px';
+      aside.style.lineHeight = '1.6';
+      aside.style.zIndex = '200';
+      aside.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+    } else {
+      aside.style.display = '';
+      aside.style.position = '';
+      aside.style.bottom = '';
+      aside.style.left = '';
+      aside.style.transform = '';
+      aside.style.maxWidth = '';
+      aside.style.width = '';
+      aside.style.background = '';
+      aside.style.color = '';
+      aside.style.padding = '';
+      aside.style.borderRadius = '';
+      aside.style.border = '';
+      aside.style.fontSize = '';
+      aside.style.lineHeight = '';
+      aside.style.zIndex = '';
+      aside.style.boxShadow = '';
+    }
+  }
+
+  // Hide notes on slide change
+  const origShow = showSlide;
+  showSlide = function(idx) {
+    origShow(idx);
+    if (notesVisible) {
+      const allAsides = document.querySelectorAll('.slide aside');
+      allAsides.forEach(a => { a.style.display = ''; a.style.position = ''; a.style.bottom = ''; a.style.left = ''; a.style.transform = ''; a.style.maxWidth = ''; a.style.width = ''; a.style.background = ''; a.style.color = ''; a.style.padding = ''; a.style.borderRadius = ''; a.style.border = ''; a.style.fontSize = ''; a.style.lineHeight = ''; a.style.zIndex = ''; a.style.boxShadow = ''; });
+      notesVisible = false;
+    }
+  };
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', function(e) {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 60) { if (diff > 0) showSlide(current + 1); else showSlide(current - 1); }
+  });
+
+  window.addEventListener('hashchange', slideFromHash);
+  slideFromHash();
+  if (!window.location.hash) showSlide(0);
+
+  // Date display
+  const d = document.getElementById('date-display');
+  if (d) d.textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+})();
+</script>
+</body>
+</html>
