@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 32 — SQL: UPDATE, DELETE, Aggregations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --slide-bg: #161822;
+  --text: #e4e4e7;
+  --text-dim: #8b8fa3;
+  --accent: #4fc3f7;
+  --accent2: #66bb6a;
+  --accent-warn: #ffa726;
+  --accent-danger: #ef5350;
+  --code-bg: #1e2030;
+  --code-border: #2a2d3e;
+  --highlight: #2d3b5e;
+  --title-font: 'Inter', -apple-system, sans-serif;
+  --body-font: 'Inter', -apple-system, sans-serif;
+  --mono-font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body-font);
+  overflow: hidden;
+}
+
+#deck {
+  position: relative;
+  width: 100vw; height: 100vh;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 5vh 6vw;
+}
+.slide.active { display: flex; }
+
+.slide-inner {
+  width: 100%; max-width: 1100px;
+  height: 100%;
+  display: flex; flex-direction: column;
+  justify-content: center;
+}
+
+/* Progress bar */
+#progress {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 3px; background: #2a2d3e; z-index: 100;
+}
+#progress-bar {
+  height: 100%; width: 0%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+/* Slide counter */
+#counter {
+  position: fixed; bottom: 14px; right: 24px;
+  font-family: var(--mono-font);
+  font-size: 13px;
+  color: var(--text-dim);
+  z-index: 100;
+  letter-spacing: 0.5px;
+}
+
+/* Last updated */
+#last-updated {
+  position: fixed; bottom: 14px; left: 24px;
+  font-size: 11px;
+  color: var(--text-dim);
+  z-index: 100;
+  opacity: 0.6;
+}
+
+/* Typography */
+h1 {
+  font-family: var(--title-font);
+  font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 0.25em;
+}
+h2 {
+  font-family: var(--title-font);
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.4em;
+}
+h3 {
+  font-family: var(--title-font);
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  font-weight: 600;
+  margin-bottom: 0.35em;
+  color: var(--accent);
+}
+p, li { font-size: clamp(1rem, 1.4vw, 1.2rem); line-height: 1.6; color: var(--text-dim); }
+p { margin-bottom: 0.6em; }
+strong { color: var(--text); font-weight: 600; }
+code {
+  font-family: var(--mono-font);
+  font-size: 0.85em;
+  background: var(--code-bg);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 1.2em 1.4em;
+  overflow-x: auto;
+  margin: 0.6em 0;
+  font-size: clamp(0.8rem, 1.1vw, 1rem);
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  tab-size: 2;
+}
+
+/* Syntax highlights via spans (inline in pre) */
+.kw { color: #c792ea; }   /* keywords */
+.str { color: #c3e88d; }  /* strings */
+.fn { color: #82aaff; }   /* functions */
+.cm { color: #546e7a; font-style: italic; } /* comments */
+.num { color: #f78c6c; }  /* numbers */
+.op { color: #89ddff; }   /* operators */
+.tbl { color: #ffcb6b; }  /* table names */
+.col { color: #b2ccd6; }  /* column names */
+
+/* Lists */
+ul, ol { margin: 0.4em 0 0.8em 1.4em; }
+li { margin-bottom: 0.3em; }
+
+/* Title slide specific */
+.title-slide h1 {
+  font-size: clamp(2.6rem, 5vw, 4.2rem);
+  margin-bottom: 0.15em;
+}
+.title-slide .subtitle {
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 0.6em;
+}
+.title-slide .meta {
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  color: var(--text-dim);
+  font-family: var(--mono-font);
+}
+.title-slide .phase-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #0f1117;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.3em 1em;
+  border-radius: 20px;
+  margin-bottom: 0.8em;
+  letter-spacing: 0.5px;
+}
+
+/* Section break */
+.section-break {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+.section-break h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  text-align: center;
+  font-weight: 800;
+}
+
+/* Two-column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2em;
+  flex: 1;
+  align-content: center;
+}
+.two-col .col { display: flex; flex-direction: column; justify-content: center; }
+
+/* Diagram / card styles */
+.card {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 10px;
+  padding: 1.2em;
+  margin-bottom: 0.5em;
+}
+.card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.3em;
+}
+
+/* Exercise boxes */
+.exercise-box {
+  background: linear-gradient(135deg, rgba(79,195,247,0.08) 0%, rgba(102,187,106,0.05) 100%);
+  border: 1px solid rgba(79,195,247,0.25);
+  border-radius: 10px;
+  padding: 1.4em;
+  margin: 0.6em 0;
+}
+.exercise-box h3 { color: var(--accent2); margin-bottom: 0.3em; }
+.exercise-box .hint {
+  font-size: 0.9rem;
+  color: var(--accent-warn);
+  margin-top: 0.4em;
+}
+.exercise-box .hint::before { content: "💡 "; }
+
+/* Check */
+.check-item { display: flex; align-items: flex-start; gap: 0.6em; margin-bottom: 0.35em; }
+.check-item::before { content: "▸"; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+/* Recap grid */
+.recap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.2em;
+  margin-top: 0.6em;
+}
+.recap-card {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 10px;
+  padding: 1.2em;
+  text-align: center;
+}
+.recap-card .num {
+  font-family: var(--mono-font);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.2em;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 4vh 5vw; }
+  .two-col { grid-template-columns: 1fr; gap: 1em; }
+  .recap-grid { grid-template-columns: 1fr; }
+  #last-updated { display: none; }
+}
+
+/* Print */
+@media print {
+  body { overflow: visible; }
+  .slide { position: relative; display: flex !important; page-break-after: always; break-inside: avoid; }
+  #progress, #counter, #last-updated { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- ===== SLIDE 0: Title ===== -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="slide-inner">
+    <span class="phase-badge">Phase II — SQL</span>
+    <h1>UPDATE, DELETE,<br>Aggregations</h1>
+    <div class="subtitle">Day 32 · Week 6 · 90-Day Co-op Prep</div>
+    <div class="meta">June 21, 2026 · 60 min</div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 1: Overview ===== -->
+<section class="slide" data-slide="1">
+  <div class="slide-inner">
+    <h2>📋 What You'll Learn Today</h2>
+    <div class="two-col">
+      <div class="col">
+        <div class="check-item">Modify rows with <code>UPDATE</code></div>
+        <div class="check-item">Remove rows with <code>DELETE</code></div>
+        <div class="check-item">Summarize data with <code>COUNT</code>, <code>SUM</code>, <code>AVG</code></div>
+        <div class="check-item">Group rows with <code>GROUP BY</code></div>
+        <div class="check-item">Filter groups with <code>HAVING</code></div>
+        <div class="check-item">Analyze a real sample dataset</div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-label">Plan</div>
+          <strong>00:00</strong> — Warm-up + Prerequisites<br>
+          <strong>10:00</strong> — UPDATE &amp; DELETE<br>
+          <strong>20:00</strong> — Aggregates (COUNT, SUM, AVG)<br>
+          <strong>30:00</strong> — GROUP BY &amp; HAVING<br>
+          <strong>40:00</strong> — Sample dataset analysis<br>
+          <strong>50:00</strong> — Exercises<br>
+          <strong>55:00</strong> — Summary
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 2: Prerequisites ===== -->
+<section class="slide" data-slide="2">
+  <div class="slide-inner">
+    <h2>🔧 Prerequisites</h2>
+    <p>You should already know:</p>
+    <ul>
+      <li>Basic <code>SELECT</code> queries: <code>SELECT col FROM table WHERE condition</code></li>
+      <li><code>WHERE</code> with <code>=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>AND</code>, <code>OR</code></li>
+      <li><code>INSERT INTO</code> for adding rows</li>
+      <li>SQLite basics (we'll use SQLite in-browser for exercises)</li>
+    </ul>
+    <p style="margin-top:0.8em;">📌 <strong>Setup:</strong> Open <a href="https://sqliteonline.com/" target="_blank" style="color:var(--accent);">sqliteonline.com</a> or use <code>sqlite3</code> locally. We'll work with an in-memory dataset.</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 3: Section Break — UPDATE & DELETE ===== -->
+<section class="slide section-break" data-slide="3">
+  <div class="slide-inner">
+    <h2>✏️ UPDATE &amp; DELETE</h2>
+    <p style="text-align:center;color:var(--text-dim);font-size:1.05rem;">Modifying and removing data</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 4: UPDATE ===== -->
+<section class="slide" data-slide="4">
+  <div class="slide-inner">
+    <h2>UPDATE — Changing Existing Rows</h2>
+    <p><code>UPDATE</code> modifies one or more rows that match a <code>WHERE</code> condition.</p>
+    <pre><code><span class="kw">UPDATE</span> <span class="tbl">employees</span>
+<span class="kw">SET</span> <span class="col">salary</span> = 75000
+<span class="kw">WHERE</span> <span class="col">id</span> = 42;</code></pre>
+    <p><strong>Always</strong> write a <code>WHERE</code> clause — without it, <br><code>UPDATE</code> touches <em>every row</em> in the table!</p>
+    <pre><code><span class="cm">-- Update multiple columns at once</span>
+<span class="kw">UPDATE</span> <span class="tbl">employees</span>
+<span class="kw">SET</span> <span class="col">salary</span> = 80000,
+    <span class="col">title</span> = <span class="str">'Senior Engineer'</span>
+<span class="kw">WHERE</span> <span class="col">id</span> = 15;</code></pre>
+  </div>
+</section>
+
+<!-- ===== SLIDE 5: DELETE ===== -->
+<section class="slide" data-slide="5">
+  <div class="slide-inner">
+    <h2>DELETE — Removing Rows</h2>
+    <p><code>DELETE</code> removes rows that match a condition.</p>
+    <pre><code><span class="cm">-- Delete a specific employee</span>
+<span class="kw">DELETE FROM</span> <span class="tbl">employees</span>
+<span class="kw">WHERE</span> <span class="col">id</span> = 99;</code></pre>
+    <div class="two-col">
+      <div class="col">
+        <div class="card">
+          <div class="card-label" style="color:var(--accent-danger);">⚠️ Danger</div>
+          <code><span class="kw">DELETE FROM</span> <span class="tbl">table</span>;</code><br>
+          <span style="font-size:0.9rem;">deletes <strong>every row</strong>. There's no undo in production!</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-label" style="color:var(--accent2);">✅ Best Practice</div>
+          <span style="font-size:0.9rem;">Always <code>SELECT</code> first to preview what your <code>WHERE</code> matches, then convert to <code>DELETE</code>.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 6: Section Break — Aggregations ===== -->
+<section class="slide section-break" data-slide="6">
+  <div class="slide-inner">
+    <h2>📊 Aggregate Functions</h2>
+    <p style="text-align:center;color:var(--text-dim);font-size:1.05rem;">COUNT, SUM, AVG</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 7: COUNT SUM AVG ===== -->
+<section class="slide" data-slide="7">
+  <div class="slide-inner">
+    <h2>COUNT, SUM, AVG — Summarizing Columns</h2>
+    <p>Aggregate functions combine many rows into one result.</p>
+    <pre><code><span class="kw">SELECT</span>
+  <span class="fn">COUNT</span>(*)                  <span class="cm">-- total rows</span>
+  <span class="fn">COUNT</span>(<span class="col">department</span>)       <span class="cm">-- non-null values</span>
+  <span class="fn">SUM</span>(<span class="col">salary</span>)              <span class="cm">-- total salary</span>
+  <span class="fn">AVG</span>(<span class="col">salary</span>)              <span class="cm">-- average salary</span>
+<span class="kw">FROM</span> <span class="tbl">employees</span>;</code></pre>
+    <div class="two-col">
+      <div class="col">
+        <div class="card">
+          <div class="card-label">COUNT(*) vs COUNT(col)</div>
+          <code><span class="fn">COUNT</span>(*)</code> = all rows<br>
+          <code><span class="fn">COUNT</span>(col)</code> = non-<span class="kw">NULL</span> values in that column
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-label">Useful with WHERE</div>
+          <code><span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> ... <span class="kw">WHERE</span> ...</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 8: GROUP BY ===== -->
+<section class="slide" data-slide="8">
+  <div class="slide-inner">
+    <h2>GROUP BY — Aggregating by Category</h2>
+    <p>Groups rows by a column, then runs aggregates per group.</p>
+    <pre><code><span class="kw">SELECT</span> <span class="col">department</span>,
+       <span class="fn">COUNT</span>(*)     <span class="kw">AS</span> <span class="col">emp_count</span>,
+       <span class="fn">AVG</span>(<span class="col">salary</span>)  <span class="kw">AS</span> <span class="col">avg_salary</span>
+<span class="kw">FROM</span> <span class="tbl">employees</span>
+<span class="kw">GROUP BY</span> <span class="col">department</span>;</code></pre>
+    <p><strong>Rule:</strong> Every column in <code>SELECT</code> must either be<br>
+    in <code>GROUP BY</code> or wrapped in an aggregate function.</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 9: HAVING ===== -->
+<section class="slide" data-slide="9">
+  <div class="slide-inner">
+    <h2>HAVING — Filtering Groups</h2>
+    <p><code>WHERE</code> filters rows <em>before</em> grouping.<br>
+    <code>HAVING</code> filters groups <em>after</em> aggregation.</p>
+    <pre><code><span class="kw">SELECT</span> <span class="col">department</span>,
+       <span class="fn">AVG</span>(<span class="col">salary</span>) <span class="kw">AS</span> <span class="col">avg_salary</span>,
+       <span class="fn">COUNT</span>(*)   <span class="kw">AS</span> <span class="col">headcount</span>
+<span class="kw">FROM</span> <span class="tbl">employees</span>
+<span class="kw">WHERE</span> <span class="col">status</span> = <span class="str">'active'</span>          <span class="cm">-- row filter</span>
+<span class="kw">GROUP BY</span> <span class="col">department</span>
+<span class="kw">HAVING</span> <span class="fn">COUNT</span>(*) &gt;= 5;             <span class="cm">-- group filter</span></code></pre>
+    <p>SQL order of execution:<br>
+    <code>FROM</code> → <code>WHERE</code> → <code>GROUP BY</code> → <code>HAVING</code> → <code>SELECT</code> → <code>ORDER BY</code></p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 10: Section Break — Dataset Analysis ===== -->
+<section class="slide section-break" data-slide="10">
+  <div class="slide-inner">
+    <h2>📈 Sample Dataset Analysis</h2>
+    <p style="text-align:center;color:var(--text-dim);font-size:1.05rem;">Putting it all together</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 11: Walkthrough — Create + Populate Dataset ===== -->
+<section class="slide" data-slide="11">
+  <div class="slide-inner">
+    <h2>🗃️ Walkthrough — Sales Dataset</h2>
+    <p>Let's analyze a product sales table. Run these in SQLite:</p>
+    <pre><code><span class="kw">CREATE TABLE</span> <span class="tbl">sales</span> (
+    <span class="col">id</span>        <span class="kw">INTEGER PRIMARY KEY</span>,
+    <span class="col">product</span>   <span class="kw">TEXT</span>,
+    <span class="col">category</span>  <span class="kw">TEXT</span>,
+    <span class="col">amount</span>    <span class="kw">REAL</span>,
+    <span class="col">sale_date</span> <span class="kw">TEXT</span>
+);
+
+<span class="kw">INSERT INTO</span> <span class="tbl">sales</span> <span class="kw">VALUES</span>
+  (<span class="num">1</span>,<span class="str">'Widget'</span>, <span class="str">'Tools'</span>,  <span class="num">29.99</span>, <span class="str">'2026-06-01'</span>),
+  (<span class="num">2</span>,<span class="str">'Gadget'</span>, <span class="str">'Electronics'</span>, <span class="num">149.99</span>, <span class="str">'2026-06-01'</span>),
+  (<span class="num">3</span>,<span class="str">'Widget'</span>, <span class="str">'Tools'</span>,  <span class="num">29.99</span>, <span class="str">'2026-06-02'</span>),
+  (<span class="num">4</span>,<span class="str">'Doohickey'</span>, <span class="str">'Tools'</span>, <span class="num">15.00</span>, <span class="str">'2026-06-02'</span>),
+  (<span class="num">5</span>,<span class="str">'Gadget'</span>, <span class="str">'Electronics'</span>, <span class="num">199.99</span>, <span class="str">'2026-06-03'</span>),
+  (<span class="num">6</span>,<span class="str">'Gizmo'</span>, <span class="str">'Electronics'</span>,  <span class="num">89.99</span>, <span class="str">'2026-06-03'</span>),
+  (<span class="num">7</span>,<span class="str">'Widget'</span>, <span class="str">'Tools'</span>,  <span class="num">34.99</span>, <span class="str">'2026-06-04'</span>),
+  (<span class="num">8</span>,<span class="str">'Doohickey'</span>, <span class="str">'Tools'</span>, <span class="num">20.00</span>, <span class="str">'2026-06-04'</span>);</code></pre>
+  </div>
+</section>
+
+<!-- ===== SLIDE 12: Walkthrough — Queries ===== -->
+<section class="slide" data-slide="12">
+  <div class="slide-inner">
+    <h2>🔍 Analysis Queries</h2>
+    <p>Run these one at a time and observe the results:</p>
+    <pre><code><span class="cm">-- Q1: Total sales revenue</span>
+<span class="kw">SELECT</span> <span class="fn">SUM</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">total_revenue</span>
+<span class="kw">FROM</span> <span class="tbl">sales</span>;
+
+<span class="cm">-- Q2: Average sale amount by category</span>
+<span class="kw">SELECT</span> <span class="col">category</span>,
+       <span class="fn">AVG</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">avg_sale</span>,
+       <span class="fn">COUNT</span>(*)     <span class="kw">AS</span> <span class="col">num_sales</span>
+<span class="kw">FROM</span> <span class="tbl">sales</span>
+<span class="kw">GROUP BY</span> <span class="col">category</span>;</code></pre>
+    <pre><code><span class="cm">-- Q3: Products with more than 1 sale</span>
+<span class="kw">SELECT</span> <span class="col">product</span>, <span class="fn">COUNT</span>(*) <span class="kw">AS</span> <span class="col">times_sold</span>,
+       <span class="fn">SUM</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">total</span>
+<span class="kw">FROM</span> <span class="tbl">sales</span>
+<span class="kw">GROUP BY</span> <span class="col">product</span>
+<span class="kw">HAVING</span> <span class="fn">COUNT</span>(*) &gt; <span class="num">1</span>;</code></pre>
+  </div>
+</section>
+
+<!-- ===== SLIDE 13: UPDATE + DELETE on dataset ===== -->
+<section class="slide" data-slide="13">
+  <div class="slide-inner">
+    <h2>✏️ Modifying the Dataset</h2>
+    <p>Practice UPDATE and DELETE on our sales table:</p>
+    <pre><code><span class="cm">-- Fix: Gizmo amount was actually 99.99 (fix the typo)</span>
+<span class="kw">UPDATE</span> <span class="tbl">sales</span>
+<span class="kw">SET</span> <span class="col">amount</span> = <span class="num">99.99</span>
+<span class="kw">WHERE</span> <span class="col">product</span> = <span class="str">'Gizmo'</span>
+  <span class="kw">AND</span> <span class="col">sale_date</span> = <span class="str">'2026-06-03'</span>;
+
+<span class="cm">-- Remove the duplicate Widget sale (id=1 is the same as id=3)</span>
+<span class="kw">DELETE FROM</span> <span class="tbl">sales</span>
+<span class="kw">WHERE</span> <span class="col">id</span> = <span class="num">1</span>;
+
+<span class="cm">-- Verify: count remaining rows</span>
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> <span class="tbl">sales</span>;</code></pre>
+    <p>Expected: <code>7</code> rows remaining (we deleted 1 of 8).</p>
+  </div>
+</section>
+
+<!-- ===== SLIDE 14: Exercises ===== -->
+<section class="slide" data-slide="14">
+  <div class="slide-inner">
+    <h2>🏋️ Practice Exercises</h2>
+    <p>Try these on your own. Don't peek at the next slide until you've attempted each one!</p>
+
+    <div class="exercise-box">
+      <h3>Exercise 1 — Category Revenue</h3>
+      <p>Write a query that shows <code>category</code>, <code>total_revenue</code> (SUM), and <code>avg_price</code> for each category. Sort by total revenue descending.</p>
+      <div class="hint">Use <code>ORDER BY total_revenue DESC</code> at the end.</div>
+    </div>
+
+    <div class="exercise-box">
+      <h3>Exercise 2 — Top Products</h3>
+      <p>Find products with total revenue over $50. Show <code>product</code> and <code>total_revenue</code>.</p>
+      <div class="hint">Use <code>HAVING SUM(amount) &gt; 50</code>.</div>
+    </div>
+
+    <div class="exercise-box">
+      <h3>Exercise 3 — Price Correction</h3>
+      <p>Widget's price changed. UPDATE all Widget sales to $39.99. Count how many rows were affected.</p>
+      <div class="hint">What does <code>changes()</code> return after an UPDATE?</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 15: Solutions (hidden until arrow) ===== -->
+<section class="slide" data-slide="15">
+  <div class="slide-inner">
+    <h2>✅ Exercise Solutions</h2>
+
+    <div class="exercise-box" style="border-color:rgba(102,187,106,0.3);">
+      <h3 style="color:var(--accent2);">Solution 1 — Category Revenue</h3>
+      <pre><code><span class="kw">SELECT</span> <span class="col">category</span>,
+       <span class="fn">SUM</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">total_revenue</span>,
+       <span class="fn">AVG</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">avg_price</span>
+<span class="kw">FROM</span> <span class="tbl">sales</span>
+<span class="kw">GROUP BY</span> <span class="col">category</span>
+<span class="kw">ORDER BY</span> <span class="col">total_revenue</span> <span class="kw">DESC</span>;</code></pre>
+    </div>
+
+    <div class="exercise-box" style="border-color:rgba(102,187,106,0.3);">
+      <h3 style="color:var(--accent2);">Solution 2 — Top Products</h3>
+      <pre><code><span class="kw">SELECT</span> <span class="col">product</span>, <span class="fn">SUM</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">total_revenue</span>
+<span class="kw">FROM</span> <span class="tbl">sales</span>
+<span class="kw">GROUP BY</span> <span class="col">product</span>
+<span class="kw">HAVING</span> <span class="fn">SUM</span>(<span class="col">amount</span>) &gt; <span class="num">50</span>;</code></pre>
+    </div>
+
+    <div class="exercise-box" style="border-color:rgba(102,187,106,0.3);">
+      <h3 style="color:var(--accent2);">Solution 3 — Price Correction</h3>
+      <pre><code><span class="kw">UPDATE</span> <span class="tbl">sales</span>
+<span class="kw">SET</span> <span class="col">amount</span> = <span class="num">39.99</span>
+<span class="kw">WHERE</span> <span class="col">product</span> = <span class="str">'Widget'</span>;
+<span class="kw">SELECT</span> <span class="fn">changes</span>();  <span class="cm">-- returns number of rows updated</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 16: Summary ===== -->
+<section class="slide" data-slide="16">
+  <div class="slide-inner">
+    <h2>🎯 Key Takeaways</h2>
+    <div class="recap-grid">
+      <div class="recap-card">
+        <span class="num">1</span>
+        <strong>UPDATE / DELETE</strong>
+        <p style="font-size:0.95rem;margin-top:0.3em;">Always use <code>WHERE</code>. SELECT first to preview. No undo in SQL!</p>
+      </div>
+      <div class="recap-card">
+        <span class="num">2</span>
+        <strong>Aggregate Functions</strong>
+        <p style="font-size:0.95rem;margin-top:0.3em;"><code>COUNT</code>, <code>SUM</code>, <code>AVG</code> collapse many rows into one summary value.</p>
+      </div>
+      <div class="recap-card">
+        <span class="num">3</span>
+        <strong>GROUP BY → HAVING</strong>
+        <p style="font-size:0.95rem;margin-top:0.3em;"><code>WHERE</code> filters rows, <code>HAVING</code> filters groups after aggregation.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:1.2em;padding:1em;background:var(--code-bg);border-radius:10px;border:1px solid var(--code-border);">
+      <p style="margin:0;"><strong>📌 Milestone Check:</strong> Week 6 ends soon — <strong>Project 2 (Bookmark Saver)</strong> is due! Start planning if you haven't. You'll need a <code>SELECT</code>/<code>INSERT</code>/<code>DELETE</code> interface for bookmarks.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SLIDE 17: Next Steps ===== -->
+<section class="slide" data-slide="17">
+  <div class="slide-inner">
+    <h2>🔜 Next Up</h2>
+    <div style="display:flex;gap:1.5em;flex-wrap:wrap;margin-top:0.6em;">
+      <div class="card" style="flex:1;min-width:180px;">
+        <div class="card-label">Tomorrow (Day 33)</div>
+        <strong>SQL Joins</strong>
+        <p style="font-size:0.9rem;margin:0.3em 0 0 0;">INNER JOIN, LEFT JOIN — combining tables</p>
+      </div>
+      <div class="card" style="flex:1;min-width:180px;">
+        <div class="card-label">This Week</div>
+        <strong>Project 2</strong>
+        <p style="font-size:0.9rem;margin:0.3em 0 0 0;">Bookmark Saver — prove your SQL skills</p>
+      </div>
+      <div class="card" style="flex:1;min-width:180px;">
+        <div class="card-label">Upcoming</div>
+        <strong>Project 3 (Week 8)</strong>
+        <p style="font-size:0.9rem;margin:0.3em 0 0 0;">Weather Dashboard — API + data display</p>
+      </div>
+    </div>
+    <p style="margin-top:1em;text-align:center;color:var(--text-dim);">
+      Keep the momentum going. You're 32 / 90 days in! 💪
+    </p>
+  </div>
+</section>
+
+</div>
+
+<div id="progress"><div id="progress-bar"></div></div>
+<div id="counter">1 / 18</div>
+<div id="last-updated">Updated Jun 21, 2026</div>
+
+<script>
+(function() {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  const counter = document.getElementById('counter');
+  const bar = document.getElementById('progress-bar');
+  let current = 0;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + (total);
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    location.hash = '#' + idx;
+  }
+
+  // Hash on load
+  const hashIdx = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(hashIdx) && hashIdx >= 0 && hashIdx < total) showSlide(hashIdx);
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+    if (e.key === 'n' || e.key === 'N') {
+      document.querySelectorAll('.speaker-notes').forEach(n => n.classList.toggle('visible'));
+    }
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) dx < 0 ? next() : prev();
+  });
+
+  window.addEventListener('hashchange', function() {
+    const idx = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < total && idx !== current) showSlide(idx);
+  });
+})();
+</script>
+
+</body>
+</html>
