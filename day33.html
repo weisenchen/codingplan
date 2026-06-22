@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 33 — SQL: JOINs (INNER, LEFT)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f172a;
+  --slide-bg: #1e293b;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent-dim: #0ea5e9;
+  --accent-bg: rgba(56, 189, 248, 0.1);
+  --code-bg: #0f172a;
+  --code-text: #f8fafc;
+  --keyword: #c084fc;
+  --string: #86efac;
+  --comment: #64748b;
+  --function: #fbbf24;
+  --border: #334155;
+  --green: #22c55e;
+  --orange: #f59e0b;
+  --progress-bg: #334155;
+  --progress-fill: #38bdf8;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --font: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+}
+.deck {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.slide {
+  width: var(--slide-w);
+  max-width: 95vw;
+  height: var(--slide-h);
+  max-height: 95vh;
+  background: var(--slide-bg);
+  border-radius: 12px;
+  padding: 48px 56px;
+  display: none;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+}
+.slide.active { display: flex; }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.progress {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+.progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--progress-bg);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--progress-fill);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+.slide-number { position: absolute; bottom: 16px; left: 24px; font-size: 13px; color: var(--text-muted); font-family: var(--mono); }
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide h1 {
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.title-slide .subtitle {
+  font-size: 24px;
+  color: var(--text);
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+.title-slide .meta {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-top: 20px;
+}
+.title-slide .badge {
+  display: inline-block;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+/* Content slides */
+h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+p, li {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text);
+}
+p { margin-bottom: 8px; }
+ul { padding-left: 20px; margin-bottom: 10px; }
+li { margin-bottom: 4px; }
+code {
+  font-family: var(--mono);
+  font-size: 15px;
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 8px 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--code-text);
+}
+.kw { color: var(--keyword); }
+.str { color: var(--string); }
+.cm { color: var(--comment); font-style: italic; }
+.fn { color: var(--function); }
+.ts { color: var(--accent); }
+
+.callout {
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin: 8px 0;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.callout.warn { border-left-color: var(--orange); background: rgba(245,158,11,0.1); }
+.callout.success { border-left-color: var(--green); background: rgba(34,197,94,0.1); }
+
+/* Two-column layout */
+.cols {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+.col { flex: 1; display: flex; flex-direction: column; }
+.col pre { margin: 6px 0; flex-shrink: 1; overflow: auto; }
+
+/* Exercise / checkpoint */
+.task-box {
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 8px 0;
+}
+.task-box h4 { color: var(--orange); font-size: 16px; margin-bottom: 6px; }
+
+/* Table schema */
+.schema-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 14px;
+  margin: 8px 0;
+}
+.schema-table th {
+  text-align: left;
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 6px 10px;
+  border-bottom: 2px solid var(--accent-dim);
+}
+.schema-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.schema-table .pk { color: var(--function); }
+.schema-table .fk { color: var(--string); }
+
+/* Comparison box */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 8px 0;
+  flex-shrink: 0;
+}
+.compare-card {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.compare-card h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.compare-card h4.inner { color: var(--accent); }
+.compare-card h4.left { color: var(--green); }
+.compare-card p, .compare-card li { font-size: 14px; }
+
+/* Recap */
+.recap-list { list-style: none; padding: 0; }
+.recap-list li {
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+  font-size: 17px;
+}
+.recap-list li strong { color: var(--accent); }
+
+@media (max-width: 700px) {
+  .slide { padding: 28px 20px; max-width: 100vw; max-height: 100vh; border-radius: 0; }
+  .title-slide h1 { font-size: 32px; }
+  .title-slide .subtitle { font-size: 18px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 15px; }
+  pre { padding: 10px; }
+  pre code { font-size: 12px; }
+  .cols { flex-direction: column; gap: 10px; }
+  .compare-grid { grid-template-columns: 1fr; }
+}
+@media print {
+  body { background: #fff; }
+  .slide { display: flex !important; break-inside: avoid; box-shadow: none; border: 1px solid #ccc; background: #fff; }
+  .progress, .progress-bar, .slide-number { display: none; }
+  :root { --bg: #fff; --slide-bg: #fff; --text: #111; --text-muted: #555; --border: #ccc; --code-bg: #f4f4f5; --code-text: #111; --accent-bg: #e0f2fe; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:0%"></div></div>
+  <h1>SQL: JOINs<br>(INNER, LEFT)</h1>
+  <div class="subtitle">Day 33 — 90-Day Co-op Prep Plan</div>
+  <div class="meta">Week 6 · Phase II · SQL</div>
+  <div class="badge">⏱ 60 minutes</div>
+  <div class="progress">1 / 12</div>
+  <div class="slide-number">1 / 12</div>
+  <aside>Speaker notes: Introduce yourself and today's topic. Mention that JOINs are the single most powerful SQL feature — they're what makes relational databases relational. Ask the audience: "Who has written a SELECT with more than one table before?" Gauge the room.</aside>
+</section>
+
+<!-- SLIDE 1: What you'll learn -->
+<section class="slide" data-slide="1">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:8.3%"></div></div>
+  <h2>📋 What You'll Learn Today</h2>
+  <ul>
+    <li>Why we split data across tables (normalization)</li>
+    <li>What <strong>foreign keys</strong> are and how they connect tables</li>
+    <li><strong>INNER JOIN</strong> — matching rows in both tables</li>
+    <li><strong>LEFT JOIN</strong> — keeping all rows from the left table</li>
+    <li>Joining three tables: <code>users</code> → <code>orders</code> → <code>products</code></li>
+    <li>Common pitfalls: missing JOIN conditions, duplicate rows</li>
+  </ul>
+  <div class="callout" style="margin-top:10px;"><strong>Prerequisite:</strong> You should already know <code>SELECT</code>, <code>WHERE</code>, <code>ORDER BY</code>, and <code>LIMIT</code> from earlier lessons.</div>
+  <div class="progress">2 / 12</div>
+  <div class="slide-number">2 / 12</div>
+  <aside>This slide sets expectations. Emphasize that today is the day SQL "clicks" — JOINs are where the power lives.</aside>
+</section>
+
+<!-- SLIDE 2: Why split data across tables? -->
+<section class="slide" data-slide="2">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:16.7%"></div></div>
+  <h2>🔗 Why Split Data Into Tables?</h2>
+  <p>Imagine storing orders and the customer's name in every row:</p>
+  <pre><code><span class="cm">-- Bad: repeated data, update nightmare</span>
+<span class="kw">CREATE TABLE</span> orders_bad (
+  order_id <span class="ts">INT</span>,
+  item      <span class="ts">TEXT</span>,
+  customer  <span class="ts">TEXT</span>,   <span class="cm">-- "Alice Wong" repeated 20x</span>
+  email     <span class="ts">TEXT</span>    <span class="cm">-- same email repeated 20x</span>
+);</code></pre>
+  <p class="callout warn"><strong>Problems:</strong> Redundant data, inconsistent updates, wastes space.</p>
+  <p>Instead, we <strong>normalize</strong>: store each fact once, link via IDs.</p>
+  <pre><code><span class="cm">-- Good: one customer record, many order references</span>
+<span class="kw">CREATE TABLE</span> customers (
+  customer_id <span class="ts">INT</span> <span class="kw">PRIMARY KEY</span>,
+  name        <span class="ts">TEXT</span>,
+  email       <span class="ts">TEXT</span>
+);
+<span class="kw">CREATE TABLE</span> orders (
+  order_id    <span class="ts">INT</span> <span class="kw">PRIMARY KEY</span>,
+  customer_id <span class="ts">INT</span> <span class="kw">REFERENCES</span> customers(customer_id),
+  item        <span class="ts">TEXT</span>
+);</code></pre>
+  <div class="progress">3 / 12</div>
+  <div class="slide-number">3 / 12</div>
+  <aside>This is a "why JOINs exist" slide. Normalization is the reason. If someone asks "why can't I just put everything in one big table?" — this is your answer.</aside>
+</section>
+
+<!-- SLIDE 3: Schema & Foreign Keys -->
+<section class="slide" data-slide="3">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:25%"></div></div>
+  <h2>🗂️ Our Table Schema</h2>
+  <p>We'll be joining three tables throughout today's session. Here's the schema:</p>
+  <div class="cols">
+    <div class="col">
+      <table class="schema-table">
+        <tr><th>users</th><th></th></tr>
+        <tr><td><span class="pk">user_id (PK)</span></td><td>INT</td></tr>
+        <tr><td>name</td><td>TEXT</td></tr>
+        <tr><td>email</td><td>TEXT</td></tr>
+      </table>
+      <table class="schema-table" style="margin-top:8px;">
+        <tr><th>products</th><th></th></tr>
+        <tr><td><span class="pk">product_id (PK)</span></td><td>INT</td></tr>
+        <tr><td>name</td><td>TEXT</td></tr>
+        <tr><td>price</td><td>REAL</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <table class="schema-table">
+        <tr><th>orders</th><th></th></tr>
+        <tr><td><span class="pk">order_id (PK)</span></td><td>INT</td></tr>
+        <tr><td><span class="fk">user_id (FK → users)</span></td><td>INT</td></tr>
+        <tr><td><span class="fk">product_id (FK → products)</span></td><td>INT</td></tr>
+        <tr><td>quantity</td><td>INT</td></tr>
+        <tr><td>order_date</td><td>DATE</td></tr>
+      </table>
+      <div class="callout" style="margin-top:8px;">
+        <strong>Foreign keys</strong> (<span class="fk" style="font-family:var(--mono)">colored</span>) reference the primary key of another table.
+      </div>
+    </div>
+  </div>
+  <div class="progress">4 / 12</div>
+  <div class="slide-number">4 / 12</div>
+  <aside>Walk through each table. Show how orders is the "join table" connecting users and products. Emphasize that user_id in orders is a foreign key — it's the same value as user_id in users.</aside>
+</section>
+
+<!-- SLIDE 4: INNER JOIN -->
+<section class="slide" data-slide="4">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:33.3%"></div></div>
+  <h2>🔷 INNER JOIN — Matches in Both Tables</h2>
+  <p><code>INNER JOIN</code> returns rows <strong>only</strong> when there's a match in <em>both</em> tables.</p>
+  <div class="callout"><strong>Analogy:</strong> Like a Venn diagram intersection — only the overlapping part.</div>
+  <pre><code><span class="cm">-- Get each user + their order info (only users who've ordered)</span>
+<span class="kw">SELECT</span> users.name, orders.order_id, orders.quantity
+<span class="kw">FROM</span> users
+<span class="kw">INNER JOIN</span> orders <span class="kw">ON</span> users.user_id = orders.user_id;
+
+<span class="cm">-- Result (hypothetical):</span>
+<span class="cm">--  name      | order_id | quantity</span>
+<span class="cm">--  ----------+----------+---------</span>
+<span class="cm">--  Alice     | 101      | 2</span>
+<span class="cm">--  Alice     | 102      | 1</span>
+<span class="cm">--  Bob       | 103      | 5</span>
+<span class="cm">--  Diana     | 104      | 1</span>
+<span class="cm">--  (users with no orders are excluded)</span></code></pre>
+  <div class="progress">5 / 12</div>
+  <div class="slide-number">5 / 12</div>
+  <aside>Emphasize: users who never placed an order simply won't appear. The JOIN condition is the key — "ON users.user_id = orders.user_id" means "match rows where these columns are equal." Use your hands to show two overlapping circles.</aside>
+</section>
+
+<!-- SLIDE 5: LEFT JOIN -->
+<section class="slide" data-slide="5">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:41.7%"></div></div>
+  <h2>🔷 LEFT JOIN — Keep All Left-Side Rows</h2>
+  <p><code>LEFT JOIN</code> returns <strong>all rows</strong> from the left table, plus matches from the right. Unmatched right-side columns are <code>NULL</code>.</p>
+  <div class="callout warn"><strong>Analogy:</strong> "Left table is the guest list — everyone on the list shows up. If someone didn't bring a plus-one, that spot is empty (NULL)."</div>
+  <pre><code><span class="cm">-- All users, with their orders (NULL if none)</span>
+<span class="kw">SELECT</span> users.name, orders.order_id, orders.quantity
+<span class="kw">FROM</span> users
+<span class="kw">LEFT JOIN</span> orders <span class="kw">ON</span> users.user_id = orders.user_id;
+
+<span class="cm">-- Result (hypothetical):</span>
+<span class="cm">--  name      | order_id | quantity</span>
+<span class="cm">--  ----------+----------+---------</span>
+<span class="cm">--  Alice     | 101      | 2</span>
+<span class="cm">--  Alice     | 102      | 1</span>
+<span class="cm">--  Bob       | 103      | 5</span>
+<span class="cm">--  Charlie   | NULL     | NULL     ← no orders</span>
+<span class="cm">--  Diana     | 104      | 1</span>
+<span class="cm">--  Eve       | NULL     | NULL     ← no orders</span></code></pre>
+  <div class="progress">6 / 12</div>
+  <div class="slide-number">6 / 12</div>
+  <aside>Draw the Venn — LEFT JOIN is the entire left circle. Use Charlie as the example: he's on the user list but has no orders. In the result, order columns show NULL. Ask "when would you use LEFT JOIN over INNER JOIN?" (When you need all users, even inactive ones.)</aside>
+</section>
+
+<!-- SLIDE 6: INNER vs LEFT — side by side -->
+<section class="slide" data-slide="6">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:50%"></div></div>
+  <h2>⚖️ INNER vs LEFT — Which One to Use?</h2>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4 class="inner">✅ INNER JOIN</h4>
+      <p>Use when you <strong>only</strong> want rows with matches:</p>
+      <ul>
+        <li>Active customers who've ordered</li>
+        <li>Orders that have a valid product</li>
+        <li>Students enrolled in a course</li>
+        <li>Anything where NULL = irrelevant</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <h4 class="left">✅ LEFT JOIN</h4>
+      <p>Use when you need <strong>all</strong> left-side rows:</p>
+      <ul>
+        <li>All users, even inactive ones</li>
+        <li>All products, even unsold ones</li>
+        <li>Report with "0" or NULL for missing data</li>
+        <li>Finding orphans (WHERE right IS NULL)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout success" style="margin-top:6px;"><strong>Pro tip:</strong> Use <code>WHERE orders.order_id IS NULL</code> with a LEFT JOIN to find users <em>without</em> orders — a very common pattern.</div>
+  <div class="progress">7 / 12</div>
+  <div class="slide-number">7 / 12</div>
+  <aside>This is the "when to use which" slide. The NULL-detection pattern (WHERE right-side PK IS NULL) is extremely useful — do a quick mental demo.</aside>
+</section>
+
+<!-- SLIDE 7: Joining 3 tables -->
+<section class="slide" data-slide="7">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:58.3%"></div></div>
+  <h2>🔗 Joining Three Tables</h2>
+  <p>Chain JOINs to connect across multiple tables. Each JOIN adds one more table:</p>
+  <pre><code><span class="cm">-- Users → Orders → Products: what did each user order, and what's it called?</span>
+<span class="kw">SELECT</span>
+  users.name,
+  orders.order_id,
+  products.name <span class="kw">AS</span> product_name,
+  products.price,
+  orders.quantity,
+  (products.price * orders.quantity) <span class="kw">AS</span> total
+<span class="kw">FROM</span> users
+<span class="kw">INNER JOIN</span> orders   <span class="kw">ON</span> users.user_id     = orders.user_id
+<span class="kw">INNER JOIN</span> products <span class="kw">ON</span> orders.product_id = products.product_id
+<span class="kw">ORDER BY</span> total <span class="kw">DESC</span>;</code></pre>
+  <div class="callout"><strong>Read it like a sentence:</strong> "From users, join orders where user_id matches, then join products where product_id matches."</div>
+  <div class="progress">8 / 12</div>
+  <div class="slide-number">8 / 12</div>
+  <aside>This is the payoff — the three-table join. Read the query aloud as a sentence. Point out the alias AS and the computed total column. This is a real reporting query.</aside>
+</section>
+
+<!-- SLIDE 8: Aliases & Shorthand -->
+<section class="slide" data-slide="8">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:66.7%"></div></div>
+  <h2>📝 Table Aliases — Cleaner Queries</h2>
+  <p>Type less, read more. Use <code>AS</code> (or just a space) to alias table names:</p>
+  <pre><code><span class="cm">-- Without aliases (verbose):</span>
+<span class="kw">SELECT</span> users.name, orders.order_id, products.name, products.price
+<span class="kw">FROM</span> users
+<span class="kw">INNER JOIN</span> orders <span class="kw">ON</span> users.user_id = orders.user_id
+<span class="kw">INNER JOIN</span> products <span class="kw">ON</span> orders.product_id = products.product_id;
+
+<span class="cm">-- With aliases (clean):</span>
+<span class="kw">SELECT</span> u.name, o.order_id, p.name <span class="kw">AS</span> product, p.price
+<span class="kw">FROM</span> users u
+<span class="kw">INNER JOIN</span> orders o   <span class="kw">ON</span> u.user_id = o.user_id
+<span class="kw">INNER JOIN</span> products p <span class="kw">ON</span> o.product_id = p.product_id;
+</code></pre>
+  <div class="callout warn"><strong>Pitfall:</strong> If two tables have the same column name (e.g. <code>name</code> in both users <em>and</em> products), you <strong>must</strong> prefix with table name or alias: <code>u.name</code>, <code>p.name</code>.</div>
+  <div class="progress">9 / 12</div>
+  <div class="slide-number">9 / 12</div>
+  <aside>Aliases are pure convenience but important. Show the before/after. The ambiguous-column-name pitfall is a real source of errors — students hit this often.</aside>
+</section>
+
+<!-- SLIDE 9: Common Pitfalls -->
+<section class="slide" data-slide="9">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:75%"></div></div>
+  <h2>⚠️ Common JOIN Pitfalls</h2>
+  <div class="callout warn"><strong>Pitfall 1: Missing JOIN condition</strong><br>
+    <code>FROM users JOIN orders</code> (without <code>ON</code>) → <strong>Cartesian product</strong> — every user paired with every order. Catastrophic with large tables.
+  </div>
+  <div class="callout warn"><strong>Pitfall 2: Duplicate rows</strong><br>
+    If a user has 3 orders and you join to orders <em>then</em> to a table with multiple rows per order, rows multiply. Always check cardinality before joining.
+  </div>
+  <div class="callout warn"><strong>Pitfall 3: NULL in JOIN condition</strong><br>
+    <code>ON a.col = b.col</code> — if either value is <code>NULL</code>, the row <strong>does not match</strong>. NULL ≠ NULL in SQL.
+  </div>
+  <div class="callout success"><strong>Debug quickly:</strong> Run <code>SELECT COUNT(*)</code> before and after each JOIN to see if rows exploded.</div>
+  <div class="progress">10 / 12</div>
+  <div class="slide-number">10 / 12</div>
+  <aside>These are the three mistakes everyone makes. Missing ON is the most destructive — it's a silent cartesian product. I've seen interns bring down a production DB this way. Always, always write the ON clause.</aside>
+</section>
+
+<!-- SLIDE 10: Exercise -->
+<section class="slide" data-slide="10">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:83.3%"></div></div>
+  <h2>🏋️ Practice Exercises</h2>
+  <div class="task-box">
+    <h4>Exercise 1: Basic INNER JOIN</h4>
+    <p>Write a query to show <strong>all orders</strong> with the <strong>customer name</strong> and <strong>product name</strong>. Use <code>orders</code>, <code>users</code>, and <code>products</code>.</p>
+    <p><em>Hint: you need two JOINs.</em></p>
+  </div>
+  <div class="task-box">
+    <h4>Exercise 2: Find users with no orders</h4>
+    <p>Using a <code>LEFT JOIN</code>, find every user who has <strong>never placed an order</strong>.</p>
+    <p><em>Hint: WHERE right-table PK IS NULL.</em></p>
+  </div>
+  <div class="task-box">
+    <h4>Exercise 3: Revenue per user</h4>
+    <p>Show each user and the <strong>total amount they've spent</strong> (price × quantity, summed).</p>
+    <p><em>Hint: SUM( ... ), GROUP BY, and JOIN all three tables.</em></p>
+  </div>
+  <div class="progress">11 / 12</div>
+  <div class="slide-number">11 / 12</div>
+  <aside>Give 3-4 minutes per exercise. Let them struggle a bit before giving hints. Exercise 3 is the hardest — it combines JOINs with aggregation.</aside>
+</section>
+
+<!-- SLIDE 11: Summary -->
+<section class="slide" data-slide="11">
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:91.7%"></div></div>
+  <h2>🎯 Key Takeaways</h2>
+  <ul class="recap-list">
+    <li><strong>INNER JOIN</strong> — only matching rows from both tables. Use when NULLs don't make sense.</li>
+    <li><strong>LEFT JOIN</strong> — all rows from the left table, matches from the right (or NULL). Use when you need everything from one side.</li>
+    <li><strong>Foreign keys</strong> are the glue — they connect tables and define the JOIN condition.</li>
+    <li><strong>Always write the ON clause</strong> — missing it causes a cartesian explosion.</li>
+    <li><strong>Next up (Week 7):</strong> Aggregation (<code>GROUP BY</code>, <code>HAVING</code>) and subqueries.</li>
+  </ul>
+  <div class="callout" style="margin-top:10px;">
+    <strong>Project connection:</strong> Your <strong>Project 2 (Bookmark Saver)</strong> will use JOINs to connect bookmarks with tags and users!
+  </div>
+  <div class="progress">12 / 12</div>
+  <div class="slide-number">12 / 12</div>
+  <aside>Recap should feel like a victory lap. The project connection is important — it shows them why they just learned this. Project 2 comes after Week 6.</aside>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  function show(n) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === n);
+      const fill = s.querySelector('.progress-bar-fill');
+      if (fill) fill.style.width = ((n + 1) / total * 100) + '%';
+    });
+    window.location.hash = n;
+  }
+
+  function next() { if (current < total - 1) { current++; show(current); } }
+  function prev() { if (current > 0) { current--; show(current); } }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+      else document.exitFullscreen().catch(()=>{});
+    }
+    else if (e.key === 'n' || e.key === 'N') {
+      // Toggle speaker notes
+      const aside = slides[current].querySelector('aside');
+      if (aside) aside.style.display = (aside.style.display === 'none' || !aside.style.display) ? 'block' : 'none';
+    }
+  });
+
+  // Touch swipe
+  let startX = 0;
+  document.addEventListener('touchstart', e => { startX = e.changedTouches[0].screenX; }, {passive: true});
+  document.addEventListener('touchend', e => {
+    const diff = startX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+  }, {passive: true});
+
+  // Hash restore
+  if (window.location.hash) {
+    const n = parseInt(window.location.hash.replace('#',''), 10);
+    if (!isNaN(n) && n >= 0 && n < total) { current = n; show(n); }
+  }
+
+  // Style speaker notes
+  const style = document.createElement('style');
+  style.textContent = `
+    aside {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      color: #cbd5e1;
+      padding: 16px 24px;
+      font-size: 14px;
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      border-top: 2px solid #38bdf8;
+      z-index: 100;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    @media print { aside { display: none !important; } }
+  `;
+  document.head.appendChild(style);
+})();
+</script>
+</body>
+</html>
