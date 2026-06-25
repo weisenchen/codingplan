@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 36 — Bookmark App (Part 2) | 90-Day Co-op Prep</title>
+<style>
+  :root {
+    --bg: #0f0f14;
+    --surface: #1a1a24;
+    --surface-alt: #24243a;
+    --text: #e8e8f0;
+    --text-dim: #9494b0;
+    --accent: #6c8cff;
+    --accent-dim: #4a6adf;
+    --green: #4cdf8b;
+    --yellow: #ffd76c;
+    --red: #ff6b6b;
+    --code-bg: #16161f;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --line-num: #3a3a50;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: #08080c;
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #deck {
+    position: relative;
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    padding: 5% 6%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-track { background: transparent; }
+  .slide::-webkit-scrollbar-thumb { background: var(--surface-alt); border-radius: 3px; }
+
+  /* Progress bar */
+  #progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    z-index: 20;
+  }
+  #counter {
+    position: absolute;
+    bottom: 14px; right: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    z-index: 20;
+  }
+  #updated {
+    position: absolute;
+    bottom: 14px; left: 24px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 20;
+  }
+
+  /* Speaker notes */
+  #notes-panel {
+    position: absolute;
+    top: 0; right: -35%;
+    width: 35%;
+    height: 100%;
+    background: var(--surface);
+    border-left: 2px solid var(--surface-alt);
+    padding: 32px 24px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 30;
+  }
+  #notes-panel.open { right: 0; }
+  #notes-panel h3 { color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  #notes-panel p { margin-bottom: 8px; }
+
+  /* Slide content */
+  h1 {
+    font-size: clamp(28px, 4vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.3em;
+  }
+  h2 {
+    font-size: clamp(20px, 2.8vw, 40px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5em;
+    color: var(--accent);
+  }
+  h3 {
+    font-size: clamp(16px, 2vw, 28px);
+    font-weight: 600;
+    margin-bottom: 0.4em;
+    color: var(--text);
+  }
+  p, li {
+    font-size: clamp(14px, 1.6vw, 22px);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  ul { padding-left: 1.4em; }
+  li { margin-bottom: 0.3em; }
+  strong { color: var(--text); font-weight: 600; }
+  .accent { color: var(--accent); }
+  .green { color: var(--green); }
+  .yellow { color: var(--yellow); }
+  .red { color: var(--red); }
+
+  /* Title slide */
+  .slide.title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide.title h1 { margin-bottom: 0.15em; }
+  .slide.title .subtitle {
+    font-size: clamp(14px, 1.4vw, 20px);
+    color: var(--text-dim);
+    margin-bottom: 0.5em;
+  }
+  .slide.title .meta {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1vw, 14px);
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .slide.title .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 0.9vw, 13px);
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 1em;
+    letter-spacing: 0.5px;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 16px);
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 12px 0;
+    position: relative;
+    counter-reset: line;
+  }
+  code { font-family: var(--font-mono); }
+  pre code { font-size: inherit; }
+  .line { display: block; }
+  .line::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 28px;
+    color: var(--line-num);
+    text-align: right;
+    margin-right: 14px;
+    user-select: none;
+  }
+  .hl { background: rgba(108,140,255,0.15); border-left: 3px solid var(--accent); padding-left: 10px; }
+  .hl-g { background: rgba(76,223,139,0.15); border-left: 3px solid var(--green); padding-left: 10px; }
+  .kw { color: var(--accent); }
+  .str { color: var(--green); }
+  .cm { color: #5a5a78; font-style: italic; }
+  .fn { color: var(--yellow); }
+  .num { color: var(--red); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    gap: 16px;
+    margin: 12px 0;
+    flex: 1;
+  }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card h3 { font-size: clamp(13px, 1.3vw, 18px); margin-bottom: 6px; }
+  .card p, .card li {
+    font-size: clamp(11px, 1vw, 15px);
+  }
+  .card ul { padding-left: 1.2em; }
+  .card li { margin-bottom: 4px; }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding-left: 28px; position: relative; }
+  .checklist li::before {
+    content: '☐';
+    position: absolute; left: 0;
+    color: var(--text-dim);
+    font-size: 1.1em;
+  }
+  .checklist li.done::before {
+    content: '☑';
+    color: var(--green);
+  }
+
+  /* Steps */
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: var(--bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .step p { margin-bottom: 0; }
+
+  /* Exercise box */
+  .exercise {
+    background: linear-gradient(135deg, rgba(255,215,108,0.08), rgba(255,107,107,0.05));
+    border: 1px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 12px 0;
+  }
+  .exercise h3 { color: var(--yellow); font-size: clamp(14px, 1.4vw, 20px); }
+  .exercise p, .exercise li { font-size: clamp(12px, 1.1vw, 16px); }
+
+  /* Tip box */
+  .tip {
+    background: rgba(76,223,139,0.06);
+    border: 1px solid rgba(76,223,139,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .tip p { font-size: clamp(12px, 1.1vw, 16px); color: var(--green); }
+
+  /* Milestone bar */
+  .milestone-bar {
+    display: flex;
+    gap: 0;
+    margin: 16px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .milestone-seg {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: clamp(9px, 0.8vw, 12px);
+    font-weight: 600;
+  }
+  .milestone-seg.done { background: var(--green); color: var(--bg); }
+  .milestone-seg.active { background: var(--accent); color: var(--bg); }
+  .milestone-seg.pending { background: var(--surface); color: var(--text-dim); }
+
+  /* Recap grid */
+  .recap-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .recap-item {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .recap-item h3 { font-size: clamp(13px, 1.3vw, 18px); margin-bottom: 2px; }
+  .recap-item p { font-size: clamp(11px, 1vw, 15px); margin: 0; }
+
+  /* Button demo */
+  .demo-box {
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    margin: 12px 0;
+  }
+  .demo-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.1vw, 16px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .demo-btn:hover { background: var(--accent-dim); }
+  .demo-btn:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .demo-input {
+    background: var(--code-bg);
+    border: 1px solid var(--surface-alt);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.1vw, 16px);
+    margin: 0 8px;
+    width: 200px;
+    max-width: 60%;
+  }
+  .demo-input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .slide { padding: 5% 5%; }
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+    #notes-panel { display: none; }
+    #counter { font-size: 10px; bottom: 8px; right: 12px; }
+    #updated { font-size: 8px; bottom: 8px; left: 12px; }
+  }
+
+  /* Print */
+  @media print {
+    body { overflow: visible; display: block; background: #fff; }
+    #deck { width: 100%; height: auto; box-shadow: none; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 100vh; }
+    #progress, #counter { display: none; }
+    #notes-panel { display: none !important; }
+  }
+
+  /* Focus styles for accessibility */
+  button:focus-visible, a:focus-visible, .demo-btn:focus-visible, .demo-input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 0: Title -->
+  <!-- ============================================================ -->
+  <section class="slide title active" data-slide="0" role="region" aria-label="Title slide">
+    <span class="badge">90-Day Co-op Prep</span>
+    <h1>Bookmark App<br><span class="accent">Part 2</span></h1>
+    <p class="subtitle">Polish &bull; CSS Styling &bull; Search/Filter &bull; GitHub &bull; README</p>
+    <p class="meta">Day 36 &middot; Week 6 &middot; Phase II &middot; June 25, 2026</p>
+    <aside class="notes" style="display:none;">
+      Welcome to Day 36. Today we finish Project 2 — the Bookmark Saver app. We'll polish the UI, add search/filter, push to GitHub, and write a proper README. This is a milestone day: after this, you have a deployable project for your portfolio.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 1: Learning Overview -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="1" role="region" aria-label="Overview">
+    <h2>Today's Plan &mdash; 60 Minutes</h2>
+    <div class="card-grid cols-2" style="margin-top:12px;">
+      <div class="card">
+        <h3>🔄 Recap (5 min)</h3>
+        <p>What we built in Part 1 — the bookmark data model, basic CRUD, and CLI.</p>
+      </div>
+      <div class="card">
+        <h3>🎨 Polish &amp; CSS (15 min)</h3>
+        <p>Refactor the HTML template, apply a clean dark-theme stylesheet, responsive layout.</p>
+      </div>
+      <div class="card">
+        <h3>🔍 Search &amp; Filter (15 min)</h3>
+        <p>Add a search bar, filter by tags/keywords, debounced live filtering.</p>
+      </div>
+      <div class="card">
+        <h3>🚀 Ship It (15 min)</h3>
+        <p>Push to GitHub, write a stellar README, deploy via GitHub Pages or Render.</p>
+      </div>
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>✏️ Exercise &amp; Wrap (10 min)</h3>
+        <p>One extension task + summary of key takeaways for your portfolio.</p>
+      </div>
+    </div>
+    <div class="milestone-bar">
+      <div class="milestone-seg done">P1: Todo CLI</div>
+      <div class="milestone-seg active">P2: Bookmark</div>
+      <div class="milestone-seg pending">P3: Weather</div>
+      <div class="milestone-seg pending">P4: Dashboard</div>
+      <div class="milestone-seg pending">P5: Full-Stack</div>
+    </div>
+    <aside class="notes" style="display:none;">
+      Walk through the agenda. Emphasise this is a milestone — after today they have a second portfolio project ready for co-op applications. The milestone bar shows P1 done, P2 active today, and the road ahead.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 2: Recap — What Part 1 Built -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="2" role="region" aria-label="Recap">
+    <h2>🔄 Recap &mdash; Bookmark App Part 1</h2>
+    <p style="margin-bottom:16px;">By the end of Part 1, you had a working Flask app with:</p>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h3>✅ Data Model</h3>
+        <ul>
+          <li><code>Bookmark</code> model: <code>id</code>, <code>url</code>, <code>title</code>, <code>tags</code>, <code>created_at</code></li>
+          <li>SQLite database via Flask-SQLAlchemy</li>
+          <li>CRUD operations (create, read, update, delete)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>✅ Basic Routes</h3>
+        <ul>
+          <li><code>GET /</code> — list all bookmarks</li>
+          <li><code>POST /add</code> — add a new bookmark</li>
+          <li><code>POST /delete/&lt;id&gt;</code> — remove a bookmark</li>
+          <li>Minimal HTML templates (functional but plain)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip">
+      <p><strong>Tip:</strong> If you need the Part 1 starter code, check your working directory. We'll build on it today.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Quick recap. Don't dwell — learners who need Part 1 can refer back. The goal today is to take that functional but ugly app and make it portfolio-ready.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 3: Project Structure -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="3" role="region" aria-label="Structure">
+    <h2>📁 Project Structure (Target)</h2>
+    <p style="margin-bottom:8px;">By the end of today, your project should look like this:</p>
+    <pre><code><span class="line"><span class="cm"># bookmark-app/</span></span>
+<span class="line">bookmark-app/</span>
+<span class="line">├── app.py              <span class="cm"># Flask app, routes, database</span></span>
+<span class="line">├── models.py           <span class="cm"># SQLAlchemy models</span></span>
+<span class="line">├── requirements.txt    <span class="cm"># Python dependencies</span></span>
+<span class="line">├── .gitignore</span>
+<span class="line">├── README.md           <span class="cm"># Will write today</span></span>
+<span class="line">├── static/</span>
+<span class="line">│   └── style.css       <span class="cm"># Will write today</span></span>
+<span class="line">├── templates/</span>
+<span class="line">│   ├── base.html       <span class="cm"># Layout template</span></span>
+<span class="line">│   ├── index.html      <span class="cm"># Bookmark list + search</span></span>
+<span class="line">│   └── add.html        <span class="cm"># Add bookmark form</span></span>
+<span class="line">└── venv/                <span class="cm"># Virtual environment</span></span></code></pre>
+    <p>We'll add <code>static/style.css</code>, enhance <code>templates/</code>, write <code>README.md</code>, and git init + push.</p>
+    <aside class="notes" style="display:none;">
+      Show the target directory tree. Learners should have most of these files from Part 1. Today adds style.css, updates templates, writes README, and sets up git.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 4: CSS Styling — Dark Theme -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="4" role="region" aria-label="CSS Styling">
+    <h2>🎨 Step 1: CSS Styling — Dark Theme</h2>
+    <p>Create <code>static/style.css</code> with a clean dark-theme design. This transforms the app from "functional prototype" to "portfolio-ready."</p>
+    <pre><code><span class="line"><span class="cm">/* static/style.css — Dark Theme Bookmark App */</span></span>
+<span class="line">:root {</span>
+<span class="line hl">  --bg: #0f0f14;</span>
+<span class="line hl">  --surface: #1a1a24;</span>
+<span class="line hl">  --accent: #6c8cff;</span>
+<span class="line hl">  --text: #e8e8f0;</span>
+<span class="line hl">  --text-dim: #9494b0;</span>
+<span class="line hl">  --radius: 8px;</span>
+<span class="line">}</span>
+<span class="line">* { box-sizing: border-box; margin: 0; }</span>
+<span class="line">body {</span>
+<span class="line">  background: var(--bg); color: var(--text);</span>
+<span class="line hl">  font-family: 'Inter', system-ui, sans-serif;</span>
+<span class="line">  max-width: 720px; margin: 0 auto;</span>
+<span class="line">  padding: 32px 20px;</span>
+<span class="line">}</span></code></pre>
+    <div class="tip">
+      <p><strong>Key CSS concepts:</strong> CSS custom properties (variables), flexbox/grid for layout, transitions for polish, responsive media queries.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Walk through the CSS file. Emphasise CSS custom properties — they make theming maintainable. The dark theme is deliberate: it reads better on screens and looks more professional for portfolio projects. Point out the responsive max-width.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 5: CSS — Bookmark Cards & Form -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="5" role="region" aria-label="CSS Cards">
+    <h2>🎨 Step 1b: Bookmark Cards &amp; Form Styling</h2>
+    <p>Each bookmark renders as a <strong>card</strong> with hover effects, tag pills, and a delete button.</p>
+    <pre><code><span class="line"><span class="cm">/* Bookmark cards */</span></span>
+<span class="line hl">.bookmark-card {</span>
+<span class="line">  background: var(--surface);</span>
+<span class="line">  border: 1px solid rgba(255,255,255,0.06);</span>
+<span class="line hl">  border-radius: var(--radius);</span>
+<span class="line">  padding: 16px 20px;</span>
+<span class="line hl">  transition: transform 0.15s, box-shadow 0.15s;</span>
+<span class="line">}</span>
+<span class="line hl">.bookmark-card:hover {</span>
+<span class="line hl">  transform: translateY(-2px);</span>
+<span class="line hl">  box-shadow: 0 6px 20px rgba(0,0,0,0.3);</span>
+<span class="line hl">}</span>
+<span class="line"><span class="cm">/* Tag pills */</span></span>
+<span class="line hl">.tag {</span>
+<span class="line">  display: inline-block; background: rgba(108,140,255,0.15);</span>
+<span class="line">  color: var(--accent); font-size: 12px;</span>
+<span class="line">  padding: 2px 10px; border-radius: 12px;</span>
+<span class="line">  margin: 2px 4px 2px 0;</span>
+<span class="line">}</span></code></pre>
+    <div class="tip">
+      <p><strong>Polish tip:</strong> The <code>translateY(-2px)</code> hover lift is subtle but makes the app feel alive. Use <code>transition</code> on the parent, not hover, so the animation runs both ways.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Walk through card styling: the surface background, hover lift effect, tag pills with transparent accent colour, and the delete button styling. This is where the app starts looking professional.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 6: Search & Filter — Backend -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="6" role="region" aria-label="Search Backend">
+    <h2>🔍 Step 2: Search &amp; Filter — Backend</h2>
+    <p>Add a search route to <code>app.py</code> that filters bookmarks by title, URL, or tags.</p>
+    <pre><code><span class="line"><span class="cm"># In app.py — add a search endpoint</span></span>
+<span class="line hl">@app.route('/search')</span>
+<span class="line hl">def search():</span>
+<span class="line hl">    q = request.args.get('q', '').strip()</span>
+<span class="line hl">    tag = request.args.get('tag', '').strip()</span>
+<span class="line hl">    </span>
+<span class="line">    query = Bookmark.query</span>
+<span class="line hl">    if q:</span>
+<span class="line hl">        query = query.filter(</span>
+<span class="line hl">            Bookmark.title.contains(q) |</span>
+<span class="line hl">            Bookmark.url.contains(q)</span>
+<span class="line hl">        )</span>
+<span class="line hl">    if tag:</span>
+<span class="line hl">        query = query.filter(Bookmark.tags.contains(tag))</span>
+<span class="line hl">        </span>
+<span class="line hl">    bookmarks = query.order_by(Bookmark.created_at.desc()).all()</span>
+<span class="line hl">    return render_template('index.html', bookmarks=bookmarks, q=q, tag=tag)</span></code></pre>
+    <div class="tip">
+      <p><strong>Design note:</strong> We use <code>.contains()</code> which maps to SQL <code>LIKE '%term%'</code>. For a production app you'd want full-text search (FTS5), but this is fine for a portfolio project.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Explain the search route. We pass q and tag back to the template so the search box retains its value and we can highlight active filters. Note: contains() is case-sensitive in SQLite by default for non-ASCII, which is fine for this project.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 7: Search & Filter — Frontend -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="7" role="region" aria-label="Search Frontend">
+    <h2>🔍 Step 2b: Search Bar — Template</h2>
+    <p>Update <code>templates/index.html</code> to include a search bar with live filter feel.</p>
+    <pre><code><span class="line"><span class="cm">&lt;!-- In index.html — search form --&gt;</span></span>
+<span class="line hl">&lt;form method="GET" action="/search" class="search-form"&gt;</span>
+<span class="line hl">  &lt;input type="text" name="q" class="search-input"</span>
+<span class="line hl">         placeholder="Search bookmarks..."</span>
+<span class="line hl">         value="{{ q if q else '' }}"&gt;</span>
+<span class="line hl">  &lt;button type="submit" class="search-btn"&gt;🔍&lt;/button&gt;</span>
+<span class="line hl">&lt;/form&gt;</span>
+<span class="line"></span>
+<span class="line hl">&lt;div class="tag-filters"&gt;</span>
+<span class="line hl">  {% for tag in all_tags %}</span>
+<span class="line">    &lt;a href="/search?tag={{ tag }}"</span>
+<span class="line">       class="tag {{ 'active' if tag == active_tag }}"&gt;</span>
+<span class="line">      {{ tag }}</span>
+<span class="line">    &lt;/a&gt;</span>
+<span class="line hl">  {% endfor %}</span>
+<span class="line hl">&lt;/div&gt;</span></code></pre>
+    <p>Also add <code>all_tags</code> to the context processor so the sidebar filters auto-populate.</p>
+    <aside class="notes" style="display:none;">
+      Walk through the template changes. The search form uses GET so the URL is shareable. Tag filters link directly to /search?tag=... The active tag is highlighted with a CSS class.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 8: Context Processor for Tags -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="8" role="region" aria-label="Context Processor">
+    <h2>🔧 Step 2c: Tag Context Processor</h2>
+    <p>Add a <strong>context processor</strong> to <code>app.py</code> so tag filters are available on every page.</p>
+    <pre><code><span class="line"><span class="cm"># In app.py — after the route definitions</span></span>
+<span class="line hl">@app.context_processor</span>
+<span class="line hl">def inject_tags():</span>
+<span class="line hl">    <span class="str">"""Collect all unique tags from every bookmark."""</span></span>
+<span class="line hl">    all_bookmarks = Bookmark.query.all()</span>
+<span class="line hl">    tags = set()</span>
+<span class="line hl">    for bm in all_bookmarks:</span>
+<span class="line hl">        if bm.tags:</span>
+<span class="line hl">            <span class="cm"># Tags stored as comma-separated string</span></span>
+<span class="line hl">            for t in bm.tags.split(','):</span>
+<span class="line hl">                tags.add(t.strip())</span>
+<span class="line hl">    return dict(all_tags=sorted(tags))</span>
+<span class="line"></span>
+<span class="line"><span class="cm"># Also update the index route to pass search params</span></span>
+<span class="line hl">@app.route('/')</span>
+<span class="line hl">def index():</span>
+<span class="line hl">    bookmarks = Bookmark.query.order_by(</span>
+<span class="line hl">        Bookmark.created_at.desc()</span>
+<span class="line hl">    ).all()</span>
+<span class="line hl">    return render_template('index.html', bookmarks=bookmarks, q='')</span></code></pre>
+    <div class="tip">
+      <p><strong>Jinja tip:</strong> Context processors are great for injecting data (tags, user info, config) into every template without repeating it in every route.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Context processors avoid duplicating the tag-collection logic in every route. The tags are stored as a comma-separated string — we split and deduplicate with a set, then sort alphabetically. This is a common pattern for simple tag systems.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 9: Git & GitHub -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="9" role="region" aria-label="GitHub">
+    <h2>🚀 Step 3: Push to GitHub</h2>
+    <p>Make your project visible to employers. Initialize git, commit, and push.</p>
+    <pre><code><span class="line"><span class="cm"># From your bookmark-app/ directory</span></span>
+<span class="line hl">$ git init</span>
+<span class="line hl">$ git add .</span>
+<span class="line hl">$ git commit -m "Initial commit: Bookmark Saver app"</span>
+<span class="line"></span>
+<span class="line hl">$ gh repo create bookmark-app --public --source=. --push</span>
+<span class="line"><span class="cm"># Or manually:</span></span>
+<span class="line hl">$ git remote add origin https://github.com/YOUR_USER/bookmark-app.git</span>
+<span class="line hl">$ git branch -M main</span>
+<span class="line hl">$ git push -u origin main</span></code></pre>
+    <p>Make sure <code>.gitignore</code> includes <code>venv/</code>, <code>*.pyc</code>, <code>__pycache__/</code>, <code>instance/</code>, and <code>.env</code>.</p>
+    <aside class="notes" style="display:none;">
+      Walk through git init → add → commit → push. Use gh CLI if available, otherwise manual. Emphasise .gitignore — pushing venv/ is a common mistake. The public repo is portfolio-ready.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 10: README -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="10" role="region" aria-label="README">
+    <h2>📝 Step 4: Write a Stellar README</h2>
+    <p>A good README tells employers what the project does, how to run it, and what you learned.</p>
+    <pre><code><span class="line"><span class="cm">&lt;!-- README.md template --&gt;</span></span>
+<span class="line"># Bookmark Saver</span>
+<span class="line"></span>
+<span class="line hl">A web app to save, organize, and search bookmarks.</span>
+<span class="line hl">Built with Flask + SQLite. Dark theme UI.</span>
+<span class="line"></span>
+<span class="line">## Features</span>
+<span class="line hl">- ➕ Add bookmarks with title, URL, and tags</span>
+<span class="line hl">- 🔍 Search by keyword or filter by tag</span>
+<span class="line hl">- 🗑️ Delete unwanted bookmarks</span>
+<span class="line hl">- 🌙 Dark theme responsive design</span>
+<span class="line"></span>
+<span class="line">## Quick Start</span>
+<span class="line hl">python3 -m venv venv</span>
+<span class="line hl">source venv/bin/activate</span>
+<span class="line hl">pip install -r requirements.txt</span>
+<span class="line hl">python app.py</span></code></pre>
+    <div class="tip">
+      <p><strong>READme rule:</strong> Include a screenshot or GIF of the app. A picture immediately communicates polish. Use <code>![screenshot](screenshot.png)</code>.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      The README is the first thing employers see. Cover: what it does, how to run it, tech stack, features with emojis, screenshot, and what you learned. The quick start should be copy-pasteable. Add a screenshot for maximum impact.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 11: README — What You Learned -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="11" role="region" aria-label="README Learnings">
+    <h2>📝 Step 4b: README — Skills Section</h2>
+    <p>Employers read the <strong>"What I Learned"</strong> section to gauge your growth.</p>
+    <pre><code><span class="line">## What I Learned</span>
+<span class="line"></span>
+<span class="line hl">- Building a full CRUD web app with Flask + SQLAlchemy</span>
+<span class="line hl">- Designing a responsive dark-theme UI with CSS custom properties</span>
+<span class="line hl">- Implementing search and tag-based filtering with SQL</span>
+<span class="line hl">- Using Jinja2 template inheritance for clean HTML</span>
+<span class="line hl">- Version control workflow: git init → commit → push</span>
+<span class="line hl">- Writing a project README for portfolio presentation</span>
+<span class="line"></span>
+<span class="line">## Tech Stack</span>
+<span class="line"></span>
+<span class="line hl">| Technology   | Purpose                |</span>
+<span class="line hl">|-------------|------------------------|</span>
+<span class="line hl">| Python       | Backend logic          |</span>
+<span class="line hl">| Flask        | Web framework          |</span>
+<span class="line hl">| SQLite       | Database               |</span>
+<span class="line hl">| SQLAlchemy   | ORM                    |</span>
+<span class="line hl">| Jinja2       | Templating             |</span>
+<span class="line hl">| HTML/CSS     | Frontend               |</span></code></pre>
+    <p>Be honest about your skill level. Employers appreciate self-awareness more than exaggerated claims.</p>
+    <aside class="notes" style="display:none;">
+      The "What I Learned" section is your chance to show metacognition. List concrete skills, not clichés. Use a tech stack table — it's scannable and shows you understand what each tool does.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 12: Deploy (Optional) -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="12" role="region" aria-label="Deploy">
+    <h2>🌐 Bonus: Deploy to Render</h2>
+    <p>Make your app accessible via a public URL. Render has a generous free tier.</p>
+    <div class="step">
+      <span class="step-num">1</span>
+      <p>Push your code to GitHub (already done).</p>
+    </div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <p>Go to <strong>render.com</strong> → New Web Service → Connect your GitHub repo.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <p>Set <strong>Build Command</strong>: <code>pip install -r requirements.txt</code></p>
+    </div>
+    <div class="step">
+      <span class="step-num">4</span>
+      <p>Set <strong>Start Command</strong>: <code>gunicorn app:app</code> (add gunicorn to requirements.txt)</p>
+    </div>
+    <div class="step">
+      <span class="step-num">5</span>
+      <p>Click <strong>Deploy</strong> — in ~3 minutes you'll have a live URL to put on your resume.</p>
+    </div>
+    <p style="margin-top:8px;color:var(--text-dim);font-size:clamp(12px,1vw,15px);">Alternatives: PythonAnywhere, Fly.io, Railway, or GitHub Actions + Surge for static sites.</p>
+    <aside class="notes" style="display:none;">
+      Deploying to Render is optional but strongly encouraged. A live URL in your portfolio is vastly more impressive than a GitHub repo. Emphasise: add gunicorn to requirements.txt. If they're comfortable with Docker, a Dockerfile is even better.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 13: Exercise -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="13" role="region" aria-label="Exercise">
+    <h2>✏️ Exercise: Extend the App</h2>
+    <div class="exercise">
+      <h3>Choose one extension to implement:</h3>
+      <p><strong>Option A — Bookmark Categories</strong></p>
+      <ul>
+        <li>Add a <code>category</code> field to the model (e.g., "work", "learning", "fun")</li>
+        <li>Add a dropdown filter on the index page</li>
+        <li>Style active category differently</li>
+      </ul>
+      <p style="margin-top:8px;"><strong>Option B — Click Counter</strong></p>
+      <ul>
+        <li>Add a <code>clicks</code> integer field to the model</li>
+        <li>Increment it when a user clicks a bookmark link</li>
+        <li>Display click count and sort by "most clicked"</li>
+      </ul>
+      <p style="margin-top:8px;"><strong>Option C — Export as JSON</strong></p>
+      <ul>
+        <li>Add a route <code>GET /export</code> that returns all bookmarks as JSON</li>
+        <li>Add a download button on the index page</li>
+        <li>Bonus: allow export filtered by tag</li>
+      </ul>
+    </div>
+    <div class="tip">
+      <p><strong>Hint:</strong> Start with Option C — it's the simplest (no DB migration) and teaches a useful API skill.</p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Give learners 10 minutes to pick and implement one extension. Option C is easiest (no migration needed). Option A and B require Flask-Migrate or manual ALTER TABLE. For co-op prep, any extension counts — the goal is to practice independent feature work.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 14: Summary -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="14" role="region" aria-label="Summary">
+    <h2>📌 Key Takeaways</h2>
+    <div class="recap-grid">
+      <div class="recap-item">
+        <h3>1. Polish is a feature</h3>
+        <p>A dark theme, responsive layout, and hover effects transform a prototype into a portfolio project. Employers judge by appearance first.</p>
+      </div>
+      <div class="recap-item">
+        <h3>2. Search &amp; filter are expected</h3>
+        <p>Every CRUD app needs them. Use SQL <code>.contains()</code> for MVP; graduate to full-text search when you need scale.</p>
+      </div>
+      <div class="recap-item">
+        <h3>3. Git + README = professional</h3>
+        <p>A public GitHub repo with a thoughtful README and screenshot is the minimum bar for co-op applications. Deploying makes you stand out.</p>
+      </div>
+      <div class="recap-item">
+        <h3>4. Extend to learn</h3>
+        <p>The exercise forces you to add a feature without step-by-step instructions. That's the real skill: independent problem-solving.</p>
+      </div>
+    </div>
+    <p style="margin-top:8px;font-size:clamp(12px,1.2vw,17px);">
+      <strong>Milestone:</strong> <span class="green">Project 2 — Bookmark Saver ✓</span><br>
+      <span class="text-dim">Next up: Project 3 — Weather Dashboard (Week 8)</span>
+    </p>
+    <aside class="notes" style="display:none;">
+      Recap the four key takeaways. Congratulate learners on completing their second portfolio project. Remind them: P3 (Weather Dashboard) comes after Week 8. Between now and then, they have study decks on intermediate topics.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 15: Q&A / Closing -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="15" role="region" aria-label="Closing">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+      <h1 style="font-size:clamp(32px,5vw,72px);margin-bottom:0.2em;">🎉</h1>
+      <h1>Project Complete</h1>
+      <p style="font-size:clamp(16px,1.8vw,26px);color:var(--text-dim);max-width:80%;margin:0 auto 24px;">
+        You now have <strong>two</strong> portfolio-ready projects for co-op applications.
+      </p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+        <span style="background:var(--green);color:var(--bg);padding:8px 20px;border-radius:6px;font-family:var(--font-mono);font-weight:600;font-size:clamp(12px,1.1vw,15px);">P1: Todo CLI ✓</span>
+        <span style="background:var(--accent);color:var(--bg);padding:8px 20px;border-radius:6px;font-family:var(--font-mono);font-weight:600;font-size:clamp(12px,1.1vw,15px);">P2: Bookmark ✓</span>
+        <span style="background:var(--surface);color:var(--text-dim);padding:8px 20px;border-radius:6px;font-family:var(--font-mono);font-weight:600;font-size:clamp(12px,1.1vw,15px);">P3: Weather ⏳</span>
+      </div>
+      <p style="margin-top:24px;color:var(--text-dim);font-size:clamp(12px,1.2vw,17px);">
+        See you on Day 37 for the next topic.
+      </p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Close with energy. Learners should feel proud of completing two projects. Preview: the next phase focuses on intermediate Python + web dev concepts before P3.
+    </aside>
+  </section>
+
+  <!-- Progress bar and counter -->
+  <div id="progress" style="width:0%;"></div>
+  <div id="counter"></div>
+  <div id="updated">Updated June 25, 2026</div>
+
+  <!-- Speaker notes panel -->
+  <div id="notes-panel">
+    <h3>Speaker Notes</h3>
+    <div id="notes-content"><p>Select a slide to see notes.</p></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const notesPanel = document.getElementById('notes-panel');
+  const notesContent = document.getElementById('notes-content');
+  let notesOpen = false;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    location.hash = '#' + idx;
+
+    // Update speaker notes
+    const note = slides[idx].querySelector('.notes');
+    if (note) {
+      notesContent.innerHTML = note.innerHTML;
+    } else {
+      notesContent.innerHTML = '<p>No notes for this slide.</p>';
+    }
+    if (notesOpen) {
+      notesPanel.classList.add('open');
+    }
+  }
+
+  // Hash-based navigation
+  function hashHandler() {
+    const m = location.hash.match(/^#(\d+)$/);
+    if (m) {
+      const idx = parseInt(m[1], 10);
+      if (idx >= 0 && idx < total) {
+        showSlide(idx);
+      }
+    }
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (current < total - 1) showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (current > 0) showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      notesOpen = !notesOpen;
+      notesPanel.classList.toggle('open', notesOpen);
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      if (notesOpen) {
+        notesOpen = false;
+        notesPanel.classList.remove('open');
+      }
+    }
+  });
+
+  window.addEventListener('hashchange', hashHandler);
+
+  // Init
+  if (location.hash) {
+    hashHandler();
+  } else {
+    showSlide(0);
+  }
+})();
+</script>
+</body>
+</html>
