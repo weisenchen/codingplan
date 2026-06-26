@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 37 — OOP: Classes &amp; Objects in Python | 90-Day Co-op Prep</title>
+<style>
+  :root {
+    --bg: #0f0f14;
+    --surface: #1a1a24;
+    --surface-alt: #24243a;
+    --text: #e8e8f0;
+    --text-dim: #9494b0;
+    --accent: #6c8cff;
+    --accent-dim: #4a6adf;
+    --green: #4cdf8b;
+    --yellow: #ffd76c;
+    --orange: #ff9f43;
+    --red: #ff6b6b;
+    --code-bg: #16161f;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --line-num: #3a3a50;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: #08080c;
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #deck {
+    position: relative;
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    padding: 5% 6%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-track { background: transparent; }
+  .slide::-webkit-scrollbar-thumb { background: var(--surface-alt); border-radius: 3px; }
+
+  /* Progress bar */
+  #progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    z-index: 20;
+  }
+  #counter {
+    position: absolute;
+    bottom: 14px; right: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    z-index: 20;
+  }
+  #updated {
+    position: absolute;
+    bottom: 14px; left: 24px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 20;
+  }
+
+  /* Speaker notes */
+  #notes-panel {
+    position: absolute;
+    top: 0; right: -35%;
+    width: 35%;
+    height: 100%;
+    background: var(--surface);
+    border-left: 2px solid var(--surface-alt);
+    padding: 32px 24px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 30;
+  }
+  #notes-panel.open { right: 0; }
+  #notes-panel h3 { color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  #notes-panel p { margin-bottom: 8px; }
+
+  /* Slide content */
+  h1 {
+    font-size: clamp(28px, 4vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.3em;
+  }
+  h2 {
+    font-size: clamp(20px, 2.8vw, 40px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5em;
+    color: var(--accent);
+  }
+  h3 {
+    font-size: clamp(16px, 2vw, 28px);
+    font-weight: 600;
+    margin-bottom: 0.4em;
+    color: var(--text);
+  }
+  p, li {
+    font-size: clamp(14px, 1.6vw, 22px);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  ul { padding-left: 1.4em; }
+  li { margin-bottom: 0.3em; }
+  strong { color: var(--text); font-weight: 600; }
+  .accent { color: var(--accent); }
+  .green { color: var(--green); }
+  .yellow { color: var(--yellow); }
+  .orange { color: var(--orange); }
+  .red { color: var(--red); }
+
+  /* Title slide */
+  .slide.title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide.title h1 { margin-bottom: 0.15em; }
+  .slide.title .subtitle {
+    font-size: clamp(14px, 1.4vw, 20px);
+    color: var(--text-dim);
+    margin-bottom: 0.5em;
+  }
+  .slide.title .meta {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1vw, 14px);
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .slide.title .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 0.9vw, 13px);
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 1em;
+    letter-spacing: 0.5px;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 16px);
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 12px 0;
+    position: relative;
+    counter-reset: line;
+  }
+  code { font-family: var(--font-mono); }
+  pre code { font-size: inherit; }
+  .line { display: block; }
+  .line::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 28px;
+    color: var(--line-num);
+    text-align: right;
+    margin-right: 14px;
+    user-select: none;
+  }
+  .hl { background: rgba(108,140,255,0.15); border-left: 3px solid var(--accent); padding-left: 10px; }
+  .hl-g { background: rgba(76,223,139,0.15); border-left: 3px solid var(--green); padding-left: 10px; }
+  .hl-y { background: rgba(255,215,108,0.15); border-left: 3px solid var(--yellow); padding-left: 10px; }
+  .kw { color: var(--accent); }
+  .str { color: var(--green); }
+  .cm { color: #5a5a78; font-style: italic; }
+  .fn { color: var(--yellow); }
+  .num { color: var(--orange); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    gap: 16px;
+    margin: 12px 0;
+    flex: 1;
+  }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card h3 { font-size: clamp(13px, 1.3vw, 18px); margin-bottom: 6px; }
+  .card p, .card li {
+    font-size: clamp(11px, 1vw, 15px);
+  }
+  .card ul { padding-left: 1.2em; }
+  .card li { margin-bottom: 4px; }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding-left: 28px; position: relative; }
+  .checklist li::before {
+    content: '☐';
+    position: absolute; left: 0;
+    color: var(--text-dim);
+    font-size: 1.1em;
+  }
+  .checklist li.done::before {
+    content: '☑';
+    color: var(--green);
+  }
+
+  /* Steps */
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: var(--bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .step p { margin-bottom: 0; }
+
+  /* Exercise box */
+  .exercise {
+    background: linear-gradient(135deg, rgba(255,215,108,0.08), rgba(255,107,107,0.05));
+    border: 1px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 12px 0;
+  }
+  .exercise h3 { color: var(--yellow); font-size: clamp(14px, 1.4vw, 20px); }
+  .exercise p, .exercise li { font-size: clamp(12px, 1.1vw, 16px); }
+
+  /* Tip box */
+  .tip {
+    background: rgba(76,223,139,0.06);
+    border: 1px solid rgba(76,223,139,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .tip p { font-size: clamp(12px, 1.1vw, 16px); color: var(--green); }
+
+  /* Warning box */
+  .warning {
+    background: rgba(255,159,67,0.06);
+    border: 1px solid rgba(255,159,67,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .warning p { font-size: clamp(12px, 1.1vw, 16px); color: var(--orange); }
+
+  /* Milestone bar */
+  .milestone-bar {
+    display: flex;
+    gap: 0;
+    margin: 16px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .milestone-seg {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: clamp(9px, 0.8vw, 12px);
+    font-weight: 600;
+  }
+  .milestone-seg.done { background: var(--green); color: var(--bg); }
+  .milestone-seg.active { background: var(--accent); color: var(--bg); }
+  .milestone-seg.pending { background: var(--surface); color: var(--text-dim); }
+
+  /* Recap grid */
+  .recap-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .recap-item {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .recap-item h3 { font-size: clamp(13px, 1.3vw, 18px); margin-bottom: 2px; }
+  .recap-item p { font-size: clamp(11px, 1vw, 15px); margin: 0; }
+
+  /* Analogy box */
+  .analogy {
+    background: rgba(108,140,255,0.06);
+    border: 1px solid rgba(108,140,255,0.25);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .analogy .emoji { font-size: clamp(24px, 2.5vw, 40px); flex-shrink: 0; }
+  .analogy p { font-size: clamp(12px, 1.1vw, 16px); color: var(--accent); }
+  .analogy strong { color: var(--text); }
+
+  /* Output box */
+  .output-box {
+    background: var(--code-bg);
+    border: 1px dashed var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 1vw, 14px);
+    color: var(--green);
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .slide { padding: 5% 5%; }
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+    #notes-panel { display: none; }
+    #counter { font-size: 10px; bottom: 8px; right: 12px; }
+    #updated { font-size: 8px; bottom: 8px; left: 12px; }
+  }
+
+  /* Print */
+  @media print {
+    body { overflow: visible; display: block; background: #fff; }
+    #deck { width: 100%; height: auto; box-shadow: none; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 100vh; }
+    #progress, #counter { display: none; }
+    #notes-panel { display: none !important; }
+  }
+
+  /* Focus styles */
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 0: Title -->
+  <!-- ============================================================ -->
+  <section class="slide title active" data-slide="0" role="region" aria-label="Title slide">
+    <span class="badge">90-Day Co-op Prep</span>
+    <h1>OOP: Classes &amp;<br><span class="accent">Objects in Python</span></h1>
+    <p class="subtitle">class &bull; __init__ &bull; self &bull; attributes &bull; methods</p>
+    <p class="meta">Day 37 &middot; Week 7 &middot; Phase III &middot; June 26, 2026</p>
+    <aside class="notes" style="display:none;">
+      Welcome to Day 37. Today we start Phase III — intermediate Python — with Object-Oriented Programming. This is a foundational concept used in every Python framework, library, and project. By the end, you'll model a Student and a Task class from scratch.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 1: Learning Overview -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="1" role="region" aria-label="Overview">
+    <h2>Today's Plan &mdash; 60 Minutes</h2>
+    <div class="card-grid cols-2" style="margin-top:12px;">
+      <div class="card">
+        <h3>🧠 What is OOP? (5 min)</h3>
+        <p>The big idea: bundling data + behaviour into objects. Real-world analogies.</p>
+      </div>
+      <div class="card">
+        <h3>🏗️ The class keyword (10 min)</h3>
+        <p><code>class</code>, <code>__init__</code>, <code>self</code> &mdash; the building blocks.</p>
+      </div>
+      <div class="card">
+        <h3>📦 Attributes &amp; Methods (10 min)</h3>
+        <p>Instance attributes, class attributes, and defining behaviour.</p>
+      </div>
+      <div class="card">
+        <h3>👩‍🎓 Walkthrough: Student class (15 min)</h3>
+        <p>Build a <code>Student</code> class step by step. Type along.</p>
+      </div>
+      <div class="card">
+        <h3>📝 Walkthrough: Task class (10 min)</h3>
+        <p>Model a <code>Task</code> class &mdash; connects to Project 1.</p>
+      </div>
+      <div class="card">
+        <h3>✏️ Exercises &amp; Wrap (10 min)</h3>
+        <p>Practice tasks + key takeaways for your notes.</p>
+      </div>
+    </div>
+    <div class="milestone-bar">
+      <div class="milestone-seg done">P1: Todo CLI</div>
+      <div class="milestone-seg done">P2: Bookmark</div>
+      <div class="milestone-seg pending">P3: Weather</div>
+      <div class="milestone-seg pending">P4: Dashboard</div>
+      <div class="milestone-seg pending">P5: Full-Stack</div>
+    </div>
+    <aside class="notes" style="display:none;">
+      Walk through the agenda. Phase III starts today — intermediate Python concepts that build toward Project 3 (Weather Dashboard, Week 8). Emphasise that OOP is the single most important Python concept for co-op: every framework (Flask, Django, FastAPI) is built on it.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 2: What is OOP? -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="2" role="region" aria-label="What is OOP">
+    <h2>🧠 What is Object-Oriented Programming?</h2>
+    <p>OOP is a way of organising code around <strong>objects</strong> — bundles of <span class="accent">data</span> and <span class="green">behaviour</span> that model real-world things.</p>
+
+    <div class="card-grid cols-2" style="margin-top:8px;">
+      <div class="card">
+        <h3>❌ Without OOP</h3>
+        <ul>
+          <li>Scattered variables: <code>student_name</code>, <code>student_age</code>, <code>student_grades</code></li>
+          <li>Separate functions: <code>print_student()</code>, <code>calc_average()</code></li>
+          <li>Easy to lose connection between data and the functions that use it</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>✅ With OOP</h3>
+        <ul>
+          <li>Everything in one place: a <code>Student</code> <strong>class</strong></li>
+          <li>Data = <strong>attributes</strong> (<code>.name</code>, <code>.age</code>)</li>
+          <li>Behaviour = <strong>methods</strong> (<code>.print_summary()</code>, <code>.average_grade()</code>)</li>
+          <li>Reusable: create many students from one class</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="analogy">
+      <span class="emoji">🏭</span>
+      <p><strong>Analogy:</strong> A <em>class</em> is a blueprint / factory mould. An <em>object</em> is the actual thing the mould produces. One blueprint → many objects.</p>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Start with the big picture. OOP is about grouping related data and functions together. Use the blueprint/object analogy: the blueprint for a house (class) vs. actual houses (objects). Each house has its own address, colour, occupants — but they all share the same structure defined in the blueprint.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 3: The class keyword + __init__ + self -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="3" role="region" aria-label="Class Keyword">
+    <h2>🏗️ The <code>class</code> Keyword</h2>
+    <p>A class is defined with <code>class ClassName:</code>. Inside, <code>__init__</code> is the <strong>constructor</strong> that runs when you create a new object.</p>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Student</span>:</span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, name, age):</span>
+    <span class="line">        <span class="kw">self</span>.name = name</span>
+    <span class="line hl">        <span class="kw">self</span>.age = age</span>
+    <span class="line">        <span class="kw">self</span>.grades = []</span>
+    <span class="line"><span class="cm"># Creating an object (instance)</span></span>
+    <span class="line hl">alice = <span class="fn">Student</span>(<span class="str">"Alice"</span>, <span class="num">20</span>)</span>
+    <span class="line hl"><span class="fn">print</span>(alice.name)  <span class="cm"># Alice</span></span></code></pre>
+
+    <div class="card-grid cols-3" style="margin-top:4px;">
+      <div class="card">
+        <h3><code>class</code></h3>
+        <p>Declares the blueprint. Convention: <strong>PascalCase</strong> (<code>Student</code>, <code>TaskManager</code>).</p>
+      </div>
+      <div class="card">
+        <h3><code>__init__</code></h3>
+        <p>Constructor method. Called once when the object is created. Sets up initial state.</p>
+      </div>
+      <div class="card">
+        <h3><code>self</code></h3>
+        <p>The object itself. Every method gets <code>self</code> as the first parameter so you can access attributes.</p>
+      </div>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Walk through the syntax carefully. Emphasise three things: (1) PascalCase naming convention for classes, (2) __init__ runs automatically on creation, (3) self is always the first parameter and refers to the specific instance. Use the whiteboard: draw two Student objects, each with their own .name and .age in memory, but sharing the same class definition.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 4: Attributes — Instance vs Class -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="4" role="region" aria-label="Attributes">
+    <h2>📦 Attributes: Instance vs. Class</h2>
+    <p>Attributes store data on an object. There are two kinds:</p>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Student</span>:</span>
+    <span class="line hl">    school = <span class="str">"Waterloo Collegiate"</span>  <span class="cm"># Class attribute — shared by ALL students</span></span>
+    <span class="line">    </span>
+    <span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, name, age):</span>
+    <span class="line hl">        <span class="kw">self</span>.name = name              <span class="cm"># Instance attribute — unique per student</span></span>
+    <span class="line hl">        <span class="kw">self</span>.age = age</span>
+    <span class="line">        <span class="kw">self</span>.grades = []</span>
+    <span class="line"></span>
+    <span class="line"><span class="fn">print</span>(alice.school)  <span class="cm"># "Waterloo Collegiate" — accessed via instance</span></span>
+    <span class="line"><span class="fn">print</span>(<span class="fn">Student</span>.school) <span class="cm"># "Waterloo Collegiate" — accessed via class</span></span></code></pre>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h3>📍 Instance Attributes</h3>
+        <ul>
+          <li>Set in <code>__init__</code> via <code>self.attr = value</code></li>
+          <li>Each object has its own copy</li>
+          <li><code>alice.name</code> ≠ <code>bob.name</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🌍 Class Attributes</h3>
+        <ul>
+          <li>Set directly on the class body</li>
+          <li>Shared by all instances</li>
+          <li>Good for defaults, constants, config</li>
+        </ul>
+      </div>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      This is a common interview question: "What's the difference between class and instance attributes?" Instance = each object's own data. Class = shared across all objects. Demo with two Student objects: change alice.school and show it doesn't affect the class attribute if you assign via the instance (it shadows it). Show Student.school stays the same.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 5: Methods -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="5" role="region" aria-label="Methods">
+    <h2>🏃 Methods — Behaviour on Objects</h2>
+    <p>Methods are <strong>functions that belong to a class</strong>. They operate on the object's data via <code>self</code>.</p>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Student</span>:</span>
+    <span class="line">    school = <span class="str">"Waterloo Collegiate"</span></span>
+    <span class="line">    </span>
+    <span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, name, age):</span>
+    <span class="line">        <span class="kw">self</span>.name = name</span>
+    <span class="line">        <span class="kw">self</span>.age = age</span>
+    <span class="line">        <span class="kw">self</span>.grades = []</span>
+    <span class="line"></span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">add_grade</span>(<span class="kw">self</span>, grade):       <span class="cm"># Method: adds a grade</span></span>
+    <span class="line hl">        <span class="kw">self</span>.grades.append(grade)</span>
+    <span class="line">    </span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">average</span>(<span class="kw">self</span>):                 <span class="cm"># Method: computes average</span></span>
+    <span class="line hl">        <span class="kw">if</span> <span class="kw">not</span> <span class="kw">self</span>.grades:</span>
+    <span class="line hl">            <span class="kw">return</span> <span class="num">0</span></span>
+    <span class="line hl">        <span class="kw">return</span> <span class="fn">sum</span>(<span class="kw">self</span>.grades) / <span class="fn">len</span>(<span class="kw">self</span>.grades)</span>
+    <span class="line"></span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">is_passing</span>(<span class="kw">self</span>):               <span class="cm"># Method: returns bool</span></span>
+    <span class="line hl">        <span class="kw">return</span> <span class="kw">self</span>.average() &gt;= <span class="num">60</span></span>
+    <span class="line"></span>
+    <span class="line">alice = <span class="fn">Student</span>(<span class="str">"Alice"</span>, <span class="num">20</span>)</span>
+    <span class="line">alice.add_grade(<span class="num">85</span>)</span>
+    <span class="line">alice.add_grade(<span class="num">92</span>)</span>
+    <span class="line"><span class="fn">print</span>(alice.average())     <span class="cm"># 88.5</span></span>
+    <span class="line"><span class="fn">print</span>(alice.is_passing())  <span class="cm"># True</span></span></code></pre>
+
+    <div class="tip">
+      <p><strong>Key insight:</strong> Every method takes <code>self</code> first. When you call <code>alice.average()</code>, Python automatically passes <code>alice</code> as <code>self</code>.</p>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Methods are just functions attached to a class. The magic is that Python passes the instance as the first argument automatically. Demonstrate: Student.average(alice) is equivalent to alice.average(). This is a common interview question / whiteboard trap — make sure learners understand it.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 6: Walkthrough — Build a Student class -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="6" role="region" aria-label="Walkthrough Student">
+    <h2>👩‍🎓 Walkthrough: Build the Student Class</h2>
+    <p>Open a Python file (<code>student.py</code>) and type along. Each step adds one feature.</p>
+
+    <div class="step">
+      <span class="step-num">1</span>
+      <p>Define the class with <code>__init__</code>. Store <code>name</code>, <code>year</code> (1-4), and an empty <code>courses</code> list.</p>
+    </div>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Student</span>:</span>
+    <span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, name, year):</span>
+    <span class="line">        <span class="kw">self</span>.name = name</span>
+    <span class="line">        <span class="kw">self</span>.year = year</span>
+    <span class="line">        <span class="kw">self</span>.courses = []</span></code></pre>
+
+    <div class="step">
+      <span class="step-num">2</span>
+      <p>Add an <code>enroll(course)</code> method and an <code>info()</code> method that returns a summary string.</p>
+    </div>
+
+    <pre><code><span class="line hl">    <span class="kw">def</span> <span class="fn">enroll</span>(<span class="kw">self</span>, course):</span>
+    <span class="line hl">        <span class="kw">self</span>.courses.append(course)</span>
+    <span class="line hl">        <span class="kw">return</span> <span class="str">f"<span class="fn">{self.name}</span> enrolled in <span class="fn">{course}</span>"</span></span>
+    <span class="line"></span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">info</span>(<span class="kw">self</span>):</span>
+    <span class="line hl">        courses_str = <span class="str">", "</span>.join(<span class="kw">self</span>.courses) <span class="kw">or</span> <span class="str">"none"</span></span>
+    <span class="line hl">        <span class="kw">return</span> <span class="str">f"<span class="fn">{self.name}</span> (Year <span class="fn">{self.year}</span>): <span class="fn">{courses_str}</span>"</span></span></code></pre>
+
+    <p>Create two students and test:</p>
+
+    <pre><code><span class="line">s1 = <span class="fn">Student</span>(<span class="str">"Alice"</span>, <span class="num">2</span>)</span>
+    <span class="line">s2 = <span class="fn">Student</span>(<span class="str">"Bob"</span>, <span class="num">3</span>)</span>
+    <span class="line"><span class="fn">print</span>(s1.enroll(<span class="str">"CS 241"</span>))</span>
+    <span class="line"><span class="fn">print</span>(s1.enroll(<span class="str">"MATH 239"</span>))</span>
+    <span class="line">s2.enroll(<span class="str">"CS 350"</span>)</span>
+    <span class="line"><span class="fn">print</span>(s1.info())</span>
+    <span class="line"><span class="fn">print</span>(s2.info())</span></code></pre>
+
+    <div class="output-box">
+      Alice enrolled in CS 241<br>
+      Alice enrolled in MATH 239<br>
+      Alice (Year 2): CS 241, MATH 239<br>
+      Bob (Year 3): CS 350
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Have learners type this from scratch. The output box shows what they should see. If their output differs, debug together. Common issues: forgetting self, misspelling method names, f-string syntax errors.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 7: Walkthrough — Task class (P1 connection) -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="7" role="region" aria-label="Walkthrough Task">
+    <h2>📝 Walkthrough: Task Class (Project 1 Flashback)</h2>
+    <p>Remember Project 1 — the CLI Todo List? Let's model its core with a <code>Task</code> class.</p>
+
+    <div class="step">
+      <span class="step-num">1</span>
+      <p>Define <code>Task</code> with <code>title</code>, <code>priority</code> (default: <code>"medium"</code>), and <code>completed</code> (default: <code>False</code>).</p>
+    </div>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Task</span>:</span>
+    <span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title, priority=<span class="str">"medium"</span>):</span>
+    <span class="line">        <span class="kw">self</span>.title = title</span>
+    <span class="line">        <span class="kw">self</span>.priority = priority</span>
+    <span class="line">        <span class="kw">self</span>.completed = <span class="kw">False</span></span>
+    <span class="line"></span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">mark_done</span>(<span class="kw">self</span>):</span>
+    <span class="line hl">        <span class="kw">self</span>.completed = <span class="kw">True</span></span>
+    <span class="line hl">        <span class="kw">return</span> <span class="str">f"<span class="fn">{self.title}</span> completed!"</span></span>
+    <span class="line"></span>
+    <span class="line hl">    <span class="kw">def</span> <span class="fn">__str__</span>(<span class="kw">self</span>):</span>
+    <span class="line hl">        status = <span class="str">"✓"</span> <span class="kw">if</span> <span class="kw">self</span>.completed <span class="kw">else</span> <span class="str">"○"</span></span>
+    <span class="line hl">        <span class="kw">return</span> <span class="str">f"<span class="fn">{status}</span> [<span class="fn">{self.priority}</span>] <span class="fn">{self.title}</span>"</span></span></code></pre>
+
+    <div class="step">
+      <span class="step-num">2</span>
+      <p>Test it — create tasks, mark one done, print them.</p>
+    </div>
+
+    <pre><code><span class="line">t1 = <span class="fn">Task</span>(<span class="str">"Apply to 5 co-op jobs"</span>, <span class="str">"high"</span>)</span>
+    <span class="line">t2 = <span class="fn">Task</span>(<span class="str">"Review data structures"</span>)</span>
+    <span class="line"><span class="fn">print</span>(t1)</span>
+    <span class="line"><span class="fn">print</span>(t2)</span>
+    <span class="line">t1.mark_done()</span>
+    <span class="line"><span class="fn">print</span>(t1)</span></code></pre>
+
+    <div class="output-box">
+      ○ [high] Apply to 5 co-op jobs<br>
+      ○ [medium] Review data structures<br>
+      ✓ [high] Apply to 5 co-op jobs
+    </div>
+
+    <div class="tip">
+      <p><strong>Bonus:</strong> <code>__str__</code> is a <em>magic method</em> — it defines how <code>print()</code> displays your object. More magic methods in a future lesson.</p>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      This slide connects OOP to the learner's existing Project 1 (Todo CLI). The Task class they build here is a simplified version of what they already implemented functionally. This shows them that they've been using OOP concepts already! The __str__ method is a nice preview of operator overloading / dunder methods.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 8: Working with Objects — Practice -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="8" role="region" aria-label="Working with Objects">
+    <h2>🔧 Working with Objects — Common Patterns</h2>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h3>📋 Creating objects</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:12px;margin:6px 0 0;"><code><span class="line">alice = <span class="fn">Student</span>(<span class="str">"Alice"</span>, <span class="num">2</span>)</span>
+<span class="line">bob = <span class="fn">Student</span>(<span class="str">"Bob"</span>, <span class="num">3</span>)</span>
+<span class="line">tasks = [</span>
+<span class="line">    <span class="fn">Task</span>(<span class="str">"Study"</span>),</span>
+<span class="line">    <span class="fn">Task</span>(<span class="str">"Apply"</span>, <span class="str">"high"</span>)</span>
+<span class="line">]</span></code></pre>
+      </div>
+      <div class="card">
+        <h3>🔄 Modifying objects</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:12px;margin:6px 0 0;"><code><span class="line">alice.year = <span class="num">3</span>          <span class="cm"># Direct attribute</span></span>
+<span class="line">alice.enroll(<span class="str">"CS 350"</span>) <span class="cm"># Via method</span></span>
+<span class="line">tasks[<span class="num">0</span>].mark_done()     <span class="cm"># From list</span></span>
+<span class="line">tasks[<span class="num">1</span>].priority = <span class="str">"low"</span></span></code></pre>
+      </div>
+      <div class="card">
+        <h3>🔍 Inspecting objects</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:12px;margin:6px 0 0;"><code><span class="line"><span class="fn">print</span>(alice.info())</span>
+<span class="line"><span class="fn">print</span>(<span class="fn">type</span>(alice))     <span class="cm"># &lt;class '__main__.Student'&gt;</span></span>
+<span class="line"><span class="fn">print</span>(<span class="fn">isinstance</span>(alice, <span class="fn">Student</span>))  <span class="cm"># True</span></span></code></pre>
+      </div>
+      <div class="card">
+        <h3>📂 Collections of objects</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:12px;margin:6px 0 0;"><code><span class="line"><span class="kw">for</span> t <span class="kw">in</span> tasks:</span>
+<span class="line">    <span class="kw">if</span> <span class="kw">not</span> t.completed:</span>
+<span class="line">        <span class="fn">print</span>(t)</span>
+<span class="line"><span class="cm"># Filtering by attribute</span></span>
+<span class="line">high = [t <span class="kw">for</span> t <span class="kw">in</span> tasks</span>
+<span class="line">        <span class="kw">if</span> t.priority == <span class="str">"high"</span>]</span></code></pre>
+      </div>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      This is a reference slide — learners can come back to it. Show common patterns they'll use daily: creating objects, modifying them, inspecting type/isinstance, and putting objects in lists/dicts for iteration.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 9: Exercise Slide -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="9" role="region" aria-label="Exercises">
+    <h2>✏️ Practice Exercises</h2>
+    <p>Open a new file (<code>exercises.py</code>) and try these. Spend ~8 minutes, then check solutions.</p>
+
+    <div class="exercise">
+      <h3>Exercise 1: Book class</h3>
+      <p>Create a <code>Book</code> class with:</p>
+      <ul>
+        <li><strong>Attributes:</strong> <code>title</code>, <code>author</code>, <code>pages</code>, <code>current_page</code> (default 0)</li>
+        <li><strong>Method:</strong> <code>read(pages)</code> — increases <code>current_page</code>, prints progress</li>
+        <li><strong>Method:</strong> <code>progress()</code> — returns "% complete" as a string</li>
+      </ul>
+      <p style="margin-top:6px;">Test: <code>Book("1984", "Orwell", 328) → read(100) → "Read 100 of 328 pages (30%)"</code></p>
+    </div>
+
+    <div class="exercise">
+      <h3>Exercise 2: BankAccount class</h3>
+      <p>Create a <code>BankAccount</code> class with:</p>
+      <ul>
+        <li><strong>Class attribute:</strong> <code>interest_rate = 0.02</code></li>
+        <li><strong>Attributes:</strong> <code>owner</code>, <code>balance</code> (default 0)</li>
+        <li><strong>Methods:</strong> <code>deposit(amount)</code>, <code>withdraw(amount)</code> (check balance!), <code>apply_interest()</code></li>
+      </ul>
+      <p style="margin-top:6px;">Bonus: Prevent withdrawing more than the balance. Raise a descriptive error or print a warning.</p>
+    </div>
+
+    <div class="tip">
+      <p><strong>Hint:</strong> Use <code>self.current_page / self.pages * 100</code> for the percentage. Remember to handle division by zero!</p>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Two exercises: Book is easier (direct attribute manipulation), BankAccount is harder (conditional logic, class attribute). Learners who finish fast can do both. The hint is on-screen but the solutions are on the next slide — encourage them to try first.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 10: Exercise Solutions -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="10" role="region" aria-label="Solutions">
+    <h2>✅ Exercise Solutions</h2>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h3>📖 Book class</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:12px;margin:6px 0 0;"><code><span class="line"><span class="kw">class</span> <span class="fn">Book</span>:</span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title, author, pages):</span>
+<span class="line">        <span class="kw">self</span>.title = title</span>
+<span class="line">        <span class="kw">self</span>.author = author</span>
+<span class="line">        <span class="kw">self</span>.pages = pages</span>
+<span class="line">        <span class="kw">self</span>.current_page = <span class="num">0</span></span>
+<span class="line"></span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">read</span>(<span class="kw">self</span>, pages):</span>
+<span class="line hl">        <span class="kw">self</span>.current_page += pages</span>
+<span class="line hl">        <span class="kw">if</span> <span class="kw">self</span>.current_page &gt; <span class="kw">self</span>.pages:</span>
+<span class="line hl">            <span class="kw">self</span>.current_page = <span class="kw">self</span>.pages</span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"Read <span class="fn">{self.current_page}</span> of <span class="fn">{self.pages}</span> pages (<span class="fn">{self.progress()}</span>)"</span></span>
+<span class="line"></span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">progress</span>(<span class="kw">self</span>):</span>
+<span class="line hl">        pct = (<span class="kw">self</span>.current_page / <span class="kw">self</span>.pages) * <span class="num">100</span></span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"<span class="fn">{pct:.0f}</span>%"</span></span></code></pre>
+      </div>
+      <div class="card">
+        <h3>🏦 BankAccount class</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:12px;margin:6px 0 0;"><code><span class="line"><span class="kw">class</span> <span class="fn">BankAccount</span>:</span>
+<span class="line">    interest_rate = <span class="num">0.02</span></span>
+<span class="line"></span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, owner, balance=<span class="num">0</span>):</span>
+<span class="line hl">        <span class="kw">self</span>.owner = owner</span>
+<span class="line hl">        <span class="kw">self</span>.balance = balance</span>
+<span class="line"></span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">deposit</span>(<span class="kw">self</span>, amount):</span>
+<span class="line hl">        <span class="kw">self</span>.balance += amount</span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"Deposited $<span class="fn">{amount}</span>. Balance: $<span class="fn">{self.balance}</span>"</span></span>
+<span class="line"></span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">withdraw</span>(<span class="kw">self</span>, amount):</span>
+<span class="line hl">        <span class="kw">if</span> amount &gt; <span class="kw">self</span>.balance:</span>
+<span class="line hl">            <span class="kw">return</span> <span class="str">"Insufficient funds!"</span></span>
+<span class="line hl">        <span class="kw">self</span>.balance -= amount</span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"Withdrew $<span class="fn">{amount}</span>. Balance: $<span class="fn">{self.balance}</span>"</span></span>
+<span class="line"></span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">apply_interest</span>(<span class="kw">self</span>):</span>
+<span class="line hl">        <span class="kw">self</span>.balance += <span class="kw">self</span>.balance * <span class="fn">BankAccount</span>.interest_rate</span></code></pre>
+      </div>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Review both solutions. For Book, note the clamping logic (can't read past the last page). For BankAccount, highlight: (1) using `BankAccount.interest_rate` vs `self.interest_rate` to access class attribute, (2) the validation in withdraw(). Mention that real banking apps use Decimal, not float, for money.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 11: Common Pitfalls -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="11" role="region" aria-label="Pitfalls">
+    <h2>⚠️ Common Pitfalls &amp; How to Avoid Them</h2>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h3>❌ Forgetting <code>self</code></h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:10px;margin:4px 0 0;"><code><span class="line"><span class="cm"># BAD — missing self</span></span>
+<span class="line"><span class="kw">def</span> <span class="fn">__init__</span>(name):       <span class="cm"># TypeError!</span></span>
+<span class="line">    <span class="kw">self</span>.name = name</span>
+<span class="line"><span class="cm"># GOOD</span></span>
+<span class="line"><span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, name):</span></code></pre>
+        <p style="font-size:clamp(10px,0.9vw,14px);margin-top:4px;">Python passes the instance as first arg. Always list <code>self</code> first in method signatures.</p>
+      </div>
+      <div class="card">
+        <h3>❌ Mutable default args</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:10px;margin:4px 0 0;"><code><span class="line"><span class="cm"># BAD — shared across instances!</span></span>
+<span class="line"><span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, grades=[]):</span>
+<span class="line"><span class="cm"># GOOD — None + create inside</span></span>
+<span class="line"><span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, grades=<span class="kw">None</span>):</span>
+<span class="line">    <span class="kw">self</span>.grades = grades <span class="kw">or</span> []</span></code></pre>
+        <p style="font-size:clamp(10px,0.9vw,14px);margin-top:4px;">Default args are evaluated once at definition. Mutable defaults cause bugs.</p>
+      </div>
+      <div class="card">
+        <h3>❌ Accessing wrong scope</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:10px;margin:4px 0 0;"><code><span class="line"><span class="cm"># BAD — local variable hides self.name</span></span>
+<span class="line">name = <span class="str">"Class name"</span></span>
+<span class="line"><span class="kw">def</span> <span class="fn">info</span>(<span class="kw">self</span>):</span>
+<span class="line">    <span class="kw">return</span> name  <span class="cm"># Uses class-level, not instance!</span></span></code></pre>
+        <p style="font-size:clamp(10px,0.9vw,14px);margin-top:4px;">Always use <code>self.attr</code> to access instance data from within methods.</p>
+      </div>
+      <div class="card">
+        <h3>❌ Mutable class attributes</h3>
+        <pre style="font-size:clamp(9px,0.9vw,13px);padding:10px;margin:4px 0 0;"><code><span class="line"><span class="cm"># Students all share this list!</span></span>
+<span class="line"><span class="kw">class</span> <span class="fn">Student</span>:</span>
+<span class="line">    grades = []  <span class="cm"># Class attribute</span></span></code></pre>
+        <p style="font-size:clamp(10px,0.9vw,14px);margin-top:4px;">Class attributes should be immutable (strings, numbers, tuples) or constants.</p>
+      </div>
+    </div>
+
+    <div class="warning">
+      <p><strong>Golden rule:</strong> If it varies by instance, put it in <code>__init__</code> with <code>self</code>. If it's shared / constant, use a class attribute.</p>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      These are the top 4 mistakes beginners make with OOP in Python. The mutable default arg trap is famously asked in Python interviews. The mutable class attr bug is subtle — show a demo where two students' grades get mixed up.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 12: Why OOP Matters for Co-op -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="12" role="region" aria-label="OOP for Co-op">
+    <h2>🎯 Why OOP Matters for Co-op</h2>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h3>💼 Interview Questions</h3>
+        <ul>
+          <li>"Explain the difference between a class and an object."</li>
+          <li>"What is <code>self</code> in Python?"</li>
+          <li>"What are class vs instance attributes?"</li>
+          <li>"Write a class that models a bank account."</li>
+          <li>Every midterm/final has an OOP question.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🛠️ Real-world Usage</h3>
+        <ul>
+          <li><strong>Flask/Django:</strong> views are methods on classes</li>
+          <li><strong>SQLAlchemy:</strong> database tables are Python classes</li>
+          <li><strong>PyTorch:</strong> neural networks are <code>nn.Module</code> subclasses</li>
+          <li><strong>Pytest:</strong> test suites use classes</li>
+          <li>Every major library uses OOP internally</li>
+        </ul>
+      </div>
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>🧩 OOP Mental Model</h3>
+        <p>Good code = groups of related data + operations on that data. OOP enforces this grouping. When you see <code>student.name</code>, you instantly know <code>name</code> belongs to a student — it's self-documenting.</p>
+      </div>
+    </div>
+
+    <aside class="notes" style="display:none;">
+      Motivate why they're learning this. Every co-op interview at a tech company will touch OOP. Every Python framework they'll use on the job is built on classes. This isn't theory — it's the language of professional Python.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 13: Key Takeaways -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="13" role="region" aria-label="Summary">
+    <h2>📌 Key Takeaways</h2>
+    <div class="recap-grid">
+      <div class="recap-item">
+        <h3>1. Class = blueprint, Object = instance</h3>
+        <p><code>class Student:</code> defines the blueprint. <code>alice = Student("Alice", 2)</code> produces one object. You can make many objects from one class.</p>
+      </div>
+      <div class="recap-item">
+        <h3>2. <code>__init__</code> + <code>self</code> set up instance data</h3>
+        <p><code>__init__</code> runs on creation. <code>self.attr</code> stores data on the specific object. Every method must take <code>self</code> as the first parameter.</p>
+      </div>
+      <div class="recap-item">
+        <h3>3. Instance attrs are per-object; class attrs are shared</h3>
+        <p>Instance attrs in <code>__init__</code> (unique), class attrs on the class body (shared). Mutable class attrs are dangerous.</p>
+      </div>
+      <div class="recap-item">
+        <h3>4. Methods bundle behaviour with data</h3>
+        <p>A method is a function on a class. It operates on <code>self</code> to read/write the object's data. Call with <code>object.method()</code>.</p>
+      </div>
+    </div>
+    <p style="margin-top:8px;font-size:clamp(12px,1.2vw,17px);">
+      <strong>Phase III checkpoint:</strong> Day 37 ✓ — OOP fundamentals<br>
+      <span class="text-dim">Next topic: Day 38 — Inheritance &amp; Polymorphism</span>
+    </p>
+    <aside class="notes" style="display:none;">
+      Recap the four takeaways. Emphasise that OOP is a mental model shift — it may feel awkward at first but will click with practice. Preview Day 38: building on today with inheritance, super(), and polymorphism.
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 14: Q&A / Closing -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="14" role="region" aria-label="Closing">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+      <h1 style="font-size:clamp(32px,5vw,72px);margin-bottom:0.2em;">🐍</h1>
+      <h1>You're Now an<br><span class="accent">OOP Python Developer</span></h1>
+      <p style="font-size:clamp(16px,1.8vw,26px);color:var(--text-dim);max-width:80%;margin:0 auto 24px;">
+        You can model real-world things as classes. This is the foundation for every Python framework and library.
+      </p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+        <span style="background:var(--green);color:var(--bg);padding:8px 20px;border-radius:6px;font-family:var(--font-mono);font-weight:600;font-size:clamp(12px,1.1vw,15px);">P1: Todo CLI ✓</span>
+        <span style="background:var(--green);color:var(--bg);padding:8px 20px;border-radius:6px;font-family:var(--font-mono);font-weight:600;font-size:clamp(12px,1.1vw,15px);">P2: Bookmark ✓</span>
+        <span style="background:var(--surface);color:var(--text-dim);padding:8px 20px;border-radius:6px;font-family:var(--font-mono);font-weight:600;font-size:clamp(12px,1.1vw,15px);">P3: Weather ⏳</span>
+      </div>
+      <p style="margin-top:24px;color:var(--text-dim);font-size:clamp(12px,1.2vw,17px);">
+        Next up: Day 38 — Inheritance &amp; Polymorphism
+      </p>
+    </div>
+    <aside class="notes" style="display:none;">
+      Close with energy. Learners now have OOP fundamentals — a major milestone. Remind them: practice makes permanent. The exercises at the end are the most important part. Preview Day 38: extending classes with inheritance.
+    </aside>
+  </section>
+
+  <!-- Progress bar and counter -->
+  <div id="progress" style="width:0%;"></div>
+  <div id="counter"></div>
+  <div id="updated">Updated June 26, 2026</div>
+
+  <!-- Speaker notes panel -->
+  <div id="notes-panel">
+    <h3>Speaker Notes</h3>
+    <div id="notes-content"><p>Select a slide to see notes.</p></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const notesPanel = document.getElementById('notes-panel');
+  const notesContent = document.getElementById('notes-content');
+  let notesOpen = false;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    location.hash = '#' + idx;
+
+    // Update speaker notes
+    const note = slides[idx].querySelector('.notes');
+    if (note) {
+      notesContent.innerHTML = note.innerHTML;
+    } else {
+      notesContent.innerHTML = '<p>No notes for this slide.</p>';
+    }
+    if (notesOpen) {
+      notesPanel.classList.add('open');
+    }
+  }
+
+  // Hash-based navigation
+  function hashHandler() {
+    const m = location.hash.match(/^#(\d+)$/);
+    if (m) {
+      const idx = parseInt(m[1], 10);
+      if (idx >= 0 && idx < total) {
+        showSlide(idx);
+      }
+    }
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (current < total - 1) showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (current > 0) showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      notesOpen = !notesOpen;
+      notesPanel.classList.toggle('open', notesOpen);
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      if (notesOpen) {
+        notesOpen = false;
+        notesPanel.classList.remove('open');
+      }
+    }
+  });
+
+  window.addEventListener('hashchange', hashHandler);
+
+  // Init
+  if (location.hash) {
+    hashHandler();
+  } else {
+    showSlide(0);
+  }
+})();
+</script>
+</body>
+</html>
