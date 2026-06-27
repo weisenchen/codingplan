@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 38 — OOP: Inheritance & Dunder Methods | 90-Day Co-op Prep</title>
+<style>
+  :root {
+    --bg: #0f0f14;
+    --surface: #1a1a24;
+    --surface-alt: #24243a;
+    --text: #e8e8f0;
+    --text-dim: #9494b0;
+    --accent: #6c8cff;
+    --accent-dim: #4a6adf;
+    --green: #4cdf8b;
+    --yellow: #ffd76c;
+    --orange: #ff9f43;
+    --red: #ff6b6b;
+    --code-bg: #16161f;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --line-num: #3a3a50;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: #08080c;
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #deck {
+    position: relative;
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    padding: 5% 6%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-track { background: transparent; }
+  .slide::-webkit-scrollbar-thumb { background: var(--surface-alt); border-radius: 3px; }
+
+  /* Progress bar */
+  #progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    z-index: 20;
+  }
+  #counter {
+    position: absolute;
+    bottom: 14px; right: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    z-index: 20;
+  }
+  #updated {
+    position: absolute;
+    bottom: 14px; left: 24px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    z-index: 20;
+  }
+
+  /* Speaker notes */
+  #notes-panel {
+    position: absolute;
+    top: 0; right: -35%;
+    width: 35%;
+    height: 100%;
+    background: var(--surface);
+    border-left: 2px solid var(--surface-alt);
+    padding: 32px 24px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 30;
+  }
+  #notes-panel.open { right: 0; }
+  #notes-panel h3 { color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  #notes-panel p { margin-bottom: 8px; }
+
+  /* Slide content */
+  h1 {
+    font-size: clamp(28px, 4vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.3em;
+  }
+  h2 {
+    font-size: clamp(20px, 2.8vw, 40px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5em;
+    color: var(--accent);
+  }
+  h3 {
+    font-size: clamp(16px, 2vw, 28px);
+    font-weight: 600;
+    margin-bottom: 0.4em;
+    color: var(--text);
+  }
+  p, li {
+    font-size: clamp(14px, 1.6vw, 22px);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  ul { padding-left: 1.4em; }
+  li { margin-bottom: 0.3em; }
+  strong { color: var(--text); font-weight: 600; }
+  .accent { color: var(--accent); }
+  .green { color: var(--green); }
+  .yellow { color: var(--yellow); }
+  .orange { color: var(--orange); }
+  .red { color: var(--red); }
+
+  /* Title slide */
+  .slide.title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide.title h1 { margin-bottom: 0.15em; }
+  .slide.title .subtitle {
+    font-size: clamp(14px, 1.4vw, 20px);
+    color: var(--text-dim);
+    margin-bottom: 0.5em;
+  }
+  .slide.title .meta {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1vw, 14px);
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .slide.title .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 0.9vw, 13px);
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 1em;
+    letter-spacing: 0.5px;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 16px);
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 12px 0;
+    position: relative;
+    counter-reset: line;
+  }
+  code { font-family: var(--font-mono); }
+  pre code { font-size: inherit; }
+  .line { display: block; }
+  .line::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 28px;
+    color: var(--line-num);
+    text-align: right;
+    margin-right: 14px;
+    user-select: none;
+  }
+  .hl { background: rgba(108,140,255,0.15); border-left: 3px solid var(--accent); padding-left: 10px; }
+  .hl-g { background: rgba(76,223,139,0.15); border-left: 3px solid var(--green); padding-left: 10px; }
+  .hl-y { background: rgba(255,215,108,0.15); border-left: 3px solid var(--yellow); padding-left: 10px; }
+  .kw { color: var(--accent); }
+  .str { color: var(--green); }
+  .cm { color: #5a5a78; font-style: italic; }
+  .fn { color: var(--yellow); }
+  .num { color: var(--orange); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    gap: 16px;
+    margin: 12px 0;
+    flex: 1;
+  }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card h3 { font-size: clamp(13px, 1.3vw, 18px); margin-bottom: 6px; }
+  .card p, .card li {
+    font-size: clamp(11px, 1vw, 15px);
+  }
+  .card ul { padding-left: 1.2em; }
+  .card li { margin-bottom: 4px; }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding-left: 28px; position: relative; }
+  .checklist li::before {
+    content: '☐';
+    position: absolute; left: 0;
+    color: var(--text-dim);
+    font-size: 1.1em;
+  }
+  .checklist li.done::before {
+    content: '☑';
+    color: var(--green);
+  }
+
+  /* Steps */
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: var(--bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .step p { margin-bottom: 0; }
+
+  /* Exercise box */
+  .exercise {
+    background: linear-gradient(135deg, rgba(255,215,108,0.08), rgba(255,107,107,0.05));
+    border: 1px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 12px 0;
+  }
+  .exercise h3 { color: var(--yellow); font-size: clamp(14px, 1.4vw, 20px); }
+  .exercise p, .exercise li { font-size: clamp(12px, 1.1vw, 16px); }
+
+  /* Tip box */
+  .tip {
+    background: rgba(76,223,139,0.06);
+    border: 1px solid rgba(76,223,139,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .tip p { font-size: clamp(12px, 1.1vw, 16px); color: var(--green); }
+
+  /* Warning box */
+  .warning {
+    background: rgba(255,159,67,0.06);
+    border: 1px solid rgba(255,159,67,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .warning p { font-size: clamp(12px, 1.1vw, 16px); color: var(--orange); }
+
+  /* Milestone bar */
+  .milestone-bar {
+    display: flex;
+    gap: 0;
+    margin: 16px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .milestone-seg {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: clamp(9px, 0.8vw, 12px);
+    font-weight: 600;
+  }
+  .milestone-seg.done { background: var(--green); color: var(--bg); }
+  .milestone-seg.active { background: var(--accent); color: var(--bg); }
+  .milestone-seg.pending { background: var(--surface); color: var(--text-dim); }
+
+  /* Recap grid */
+  .recap-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .recap-item {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .recap-item h3 { font-size: clamp(13px, 1.3vw, 18px); margin-bottom: 2px; }
+  .recap-item p { font-size: clamp(11px, 1vw, 15px); margin: 0; }
+
+  /* Analogy box */
+  .analogy {
+    background: rgba(108,140,255,0.06);
+    border: 1px solid rgba(108,140,255,0.25);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 10px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .analogy .emoji { font-size: clamp(24px, 2.5vw, 40px); flex-shrink: 0; }
+  .analogy p { font-size: clamp(12px, 1.1vw, 16px); color: var(--accent); }
+  .analogy strong { color: var(--text); }
+
+  /* Output box */
+  .output-box {
+    background: var(--code-bg);
+    border: 1px dashed var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 1vw, 14px);
+    color: var(--green);
+  }
+
+  /* Diagram / Inheritance tree */
+  .diagram-box {
+    background: var(--surface);
+    border: 1px solid var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 12px 0;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.2vw, 17px);
+    line-height: 2;
+  }
+  .diagram-box .arrow { color: var(--text-dim); }
+  .diagram-box .cls { color: var(--accent); font-weight: 700; }
+  .diagram-box .note { color: var(--text-dim); font-size: clamp(10px, 0.9vw, 13px); }
+
+  /* Dunder table */
+  .dunder-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 16px);
+  }
+  .dunder-table th {
+    background: var(--surface);
+    color: var(--accent);
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--surface-alt);
+    font-weight: 600;
+  }
+  .dunder-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--surface-alt);
+    color: var(--text-dim);
+  }
+  .dunder-table tr:hover td {
+    background: var(--surface);
+  }
+  .dunder-table .meth { color: var(--yellow); font-weight: 600; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .slide { padding: 5% 5%; }
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+    #notes-panel { display: none; }
+    #counter { font-size: 10px; bottom: 8px; right: 12px; }
+    #updated { font-size: 8px; bottom: 8px; left: 12px; }
+  }
+
+  /* Print */
+  @media print {
+    body { overflow: visible; display: block; background: #fff; }
+    #deck { width: 100%; height: auto; box-shadow: none; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 100vh; }
+    #progress, #counter { display: none; }
+    #notes-panel { display: none !important; }
+  }
+
+  /* Focus styles */
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 0: Title -->
+  <!-- ============================================================ -->
+  <section class="slide title active" data-slide="0" role="region" aria-label="Title slide">
+    <span class="badge">Week 7 · Phase III · OOP</span>
+    <h1>Inheritance &amp; Dunder Methods</h1>
+    <p class="subtitle">super(), __str__, __repr__, __eq__ — extending Python classes the right way</p>
+    <p class="meta">Day 38 · 90-Day Co-op Prep Plan · June 27, 2026</p>
+    <aside class="notes">
+      <p>Welcome to Day 38. Today we layer inheritance and dunder methods on top of the Task class from Day 37. By the end they'll have a PriorityTask subclass with proper string representations and equality checks.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 1: Milestones -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="1" role="region" aria-label="Program milestones">
+    <h2>🗺️ Where We Are</h2>
+    <div class="milestone-bar">
+      <div class="milestone-seg done">P1: Todo CLI<br>Week 3</div>
+      <div class="milestone-seg done">P2: Bookmark<br>Week 6</div>
+      <div class="milestone-seg active">P3: Weather<br>Week 8</div>
+      <div class="milestone-seg pending">P4: API<br>Week 10</div>
+      <div class="milestone-seg pending">P5: Full-Stack<br>Week 12</div>
+    </div>
+    <p style="margin-top:8px;">Week 7 = OOP mastery. Day 37 gave us <strong>classes &amp; objects</strong>. Today we add <strong>inheritance</strong> and <strong>dunder methods</strong> — the tools that make Python classes feel native.</p>
+    <div class="card-grid cols-2" style="margin-top:12px;">
+      <div class="card">
+        <h3>📦 Yesterday (Day 37)</h3>
+        <ul>
+          <li><code>class Task</code> with <code>title</code>, <code>done</code></li>
+          <li><code>__init__</code> constructor</li>
+          <li>Instance methods: <code>mark_done()</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🎯 Today (Day 38)</h3>
+        <ul>
+          <li>Inheritance: <code>class PriorityTask(Task)</code></li>
+          <li><code>super()</code> to call parent methods</li>
+          <li><code>__str__</code>, <code>__repr__</code>, <code>__eq__</code></li>
+        </ul>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>Recap the milestones quickly. Emphasise that OOP is the foundation for Project 3 (Weather Dashboard — coming Week 8).</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 2: Overview / 60-min plan -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="2" role="region" aria-label="Lesson overview">
+    <h2>📋 Today's Plan (60 min)</h2>
+    <div class="card-grid cols-2" style="margin-top:8px;">
+      <div class="card">
+        <h3>🧠 Concept (20 min)</h3>
+        <ul>
+          <li>What is inheritance?</li>
+          <li><code>super()</code> — calling the parent</li>
+          <li>Dunder methods overview</li>
+          <li><code>__str__</code> vs <code>__repr__</code></li>
+          <li><code>__eq__</code> for object equality</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>✍️ Practice (35 min)</h3>
+        <ul>
+          <li>Walkthrough: PriorityTask subclass</li>
+          <li>Add __str__ / __repr__ to Task</li>
+          <li>Add __eq__ to compare tasks</li>
+          <li>Exercise: DeadlineTask</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>📝 Wrap (5 min)</h3>
+        <ul>
+          <li>Key takeaways</li>
+          <li>Review checklist</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🎯 Prerequisites</h3>
+        <ul>
+          <li>✔ Classes &amp; <code>__init__</code></li>
+          <li>✔ Instance methods</li>
+          <li>✔ <code>self</code> parameter</li>
+        </ul>
+      </div>
+    </div>
+    <aside class="notes">
+      <p>Give them the roadmap. Emphasise that dunder methods are what make print() and == work on your custom classes — they're the Pythonic way to integrate with the language.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 3: What is inheritance? -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="3" role="region" aria-label="What is inheritance">
+    <h2>🧬 What Is Inheritance?</h2>
+    <p>Inheritance lets a <strong>child class</strong> reuse and extend the behavior of a <strong>parent class</strong>.</p>
+
+    <div class="analogy">
+      <span class="emoji">🔨</span>
+      <p><strong>Analogy:</strong> A power drill inherits from a regular drill. It has all the same features <em>plus</em> extra ones. You don't reinvent the chuck — you add the motor.</p>
+    </div>
+
+    <div class="diagram-box">
+      <span class="cls">Task</span> ← parent (general)<br>
+      <span class="arrow">┣━</span> <span class="cls">PriorityTask</span> ← child (more specific)<br>
+      <span class="arrow">┗━</span> <span class="cls">DeadlineTask</span> ← another child<br>
+      <span class="note">Children inherit all methods &amp; attributes from the parent</span>
+    </div>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Task</span>:</span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title):</span>
+<span class="line">        <span class="kw">self</span>.title = title</span>
+<span class="line">        <span class="kw">self</span>.done = <span class="kw">False</span></span>
+<span class="line hl"> </span>
+<span class="line hl"><span class="kw">class</span> <span class="fn">PriorityTask</span>(Task):       <span class="cm"># (Task) = "inherits from Task"</span></span>
+<span class="line hl">    <span class="kw">pass</span>                              <span class="cm"># has .title, .done for free</span></span>
+</code></pre>
+
+    <p style="font-size:clamp(11px,1vw,15px);color:var(--text-dim);">Syntax: <code>class Child(Parent):</code> — put the parent name in parentheses.</p>
+    <aside class="notes">
+      <p>Inheritance is the "is-a" relationship. A PriorityTask IS a Task, plus more. Emphasise that the child doesn't need to re-implement anything it doesn't want to change.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 4: super() — calling the parent -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="4" role="region" aria-label="super()">
+    <h2>⬆️ super() — Calling the Parent</h2>
+    <p>When a child overrides <code>__init__</code>, it usually still needs the parent's setup. Use <code>super()</code> to call it.</p>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">PriorityTask</span>(Task):</span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title, priority):</span>
+<span class="line hl">        <span class="kw">super</span>().<span class="fn">__init__</span>(title)   <span class="cm"># ← runs Task.__init__</span></span>
+<span class="line">        <span class="kw">self</span>.priority = priority    <span class="cm"># ← new attribute</span></span>
+<span class="line"> </span>
+<span class="line">t = PriorityTask(<span class="str">"Write report"</span>, <span class="str">"high"</span>)</span>
+<span class="line"><span class="fn">print</span>(t.title)     <span class="cm"># inherited from Task</span></span>
+<span class="line"><span class="fn">print</span>(t.priority)  <span class="cm"># new in PriorityTask</span></span>
+</code></pre>
+
+    <div class="tip">
+      <p>💡 <strong>Always</strong> call <code>super().__init__()</code> when overriding the constructor — otherwise the parent's attributes never get created.</p>
+    </div>
+
+    <pre><code><span class="line"><span class="kw">def</span> <span class="fn">mark_done</span>(<span class="kw">self</span>):</span>
+<span class="line">    <span class="kw">super</span>().<span class="fn">mark_done</span>()          <span class="cm"># reuse existing logic</span></span>
+<span class="line">    <span class="fn">print</span>(<span class="str">f"Priority task '{<span class="kw">self</span>.title}' done!"</span>)</span>
+</code></pre>
+
+    <aside class="notes">
+      <p>super() returns a proxy object that delegates method calls to the parent class. It's not a function call that "goes up" — it's a nice API for cooperative multiple inheritance. For single inheritance, just think of it as "the parent's version of this method".</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 5: Dunder methods intro + __str__ vs __repr__ -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="5" role="region" aria-label="Dunder methods">
+    <h2>🔮 Dunder Methods — What Are They?</h2>
+    <p>"Dunder" = <strong>D</strong>ouble <strong>Under</strong>score. These are Python's <strong>protocol methods</strong> — they let your objects hook into built-in operations like <code>print()</code>, <code>==</code>, <code>len()</code>, and more.</p>
+
+    <table class="dunder-table">
+      <thead>
+        <tr><th>Method</th><th>Triggered By</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="meth">__init__</td>
+          <td><code>Task("x")</code></td>
+          <td>Constructor — set up new objects</td>
+        </tr>
+        <tr>
+          <td class="meth">__str__</td>
+          <td><code>print(obj)</code>, <code>str(obj)</code></td>
+          <td>Human-readable, informal description</td>
+        </tr>
+        <tr>
+          <td class="meth">__repr__</td>
+          <td><code>repr(obj)</code>, debug console</td>
+          <td>Unambiguous, developer-focused repr</td>
+        </tr>
+        <tr>
+          <td class="meth">__eq__</td>
+          <td><code>obj1 == obj2</code></td>
+          <td>Equality comparison</td>
+        </tr>
+        <tr>
+          <td class="meth">__lt__</td>
+          <td><code>obj1 &lt; obj2</code></td>
+          <td>Less-than (for sorting)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="analogy">
+      <span class="emoji">🎭</span>
+      <p><strong>Rule of thumb:</strong> <code>__repr__</code> is for <em>developers</em> (should recreate the object). <code>__str__</code> is for <em>users</em> (should be readable). If you only define one, define <code>__repr__</code> — Python falls back to it for <code>__str__</code>.</p>
+    </div>
+
+    <aside class="notes">
+      <p>Dunder methods are what make Python classes "feel native" — they integrate with print(), ==, sorting, iteration, etc. Without __str__, print(obj) shows something like '&lt;__main__.Task object at 0x7f...&gt;'.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 6: __str__ and __repr__ in action -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="6" role="region" aria-label="str vs repr">
+    <h2>🖨️ __str__ vs __repr__ — Side by Side</h2>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">Task</span>:</span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title):</span>
+<span class="line">        <span class="kw">self</span>.title = title</span>
+<span class="line">        <span class="kw">self</span>.done = <span class="kw">False</span></span>
+<span class="line"> </span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__repr__</span>(<span class="kw">self</span>):                    <span class="cm"># dev-friendly</span></span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"Task('{<span class="kw">self</span>.title}')"</span>    <span class="cm"># enough info to recreate</span></span>
+<span class="line"> </span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__str__</span>(<span class="kw">self</span>):                     <span class="cm"># user-friendly</span></span>
+<span class="line hl">        status = <span class="str">"✓"</span> <span class="kw">if</span> <span class="kw">self</span>.done <span class="kw">else</span> <span class="str">"○"</span></span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"{status} {<span class="kw">self</span>.title}"</span></span>
+</code></pre>
+
+    <div class="output-box">
+      &gt;&gt;&gt; t = Task("Buy groceries")<br>
+      &gt;&gt;&gt; repr(t)<br>
+      "Task('Buy groceries')"<br>
+      &gt;&gt;&gt; print(t)<br>
+      ○ Buy groceries<br>
+      &gt;&gt;&gt; t.done = True<br>
+      &gt;&gt;&gt; print(t)<br>
+      ✓ Buy groceries
+    </div>
+
+    <aside class="notes">
+      <p>Show how each is triggered. The repr should ideally return a string that, when passed to eval(), recreates the object. The str is what users see in print().</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 7: __eq__ — object equality -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="7" role="region" aria-label="eq dunder">
+    <h2>⚖️ __eq__ — Comparing Objects by Value</h2>
+    <p>Without <code>__eq__</code>, <code>==</code> checks <strong>memory identity</strong> — two objects with identical data are not equal:</p>
+
+    <pre><code><span class="line">t1 = Task(<span class="str">"Buy milk"</span>)</span>
+<span class="line">t2 = Task(<span class="str">"Buy milk"</span>)</span>
+<span class="line hl"><span class="fn">print</span>(t1 == t2)    <span class="cm"># False ← same content, different objects!</span></span>
+</code></pre>
+
+    <p>Define <code>__eq__</code> to compare by <strong>value</strong> instead:</p>
+
+    <pre><code><span class="line hl"><span class="kw">def</span> <span class="fn">__eq__</span>(<span class="kw">self</span>, other):</span>
+<span class="line hl">    <span class="kw">if</span> <span class="kw">not</span> <span class="fn">isinstance</span>(other, Task):     <span class="cm"># guard: wrong type</span></span>
+<span class="line hl">        <span class="kw">return</span> <span class="kw">NotImplemented</span>           <span class="cm"># let Python handle it</span></span>
+<span class="line hl">    <span class="kw">return</span> (<span class="kw">self</span>.title == other.title</span>
+<span class="line hl">            <span class="kw">and</span> <span class="kw">self</span>.done == other.done)</span>
+</code></pre>
+
+    <div class="output-box">
+      &gt;&gt;&gt; t1 = Task("Buy milk")<br>
+      &gt;&gt;&gt; t2 = Task("Buy milk")<br>
+      &gt;&gt;&gt; t1 == t2<br>
+      True
+    </div>
+
+    <div class="warning">
+      <p>⚠️ Always check the type of <code>other</code> with <code>isinstance()</code>. Return <code>NotImplemented</code> (not <code>False</code>) for wrong types so Python can try the reverse comparison.</p>
+    </div>
+
+    <aside class="notes">
+      <p>Without __eq__, Python compares by id() — two separate objects are never ==. This is a common gotcha. __eq__ is also used implicitly by set() and dict() for uniqueness, though for those you also need __hash__.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 8: Walkthrough — Putting It All Together -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="8" role="region" aria-label="Walkthrough">
+    <h2>🛠️ Walkthrough: Complete PriorityTask</h2>
+    <p>Let's build a <code>PriorityTask</code> that inherits from <code>Task</code>, adds a priority level, and overrides display methods.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <p>Create <code>task_base.py</code> with the <code>Task</code> class (including <code>__repr__</code>, <code>__str__</code>, <code>__eq__</code> from above).</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <p>Create <code>priority_task.py</code> — subclass it:</p>
+    </div>
+
+    <pre><code><span class="line hl"><span class="kw">class</span> <span class="fn">PriorityTask</span>(Task):</span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title, priority=<span class="str">"medium"</span>):</span>
+<span class="line hl">        <span class="kw">super</span>().<span class="fn">__init__</span>(title)</span>
+<span class="line hl">        <span class="kw">self</span>.priority = priority</span>
+<span class="line"> </span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__repr__</span>(<span class="kw">self</span>):</span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"PriorityTask('{<span class="kw">self</span>.title}', '{<span class="kw">self</span>.priority}')"</span></span>
+<span class="line"> </span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__str__</span>(<span class="kw">self</span>):</span>
+<span class="line hl">        icon = {<span class="str">"high"</span>: <span class="str">"🔴"</span>, <span class="str">"medium"</span>: <span class="str">"🟡"</span>, <span class="str">"low"</span>: <span class="str">"🟢"</span>}</span>
+<span class="line hl">        <span class="kw">return</span> <span class="str">f"{icon.get(<span class="kw">self</span>.priority, '⚪')} {<span class="kw">self</span>.title}"</span></span>
+</code></pre>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <p>Test it: <code>pt = PriorityTask("Fix bug", "high"); print(pt)</code></p>
+    </div>
+
+    <div class="output-box">
+      &gt;&gt;&gt; pt = PriorityTask("Fix bug", "high")<br>
+      &gt;&gt;&gt; print(pt)          # → 🔴 Fix bug<br>
+      &gt;&gt;&gt; pt.mark_done()     # inherited from Task<br>
+      &gt;&gt;&gt; repr(pt)           # → "PriorityTask('Fix bug', 'high')"
+    </div>
+
+    <aside class="notes">
+      <p>Walk through this step by step. Let them type along. Emphasise that mark_done() just works — they didn't have to reimplement it.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 9: Walkthrough continued — __eq__ on PriorityTask -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="9" role="region" aria-label="Equality walkthrough">
+    <h2>🛠️ Walkthrough: Equality Across Inheritance</h2>
+    <p>Should two <code>PriorityTask</code>s with the same title, done status, and priority be equal? Let's add it.</p>
+
+    <pre><code><span class="line"><span class="kw">class</span> <span class="fn">PriorityTask</span>(Task):</span>
+<span class="line">    <span class="cm"># ... __init__, __repr__, __str__ as above ...</span></span>
+<span class="line"> </span>
+<span class="line hl">    <span class="kw">def</span> <span class="fn">__eq__</span>(<span class="kw">self</span>, other):</span>
+<span class="line hl">        <span class="kw">if</span> <span class="kw">not</span> <span class="fn">isinstance</span>(other, PriorityTask):</span>
+<span class="line hl">            <span class="kw">return</span> <span class="kw">NotImplemented</span></span>
+<span class="line hl">        <span class="cm"># Call parent __eq__ for title + done, then add priority</span></span>
+<span class="line hl">        <span class="kw">return</span> <span class="kw">super</span>().<span class="fn">__eq__</span>(other) <span class="kw">and</span> <span class="kw">self</span>.priority == other.priority</span>
+</code></pre>
+
+    <div class="output-box">
+      &gt;&gt;&gt; a = PriorityTask("Fix bug", "high")<br>
+      &gt;&gt;&gt; b = PriorityTask("Fix bug", "high")<br>
+      &gt;&gt;&gt; a == b<br>
+      True<br>
+      &gt;&gt;&gt; c = PriorityTask("Fix bug", "low")<br>
+      &gt;&gt;&gt; a == c<br>
+      False
+    </div>
+
+    <div class="tip">
+      <p>💡 Notice how we reused <code>super().__eq__()</code> — the parent already knows how to compare <code>title</code> and <code>done</code>. We only add the <code>priority</code> check.</p>
+    </div>
+
+    <aside class="notes">
+      <p>This is a great demonstration of DRY through inheritance — the parent has the base equality logic, the child extends it. This is exactly how real codebases work.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 10: is vs == -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="10" role="region" aria-label="is vs eq">
+    <h2>⚡ is vs == — Don't Confuse Them</h2>
+
+    <div class="card-grid cols-2" style="margin-top:8px;">
+      <div class="card">
+        <h3><code>==</code> — Value Equality</h3>
+        <p>Checks if two objects <strong>have the same content</strong>.</p>
+        <pre style="font-size:clamp(10px,0.9vw,13px);"><code><span class="line"><span class="fn">print</span>(t1 == t2)   <span class="cm"># True — same task</span></span></code></pre>
+        <p style="font-size:clamp(10px,0.9vw,13px);">Can be customized with <code>__eq__</code>.</p>
+      </div>
+      <div class="card">
+        <h3><code>is</code> — Identity</h3>
+        <p>Checks if two variables point to <strong>the exact same object</strong>.</p>
+        <pre style="font-size:clamp(10px,0.9vw,13px);"><code><span class="line"><span class="fn">print</span>(t1 <span class="kw">is</span> t2)   <span class="cm"># False — diff objects</span></span>
+<span class="line"><span class="fn">print</span>(t1 <span class="kw">is</span> t1)   <span class="cm"># True — same reference</span></span></code></pre>
+        <p style="font-size:clamp(10px,0.9vw,13px);">Cannot be overridden (Python internal).</p>
+      </div>
+    </div>
+
+    <div class="warning">
+      <p>⚠️ Common pitfall: <code>t1 is None</code> is correct (identity with singleton). <code>t1 == None</code> works but is non-idiomatic. Use <code>is</code> for <code>None</code>, <code>True</code>, <code>False</code>.</p>
+    </div>
+
+    <aside class="notes">
+      <p>This is one of the most common Python interview questions. is = identity (id()), == = value (calls __eq__).</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 11: Exercise — DeadlineTask -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="11" role="region" aria-label="Exercise description">
+    <h2>🏋️ Exercise: Build a DeadlineTask</h2>
+
+    <div class="exercise">
+      <h3>Your Turn</h3>
+      <p>Create a <code>DeadlineTask</code> subclass that extends <code>Task</code> with a <code>due_date</code> attribute:</p>
+      <ol>
+        <li><strong>Constructor:</strong> takes <code>title</code> and <code>due_date</code> (ISO format string like <code>"2026-07-05"</code>). Call <code>super().__init__(title)</code>.</li>
+        <li><strong>__repr__:</strong> returns <code>"DeadlineTask('title', 'due_date')"</code>.</li>
+        <li><strong>__str__:</strong> shows <code>"📅 title (due: due_date)"</code> plus a <code>"⚠️ OVERDUE!"</code> tag if the date is before today.</li>
+        <li><strong>__eq__:</strong> equal if same title, done, <em>and</em> due_date.</li>
+        <li><strong>is_overdue()</strong> method: returns <code>True</code> if due_date &lt; today.</li>
+      </ol>
+    </div>
+
+    <div class="tip">
+      <p>💡 Use <code>from datetime import date</code> and <code>date.fromisoformat()</code> to parse dates.</p>
+    </div>
+
+    <p style="font-size:clamp(12px,1.2vw,17px);">⏱ Try for 15 minutes before checking the solution on the next slide.</p>
+
+    <aside class="notes">
+      <p>Give them time to work through this independently. DeadlineTask is a natural extension of PriorityTask that introduces date handling.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 12: Exercise solution -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="12" role="region" aria-label="Exercise solution">
+    <h2>✅ Exercise Solution</h2>
+
+    <pre><code><span class="line"><span class="kw">from</span> datetime <span class="kw">import</span> date</span>
+<span class="line"> </span>
+<span class="line"><span class="kw">class</span> <span class="fn">DeadlineTask</span>(Task):</span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, title, due_date):</span>
+<span class="line">        <span class="kw">super</span>().<span class="fn">__init__</span>(title)</span>
+<span class="line">        <span class="kw">self</span>.due_date = due_date</span>
+<span class="line"> </span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__repr__</span>(<span class="kw">self</span>):</span>
+<span class="line">        <span class="kw">return</span> <span class="str">f"DeadlineTask('{<span class="kw">self</span>.title}', '{<span class="kw">self</span>.due_date}')"</span></span>
+<span class="line"> </span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__str__</span>(<span class="kw">self</span>):</span>
+<span class="line">        s = <span class="str">f"📅 {<span class="kw">self</span>.title} (due: {<span class="kw">self</span>.due_date})"</span></span>
+<span class="line">        <span class="kw">if</span> <span class="kw">self</span>.<span class="fn">is_overdue</span>():</span>
+<span class="line">            s += <span class="str">" ⚠️ OVERDUE!"</span></span>
+<span class="line">        <span class="kw">return</span> s</span>
+<span class="line"> </span>
+<span class="line">    <span class="kw">def</span> <span class="fn">__eq__</span>(<span class="kw">self</span>, other):</span>
+<span class="line">        <span class="kw">if</span> <span class="kw">not</span> <span class="fn">isinstance</span>(other, DeadlineTask):</span>
+<span class="line">            <span class="kw">return</span> <span class="kw">NotImplemented</span></span>
+<span class="line">        <span class="kw">return</span> (<span class="kw">super</span>().<span class="fn">__eq__</span>(other)</span>
+<span class="line">                <span class="kw">and</span> <span class="kw">self</span>.due_date == other.due_date)</span>
+<span class="line"> </span>
+<span class="line">    <span class="kw">def</span> <span class="fn">is_overdue</span>(<span class="kw">self</span>):</span>
+<span class="line">        <span class="kw">return</span> <span class="fn">date</span>.<span class="fn">fromisoformat</span>(<span class="kw">self</span>.due_date) &lt; <span class="fn">date</span>.<span class="fn">today</span>()</span>
+</code></pre>
+
+    <div class="output-box">
+      &gt;&gt;&gt; dt = DeadlineTask("Submit report", "2026-07-05")<br>
+      &gt;&gt;&gt; print(dt)<br>
+      📅 Submit report (due: 2026-07-05)<br>
+      &gt;&gt;&gt; dt.is_overdue()<br>
+      False
+    </div>
+
+    <aside class="notes">
+      <p>Walk through the solution. Highlight how super().__eq__() is reused again. Show how DeadlineTask is only ~15 lines but gets all of Task's functionality for free.</p>
+    </aside>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SLIDE 13: Summary -->
+  <!-- ============================================================ -->
+  <section class="slide" data-slide="13" role="region" aria-label="Summary">
+    <h2>🎯 Key Takeaways</h2>
+
+    <div class="recap-grid">
+      <div class="recap-item">
+        <h3>🧬 Inheritance</h3>
+        <p><code>class Child(Parent):</code> — reuse and extend. Children inherit all methods and attributes from the parent.</p>
+      </div>
+      <div class="recap-item">
+        <h3>⬆️ super()</h3>
+        <p>Call the parent's version of a method. Essential when overriding <code>__init__</code> so parent attributes are initialized.</p>
+      </div>
+      <div class="recap-item">
+        <h3>🖨️ __str__ &amp; __repr__</h3>
+        <p><code>__str__</code> → users (<code>print()</code>). <code>__repr__</code> → developers (recreates the object). Define <code>__repr__</code> at minimum.</p>
+      </div>
+      <div class="recap-item">
+        <h3>⚖️ __eq__</h3>
+        <p>Makes <code>==</code> compare by value not identity. Always guard with <code>isinstance()</code> and return <code>NotImplemented</code>.</p>
+      </div>
+      <div class="recap-item">
+        <h3>⏭️ What's Next</h3>
+        <p>Day 39: <strong>OOP: composition, @property, @classmethod</strong> — more tools for clean OOP design.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:8px;">📂 <strong>Milestone reminder:</strong> Project 3 (Weather Dashboard) starts Week 8 — OOP skills will be essential for structuring the API client and data models.</p>
+
+    <aside class="notes">
+      <p>Summarise the big ideas. Highlight that these three dunder methods (str, repr, eq) are the most commonly overridden and appear in almost every production Python class.</p>
+    </aside>
+  </section>
+
+</div>
+
+<!-- Progress bar -->
+<div id="progress"></div>
+<div id="counter">1 / 14</div>
+<div id="updated">Last updated: June 27, 2026</div>
+
+<!-- Speaker notes panel -->
+<div id="notes-panel">
+  <h3>📝 Speaker Notes</h3>
+  <div id="notes-content">Press <strong>N</strong> to toggle speaker notes.</div>
+</div>
+
+<script>
+(function() {
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var current = 0;
+  var progress = document.getElementById('progress');
+  var counter = document.getElementById('counter');
+  var notesPanel = document.getElementById('notes-panel');
+  var notesContent = document.getElementById('notes-content');
+  var notesOpen = false;
+
+  function showSlide(index) {
+    slides.forEach(function(s, i) {
+      s.classList.toggle('active', i === index);
+      s.setAttribute('aria-hidden', i !== index);
+    });
+    current = index;
+    progress.style.width = ((index + 1) / total * 100) + '%';
+    counter.textContent = (index + 1) + ' / ' + total;
+    location.hash = index;
+
+    // Update speaker notes
+    var notes = slides[index].querySelector('.notes');
+    if (notes) {
+      notesContent.innerHTML = notes.innerHTML;
+    } else {
+      notesContent.textContent = 'No speaker notes for this slide.';
+    }
+  }
+
+  function hashHandler() {
+    var hash = parseInt(location.hash.replace('#', ''), 10);
+    if (!isNaN(hash) && hash >= 0 && hash < total && hash !== current) {
+      showSlide(hash);
+    }
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (current < total - 1) showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (current > 0) showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      notesOpen = !notesOpen;
+      notesPanel.classList.toggle('open', notesOpen);
+    } else if (e.key === 'Escape') {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      if (notesOpen) {
+        notesOpen = false;
+        notesPanel.classList.remove('open');
+      }
+    }
+  });
+
+  window.addEventListener('hashchange', hashHandler);
+
+  // Init
+  if (location.hash) {
+    hashHandler();
+  } else {
+    showSlide(0);
+  }
+})();
+</script>
+</body>
+</html>
