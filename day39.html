@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 39 — Testing with pytest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Newsreader:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --fg: #e4e6eb;
+  --muted: #8b8fa3;
+  --accent: #58a6ff;
+  --accent-dim: #1f3a5f;
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --border: #21262d;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Newsreader', Georgia, serif;
+  --fs-title: clamp(2.2rem, 5vw, 4rem);
+  --fs-subtitle: clamp(1.1rem, 2vw, 1.6rem);
+  --fs-body: clamp(0.95rem, 1.4vw, 1.2rem);
+  --fs-code: clamp(0.8rem, 1.2vw, 1rem);
+  --spacing: 1.2em;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: var(--font-body); color: var(--fg); }
+#stage {
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.slide {
+  position: absolute; width: var(--slide-w); max-width: 94vw;
+  height: var(--slide-h); max-height: 92vh;
+  display: none; flex-direction: column;
+  padding: 2.8rem 3.2rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-y: auto;
+  opacity: 0; transition: opacity 0.25s ease;
+}
+.slide.active { display: flex; opacity: 1; z-index: 10; }
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Progress */
+.progress { position: absolute; bottom: 0.8rem; right: 1.2rem; font-size: 0.8rem; color: var(--muted); font-family: var(--font-mono); z-index: 20; }
+
+/* Typography */
+h1 { font-family: var(--font-display); font-size: var(--fs-title); font-weight: 700; line-height: 1.15; margin-bottom: 0.4em; }
+h2 { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: 0.5em; border-bottom: 2px solid var(--accent-dim); padding-bottom: 0.25em; }
+h3 { font-size: clamp(1.1rem, 1.8vw, 1.4rem); font-weight: 600; margin-bottom: 0.4em; color: var(--accent); }
+p, li { font-size: var(--fs-body); line-height: 1.6; margin-bottom: 0.6em; color: var(--fg); }
+ul { padding-left: 1.5em; margin-bottom: 0.8em; }
+li { margin-bottom: 0.3em; }
+
+/* Code */
+pre {
+  background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+  padding: 1rem 1.2rem; overflow-x: auto; font-family: var(--font-mono);
+  font-size: var(--fs-code); line-height: 1.55; tab-size: 2;
+  margin: 0.6em 0;
+}
+code { font-family: var(--font-mono); font-size: 0.9em; }
+pre code { font-size: inherit; }
+.highlight { background: #1f3a5f44; border-left: 3px solid var(--accent); }
+
+/* Layout helpers */
+.columns { display: grid; gap: 1.5rem; flex: 1; min-height: 0; }
+.cols-2 { grid-template-columns: 1fr 1fr; }
+.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.card {
+  background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+  padding: 1rem 1.2rem;
+}
+.card h3 { font-family: var(--font-mono); font-size: var(--fs-code); text-transform: uppercase; letter-spacing: 0.05em; }
+.card p, .card li { font-size: clamp(0.8rem, 1.1vw, 0.95rem); }
+.tag {
+  display: inline-block; background: var(--accent-dim); color: var(--accent);
+  font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15em 0.6em;
+  border-radius: 4px; margin-right: 0.4em;
+}
+
+/* Title slide */
+.title-slide { justify-content: center; align-items: center; text-align: center; }
+.title-slide h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); }
+.title-slide .meta { font-family: var(--font-mono); font-size: var(--fs-subtitle); color: var(--muted); margin-top: 1em; }
+.title-slide .phase-tag { margin-top: 0.5em; }
+.phase-tag .tag { font-size: 0.9rem; padding: 0.3em 0.8em; }
+
+/* Section break */
+.section-break { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #0f1117 0%, #1a2332 100%); }
+.section-break h2 { border: none; font-size: clamp(1.8rem, 4vw, 3rem); color: var(--accent); }
+
+/* Recap */
+.recap-slide .takeaway { display: flex; align-items: flex-start; gap: 0.8rem; margin-bottom: 0.8rem; }
+.recap-slide .num { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; color: var(--accent); min-width: 1.8rem; }
+
+/* Code slide */
+.code-slide pre { flex: 1; min-height: 0; margin: 0; }
+
+/* Exercise */
+.exercise-box {
+  background: linear-gradient(135deg, #1a2332 0%, #161b22 100%);
+  border: 1px solid var(--accent-dim); border-radius: 8px; padding: 1.2rem;
+  margin: 0.6em 0;
+}
+.exercise-box h3 { color: var(--orange); }
+.hint { color: var(--muted); font-style: italic; font-size: 0.85rem; }
+
+/* CTA */
+.cta-box {
+  background: linear-gradient(135deg, #1a2332, #0f1117);
+  border: 1px solid var(--purple); border-radius: 8px;
+  padding: 1.2rem; margin-top: 0.6em;
+}
+
+/* Checkpoint */
+.check { color: var(--green); font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 1.5rem 1rem; max-height: 88vh; }
+  .cols-2, .cols-3 { grid-template-columns: 1fr; }
+  .columns { gap: 0.8rem; }
+}
+@media print {
+  .slide { position: static; display: block; opacity: 1; break-after: page; border: none; max-height: none; }
+  #stage { display: block; height: auto; }
+  .progress { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>Testing with pytest</h1>
+  <p class="meta" style="font-size:1.4rem; color: var(--accent);">Day 39 · Week 7</p>
+  <p class="meta" style="font-size:1.1rem;">60-Minute Learning Session</p>
+  <div class="phase-tag"><span class="tag">Phase III — Testing</span></div>
+  <p style="margin-top:2em; color:var(--muted); font-size:0.9rem;">90-Day Co-op Prep Plan</p>
+</section>
+
+<!-- SLIDE 1: Prerequisites -->
+<section class="slide" data-slide="1">
+  <h2>Prerequisites</h2>
+  <p style="margin-bottom:0.8rem;">Before starting, make sure you have:</p>
+  <ul>
+    <li>Python 3.8+ installed (<code>python3 --version</code>)</li>
+    <li>A terminal and text editor ready</li>
+    <li>Basic Python: functions, classes, modules, imports</li>
+    <li>Experience with <code>if __name__ == "__main__"</code> and running Python scripts</li>
+  </ul>
+  <div class="card" style="margin-top:0.8rem;">
+    <p style="color:var(--orange);">⚠ If you haven't already, create a working folder:</p>
+    <pre><code>mkdir -p ~/coop/day39 && cd ~/coop/day39</code></pre>
+  </div>
+</section>
+
+<!-- SLIDE 2: Learning Objectives -->
+<section class="slide" data-slide="2">
+  <h2>Learning Objectives</h2>
+  <p style="margin-bottom:1rem;">By the end of this session, you will be able to:</p>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div class="card">
+      <h3>🎯 1</h3>
+      <p>Install pytest and understand the testing mindset</p>
+    </div>
+    <div class="card">
+      <h3>🎯 2</h3>
+      <p>Write test functions using <code>assert</code> statements</p>
+    </div>
+    <div class="card">
+      <h3>🎯 3</h3>
+      <p>Use pytest's test discovery and run selective tests</p>
+    </div>
+    <div class="card">
+      <h3>🎯 4</h3>
+      <p>Apply TDD: write tests <em>before</em> implementation</p>
+    </div>
+  </div>
+  <p style="margin-top:0.6rem; color:var(--muted); font-style:italic;">Reference project: Project 2 (Bookmark Saver) benefited from tests — now you'll learn the skill properly.</p>
+</section>
+
+<!-- SLIDE 3: Why Testing Matters -->
+<section class="slide" data-slide="3">
+  <h2>Why Test Your Code?</h2>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div>
+      <ul>
+        <li><strong>Catch regressions</strong> — a change in one place breaks something that used to work</li>
+        <li><strong>Document intent</strong> — tests show what each function is <em>supposed</em> to do</li>
+        <li><strong>Refactor with confidence</strong> — tests are your safety net when restructuring code</li>
+        <li><strong>Save time</strong> — a 5-minute test catches a 30-minute debugging session</li>
+        <li><strong>Impress interviewers</strong> — testing is expected in professional codebases</li>
+      </ul>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+      <p style="text-align:center; font-size:1.8rem; margin-bottom:0.3rem;">⏱️</p>
+      <p style="text-align:center; color:var(--muted);">"Untested code is legacy code."<br>— Michael Feathers</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: Section Break — pytest Fundamentals -->
+<section class="slide section-break" data-slide="4">
+  <h2>⏳ pytest Fundamentals</h2>
+</section>
+
+<!-- SLIDE 5: Install pytest + First Test -->
+<section class="slide" data-slide="5">
+  <h2>Step 1 — Install &amp; First Test</h2>
+  <p>pytest is a third-party library. Install it with pip:</p>
+  <pre><code>pip install pytest</code></pre>
+  <p style="margin-top:0.2rem;">Check the version:</p>
+  <pre><code>pytest --version</code></pre>
+  <p>Now create a file called <code>test_first.py</code>:</p>
+  <pre><code class="language-python"># test_first.py
+
+def test_addition():
+    assert 1 + 1 == 2
+
+def test_string():
+    assert "hello".upper() == "HELLO"
+
+def test_failing_intro():
+    # This will fail — we'll learn to read failure output
+    assert 2 * 3 == 7
+</code></pre>
+</section>
+
+<!-- SLIDE 6: Run tests -->
+<section class="slide" data-slide="6">
+  <h2>Step 2 — Run &amp; Read Output</h2>
+  <p>Run all tests in a file:</p>
+  <pre><code>pytest test_first.py</code></pre>
+  <p>Or let pytest discover tests automatically:</p>
+  <pre><code>pytest</code></pre>
+  <p>You'll see output like:</p>
+  <pre style="font-size:0.8rem;"><span style="color:var(--green);">.</span><span style="color:var(--green);">.</span><span style="color:var(--red);">F</span>
+<span style="color:var(--red);">FAILED</span> test_first.py::test_failing_intro - AssertionError: assert (2 * 3) == 7
+
+<span style="color:var(--green);">2 passed</span>, <span style="color:var(--red);">1 failed</span> in 0.12s</pre>
+  <div class="card">
+    <p><span class="tag">KEY</span> A dot <span style="color:var(--green);">.</span> = pass, <span style="color:var(--red);">F</span> = fail. pytest tells you <em>exactly</em> which assertion failed and what the actual value was.</p>
+  </div>
+</section>
+
+<!-- SLIDE 7: The assert Statement -->
+<section class="slide" data-slide="7">
+  <h2>The <code>assert</code> Statement</h2>
+  <p>Python's built-in <code>assert</code> is all pytest needs. No special assertions API.</p>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div class="card">
+      <h3>Equality</h3>
+      <pre><code>assert result == expected</code></pre>
+    </div>
+    <div class="card">
+      <h3>Inequality</h3>
+      <pre><code>assert result != bad_value</code></pre>
+    </div>
+    <div class="card">
+      <h3>Containment</h3>
+      <pre><code>assert "sub" in text
+assert key in dictionary</code></pre>
+    </div>
+    <div class="card">
+      <h3>Truthiness</h3>
+      <pre><code>assert result        # truthy
+assert not result    # falsy
+assert result is None</code></pre>
+    </div>
+    <div class="card">
+      <h3>Approximate (floats)</h3>
+      <pre><code>assert abs(a - b) &lt; 1e-6</code></pre>
+    </div>
+    <div class="card">
+      <h3>Exceptions</h3>
+      <pre><code>import pytest
+
+def test_raises():
+    with pytest.raises(ValueError):
+        int("abc")</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 8: Section Break — Test Discovery -->
+<section class="slide section-break" data-slide="8">
+  <h2>🧪 Test Discovery</h2>
+</section>
+
+<!-- SLIDE 9: Test Discovery Rules -->
+<section class="slide" data-slide="9">
+  <h2>How pytest Discovers Tests</h2>
+  <p>Run <code>pytest</code> with no arguments and it searches the current directory:</p>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div>
+      <h3>File naming</h3>
+      <ul>
+        <li><code>test_*.py</code></li>
+        <li><code>*_test.py</code></li>
+      </ul>
+      <h3 style="margin-top:0.6rem;">Function naming</h3>
+      <ul>
+        <li><code>def test_*():</code></li>
+      </ul>
+      <h3 style="margin-top:0.6rem;">Class naming</h3>
+      <ul>
+        <li><code>class Test*:</code></li>
+        <li>No <code>__init__</code> needed</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Selective runs</h3>
+      <pre><code># Run a specific file
+pytest test_core.py
+
+# Run a specific test
+pytest test_core.py::test_add
+
+# Run tests matching a keyword
+pytest -k "user"
+
+# Stop after first failure
+pytest -x
+
+# More verbose
+pytest -v</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 10: Walkthrough — Testing Real Code -->
+<section class="slide" data-slide="10">
+  <h2>Walkthrough — Testing a Calculator</h2>
+  <p>Create <code>calc.py</code>:</p>
+  <pre><code class="language-python"><span style="color:var(--muted);"># calc.py</span>
+
+def add(a, b):
+    return a + b
+
+def subtract(a, b):
+    return a - b
+
+def multiply(a, b):
+    return a * b
+
+def divide(a, b):
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+</code></pre>
+  <p style="color:var(--muted);">Now create <code>test_calc.py</code> — see next slide →</p>
+</section>
+
+<!-- SLIDE 11: Walkthrough (cont.) — Tests for calc -->
+<section class="slide" data-slide="11">
+  <h2>Walkthrough — <code>test_calc.py</code></h2>
+  <pre><code class="language-python"><span style="color:var(--muted);"># test_calc.py</span>
+from calc import add, subtract, multiply, divide
+import pytest
+
+def test_add():
+    assert add(2, 3) == 5
+    assert add(-1, 1) == 0
+    assert add(0, 0) == 0
+
+def test_subtract():
+    assert subtract(5, 3) == 2
+    assert subtract(0, 1) == -1
+
+def test_multiply():
+    assert multiply(3, 4) == 12
+    assert multiply(-2, 3) == -6
+
+def test_divide():
+    assert divide(10, 2) == 5
+    assert divide(7, 2) == 3.5
+
+def test_divide_by_zero():
+    with pytest.raises(ValueError):
+        divide(10, 0)
+</code></pre>
+  <p>Run: <code>pytest test_calc.py -v</code></p>
+</section>
+
+<!-- SLIDE 12: Section Break — Test-Driven Development -->
+<section class="slide section-break" data-slide="12">
+  <h2>🔄 Test-Driven Development</h2>
+</section>
+
+<!-- SLIDE 13: TDD Cycle -->
+<section class="slide" data-slide="13">
+  <h2>The TDD Cycle: Red → Green → Refactor</h2>
+  <div class="columns cols-3" style="margin-top:0.6rem;">
+    <div class="card" style="border-color: var(--red);">
+      <h3 style="color:var(--red);">🔴 RED</h3>
+      <p>Write a failing test <em>first</em>. Define what the function should do, even though it doesn't exist yet.</p>
+    </div>
+    <div class="card" style="border-color: var(--green);">
+      <h3 style="color:var(--green);">🟢 GREEN</h3>
+      <p>Write the <em>minimum</em> code to make the test pass. No extras, no premature optimization.</p>
+    </div>
+    <div class="card" style="border-color: var(--accent);">
+      <h3 style="color:var(--accent);">🔵 REFACTOR</h3>
+      <p>Clean up the code. Tests pass? You can refactor safely — the tests will catch regressions.</p>
+    </div>
+  </div>
+  <p style="margin-top:0.6rem;">TDD forces you to think about <em>requirements</em> before <em>implementation</em>. This produces cleaner, more testable code.</p>
+</section>
+
+<!-- SLIDE 14: TDD Demo — is_palindrome -->
+<section class="slide" data-slide="14">
+  <h2>TDD Demo — <code>is_palindrome</code></h2>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div>
+      <h3>🔴 Step 1 — Write the test first</h3>
+      <pre><code class="language-python"><span style="color:var(--muted);"># test_strings.py</span>
+from strings import is_palindrome
+
+def test_palindrome():
+    assert is_palindrome("racecar")
+    assert is_palindrome("level")
+    assert is_palindrome("a")
+
+def test_non_palindrome():
+    assert not is_palindrome("hello")
+    assert not is_palindrome("abc")
+
+def test_cased():
+    assert is_palindrome("Racecar")
+</code></pre>
+    </div>
+    <div>
+      <h3>🟢 Step 2 — Write the code</h3>
+      <pre><code class="language-python"><span style="color:var(--muted);"># strings.py</span>
+def is_palindrome(s):
+    normalized = s.lower()
+    return normalized == normalized[::-1]
+</code></pre>
+      <p style="color:var(--muted);">Run: <code>pytest test_strings.py</code></p>
+      <p><span class="check">✓</span> Test passes. On to the exercises!</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 15: Section Break — Practice -->
+<section class="slide section-break" data-slide="15">
+  <h2>✍️ Practice Exercises</h2>
+</section>
+
+<!-- SLIDE 16: Exercise 1 -->
+<section class="slide" data-slide="16">
+  <h2>Exercise 1 — Test a <code>get_grade</code> Function</h2>
+  <div class="exercise-box">
+    <h3>📝 Task</h3>
+    <p>Given this function in <code>grades.py</code>, write tests for it:</p>
+    <pre><code class="language-python">def get_grade(score):
+    if score &lt; 0 or score &gt; 100:
+        raise ValueError("Score must be 0-100")
+    if score &gt;= 90: return "A"
+    if score &gt;= 80: return "B"
+    if score &gt;= 70: return "C"
+    if score &gt;= 60: return "D"
+    return "F"</code></pre>
+  </div>
+  <p class="hint">💡 Test boundaries: 0, 59, 60, 69, 70, 79, 80, 89, 90, 100, and invalid values.</p>
+</section>
+
+<!-- SLIDE 17: Exercise 1 Solution -->
+<section class="slide" data-slide="17">
+  <h2>Exercise 1 — Solution</h2>
+  <pre><code class="language-python"><span style="color:var(--muted);"># test_grades.py</span>
+from grades import get_grade
+import pytest
+
+def test_grade_a():
+    assert get_grade(95) == "A"
+    assert get_grade(90) == "A"
+
+def test_grade_b():
+    assert get_grade(85) == "B"
+    assert get_grade(80) == "B"
+
+def test_grade_c():
+    assert get_grade(75) == "C"
+
+def test_grade_d():
+    assert get_grade(65) == "D"
+    assert get_grade(60) == "D"
+
+def test_grade_f():
+    assert get_grade(59) == "F"
+    assert get_grade(0) == "F"
+
+def test_invalid():
+    with pytest.raises(ValueError):
+        get_grade(-1)
+    with pytest.raises(ValueError):
+        get_grade(101)
+</code></pre>
+  <p>Run: <code>pytest test_grades.py -v</code></p>
+</section>
+
+<!-- SLIDE 18: Exercise 2 — TDD: Fibonacci -->
+<section class="slide" data-slide="18">
+  <h2>Exercise 2 — TDD: Fibonacci</h2>
+  <div class="exercise-box">
+    <h3>📝 Task — Use TDD</h3>
+    <p>Write tests <em>first</em> for a <code>fib(n)</code> function that returns the n-th Fibonacci number.</p>
+    <p><strong>Sequence:</strong> fib(0)=0, fib(1)=1, fib(2)=1, fib(3)=2, fib(4)=3, fib(5)=5, fib(6)=8</p>
+    <p>Then implement <code>fib(n)</code> in <code>fib.py</code>.</p>
+    <p class="hint">💡 Edge case: fib(0) should return 0. fib(1) should return 1.</p>
+  </div>
+  <div class="card" style="margin-top:0.6rem;">
+    <p><span class="tag">TDD REMINDER</span> Write <code>test_fib.py</code> <strong>first</strong>. Run it → it fails (RED). Then write <code>fib.py</code> → passes (GREEN). Refactor if needed.</p>
+  </div>
+</section>
+
+<!-- SLIDE 19: Exercise 2 Solution -->
+<section class="slide" data-slide="19">
+  <h2>Exercise 2 — Solution</h2>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div>
+      <h3><code>test_fib.py</code> (write first)</h3>
+      <pre><code class="language-python">from fib import fib
+
+def test_fib_zero():
+    assert fib(0) == 0
+
+def test_fib_one():
+    assert fib(1) == 1
+
+def test_fib_small():
+    assert fib(2) == 1
+    assert fib(3) == 2
+    assert fib(4) == 3
+    assert fib(5) == 5
+    assert fib(6) == 8
+
+def test_fib_larger():
+    assert fib(10) == 55
+    assert fib(20) == 6765
+</code></pre>
+    </div>
+    <div>
+      <h3><code>fib.py</code> (write second)</h3>
+      <pre><code class="language-python">def fib(n):
+    if n &lt; 0:
+        raise ValueError("n must be >= 0")
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
+</code></pre>
+      <p>All 6 tests pass. TDD complete! ✅</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 20: Exercise 3 — Testing Classes -->
+<section class="slide" data-slide="20">
+  <h2>Exercise 3 — Test a <code>TodoList</code> Class</h2>
+  <div class="exercise-box">
+    <h3>📝 Task</h3>
+    <p>Test this class from <code>todo.py</code> — think about edge cases:</p>
+    <pre><code class="language-python">class TodoList:
+    def __init__(self):
+        self.tasks = []
+
+    def add(self, task):
+        self.tasks.append(task)
+
+    def remove(self, task):
+        if task not in self.tasks:
+            raise KeyError(f"Task '{task}' not found")
+        self.tasks.remove(task)
+
+    def list_all(self):
+        return self.tasks.copy()
+
+    def is_done(self):
+        return len(self.tasks) == 0</code></pre>
+    <p class="hint">💡 Test: adding tasks, removing tasks, removing a non-existent task, listing gives copies, empty state</p>
+  </div>
+</section>
+
+<!-- SLIDE 21: Exercise 3 Solution -->
+<section class="slide" data-slide="21">
+  <h2>Exercise 3 — Solution</h2>
+  <pre><code class="language-python"><span style="color:var(--muted);"># test_todo.py</span>
+from todo import TodoList
+import pytest
+
+def test_add_and_list():
+    t = TodoList()
+    t.add("buy milk")
+    t.add("write tests")
+    assert t.list_all() == ["buy milk", "write tests"]
+
+def test_remove_task():
+    t = TodoList()
+    t.add("learn pytest")
+    t.remove("learn pytest")
+    assert t.is_done()
+
+def test_remove_missing():
+    t = TodoList()
+    with pytest.raises(KeyError):
+        t.remove("nonexistent")
+
+def test_list_isolation():
+    t = TodoList()
+    t.add("task")
+    lst = t.list_all()
+    lst.append("hack")
+    assert t.list_all() == ["task"]
+
+def test_empty():
+    t = TodoList()
+    assert t.is_done()
+    assert t.list_all() == []
+</code></pre>
+  <p>Run: <code>pytest test_todo.py -v</code></p>
+</section>
+
+<!-- SLIDE 22: Recap -->
+<section class="slide recap-slide" data-slide="22">
+  <h2>Key Takeaways</h2>
+  <div style="margin-top:1.2rem;">
+    <div class="takeaway">
+      <span class="num">1</span>
+      <div>
+        <strong>pytest uses plain <code>assert</code></strong> — no special assertion methods. Install with <code>pip install pytest</code> and run with <code>pytest</code>.
+      </div>
+    </div>
+    <div class="takeaway">
+      <span class="num">2</span>
+      <div>
+        <strong>Test discovery is convention-based</strong> — name files <code>test_*.py</code>, functions <code>def test_*():</code>. Use <code>-k</code> and <code>-x</code> flags for selective runs.
+      </div>
+    </div>
+    <div class="takeaway">
+      <span class="num">3</span>
+      <div>
+        <strong>TDD: Red → Green → Refactor</strong> — write a failing test first, then the minimum code to pass it, then clean up.
+      </div>
+    </div>
+    <div class="takeaway">
+      <span class="num">4</span>
+      <div>
+        <strong>Test exceptions with <code>pytest.raises</code></strong> — and always test edge cases: boundaries, emptiness, errors.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 23: Next Steps -->
+<section class="slide" data-slide="23">
+  <h2>Next Steps</h2>
+  <div class="columns cols-2" style="margin-top:0.4rem;">
+    <div>
+      <h3>Before the next session</h3>
+      <ul>
+        <li>Write tests for <strong>Project 2 (Bookmark Saver)</strong> — retroactively add tests</li>
+        <li>Practice TDD on a small new project</li>
+        <li>Read: <code>pytest --help</code> and explore flags</li>
+        <li>Try <code>pytest --tb=short</code> for cleaner failures</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Coming up</h3>
+      <p style="font-size:1.1rem;"><strong>Week 7 continued:</strong> Test fixtures, parameterized tests, and mocking</p>
+      <p style="margin-top:0.6rem;"><span class="tag">PROJECT 3</span> Weather Dashboard (Week 8) — tests will be required!</p>
+      <p><span class="tag">PROJECT 5</span> Full-Stack (Week 12+) — professional-grade test suites</p>
+    </div>
+  </div>
+  <div class="cta-box" style="margin-top:0.6rem;">
+    <p style="text-align:center;">Write one test today. Your future self will thank you. 🧪</p>
+  </div>
+</section>
+
+</div><!-- /stage -->
+
+<div class="progress" id="progress"></div>
+
+<script>
+(function() {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  const progress = document.getElementById('progress');
+  let current = 0;
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(idx, total - 1));
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    progress.textContent = (idx + 1) + ' / ' + total;
+    location.hash = '#' + idx;
+  }
+
+  function getSlideFromHash() {
+    const m = location.hash.match(/^#(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); showSlide(current + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); showSlide(current - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+      else document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  window.addEventListener('hashchange', function() {
+    const idx = getSlideFromHash();
+    if (idx !== current) showSlide(idx);
+  });
+
+  document.addEventListener('touchstart', function(e) {
+    const x0 = e.touches[0].clientX;
+    const handler = function(ev) {
+      const dx = ev.touches[0].clientX - x0;
+      if (Math.abs(dx) > 40) {
+        if (dx < 0) showSlide(current + 1);
+        else showSlide(current - 1);
+      }
+      document.removeEventListener('touchmove', handler);
+    };
+    document.addEventListener('touchmove', handler, { passive: true });
+  }, { passive: true });
+
+  // Init from hash or first slide
+  showSlide(getSlideFromHash());
+})();
+</script>
+</body>
+</html>
