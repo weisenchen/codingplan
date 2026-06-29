@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 40 — Node.js Basics for Backend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #181b26;
+  --surface2: #222639;
+  --text: #e4e6f0;
+  --text-muted: #8b8fa3;
+  --accent: #5fcb71;
+  --accent-dim: #3a8a4a;
+  --accent-bg: rgba(95, 203, 113, 0.08);
+  --code-bg: #1a1d2e;
+  --code-text: #cdd6f4;
+  --border: #2a2e42;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0b10; }
+body { font-family: var(--font-sans); color: var(--text); }
+
+.presentation {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#stage {
+  position: relative;
+  width: var(--slide-w);
+  max-width: 100vw;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: 4px;
+  box-shadow: 0 0 80px rgba(0,0,0,0.5);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 64px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0f1117 0%, #1a2e20 100%);
+}
+.title-slide h1 {
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+.title-slide .day-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #0a0b10;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 16px;
+  padding: 6px 20px;
+  border-radius: 100px;
+  margin-bottom: 24px;
+}
+.title-slide .subtitle {
+  font-size: 22px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.title-slide .meta {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 32px;
+}
+.title-slide .badge-strip {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.title-slide .badge-strip span {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  padding: 4px 14px;
+  border-radius: 100px;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Section header */
+.section-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0f1117, #141a2e);
+}
+.section-slide h2 {
+  font-size: 48px;
+  font-weight: 700;
+}
+.section-slide .phase-label {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Content slides */
+.content-slide h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+.content-slide .topic-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-bottom: 20px;
+}
+.content-slide p, .content-slide li {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.content-slide ul, .content-slide ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+.content-slide li { margin-bottom: 4px; }
+.content-slide strong { color: #fff; font-weight: 600; }
+
+/* Code block */
+.code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: auto;
+  margin: 12px 0;
+  color: var(--code-text);
+}
+.code-block .hl { background: var(--accent-bg); border-left: 3px solid var(--accent); padding-left: 12px; display: block; }
+.code-block .comment { color: #6c7086; }
+.code-block .kw { color: #cba6f7; }
+.code-block .fn { color: #89b4fa; }
+.code-block .str { color: #a6e3a1; }
+.code-block .num { color: #fab387; }
+
+/* Info callout */
+.callout {
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  margin: 12px 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.callout.warn { border-left-color: #f9c74f; }
+.callout.warn strong { color: #f9c74f; }
+.callout.tip { border-left-color: #89b4fa; }
+.callout.tip strong { color: #89b4fa; }
+
+/* Two column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  flex: 1;
+}
+.two-col .col { min-width: 0; }
+
+/* Progress bar */
+.progress {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+  z-index: 10;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+.slide-counter {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  z-index: 10;
+}
+
+/* Exercise styles */
+.exercise-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 12px 0;
+}
+.exercise-box h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.exercise-box ol, .exercise-box ul {
+  font-size: 16px;
+}
+.exercise-box .hint {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Recap table */
+.recap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.recap-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.recap-card .num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 14px;
+}
+.recap-card h4 {
+  font-size: 16px;
+  margin: 4px 0;
+}
+.recap-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Keyboard nav hint */
+.nav-hint {
+  position: absolute;
+  bottom: 36px;
+  left: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  opacity: 0.5;
+  z-index: 10;
+}
+
+@media (max-width: 720px) {
+  .slide { padding: 24px 20px; }
+  .title-slide h1 { font-size: 32px; }
+  .two-col { grid-template-columns: 1fr; gap: 12px; }
+  .recap-grid { grid-template-columns: 1fr; }
+  .content-slide h2 { font-size: 22px; }
+  .content-slide p, .content-slide li { font-size: 15px; }
+  .code-block { font-size: 13px; padding: 10px 12px; }
+  .section-slide h2 { font-size: 28px; }
+}
+
+/* Print styles */
+@media print {
+  .slide { opacity: 1 !important; position: relative; break-after: page; }
+  #stage { width: 100%; max-width: 100%; box-shadow: none; }
+  .nav-hint, .slide-counter { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="presentation">
+<div id="stage"></div>
+<div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+<div class="slide-counter" id="slideCounter"></div>
+<div class="nav-hint">← → navigate &nbsp;·&nbsp; f fullscreen</div>
+</div>
+
+<script>
+(function() {
+  let slides = [];
+  let current = 0;
+  const stage = document.getElementById('stage');
+  const bar = document.getElementById('progressBar');
+  const counter = document.getElementById('slideCounter');
+
+  function buildSlides() { /* ---- SLIDES ---- */
+
+  // 0 — Title
+  slides.push(createSlide(0, 'title-slide', `
+    <div class="day-badge">DAY 40</div>
+    <h1>Node.js Basics<br>for Backend</h1>
+    <div class="subtitle">Running JavaScript outside the browser</div>
+    <div class="meta">Week 7 · Phase III — Node.js · 60 min</div>
+    <div class="badge-strip">
+      <span>90-Day Co-op Prep</span>
+      <span>📅 29 Jun 2026</span>
+    </div>
+  `));
+
+  // 1 — Overview
+  slides.push(createSlide(1, 'content-slide', `
+    <h2>📋 Today's Plan</h2>
+    <div class="topic-sub">What you'll learn in 60 minutes</div>
+    <ul>
+      <li><strong>Installing Node.js</strong> — version managers and setup</li>
+      <li><strong>Your first Node script</strong> — <code>console.log</code> outside the browser</li>
+      <li><strong>CommonJS modules</strong> — <code>require</code> / <code>module.exports</code></li>
+      <li><strong>ESM modules</strong> — <code>import</code> / <code>export</code></li>
+      <li><strong>Built-in modules</strong> — <code>fs</code>, <code>path</code>, <code>os</code></li>
+      <li><strong>Hands-on exercises</strong> — build a tiny CLI tool</li>
+    </ul>
+    <div class="callout tip"><strong>Prerequisite:</strong> Basic JavaScript (variables, functions, arrays, objects). No Node experience needed.</div>
+  `));
+
+  // 2 — Section break: Setup
+  slides.push(createSlide(2, 'section-slide', `
+    <div class="phase-label">Step 1</div>
+    <h2>Installing Node.js</h2>
+    <p style="color:var(--text-muted);font-size:18px;margin-top:12px;">Get Node + npm on your machine</p>
+  `));
+
+  // 3 — Installing Node.js
+  slides.push(createSlide(3, 'content-slide', `
+    <h2>🛠 Install Node.js</h2>
+    <div class="topic-sub">nvm → node → npm</div>
+    <p>Use <strong>nvm</strong> (Node Version Manager) to install and switch Node versions easily.</p>
+    <div class="code-block">
+<span class="comment"># Install nvm (one time)</span>
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+<span class="comment"># Reload shell config</span>
+source ~/.bashrc
+
+<span class="comment"># Install latest LTS Node</span>
+nvm install --lts
+
+<span class="comment"># Verify</span>
+node --version   <span class="comment"># v22.x</span>
+npm --version    <span class="comment"># 10.x</span>
+    </div>
+    <div class="callout warn"><strong>macOS:</strong> If you use Homebrew, <code>brew install node</code> works too. Linux users: <code>apt install nodejs npm</code> but prefer nvm for version control.</div>
+  `));
+
+  // 4 — Section break: First script
+  slides.push(createSlide(4, 'section-slide', `
+    <div class="phase-label">Step 2</div>
+    <h2>Your First Node Script</h2>
+    <p style="color:var(--text-muted);font-size:18px;margin-top:12px;">Hello from the server side</p>
+  `));
+
+  // 5 — console.log & running JS
+  slides.push(createSlide(5, 'content-slide', `
+    <h2>🖥 Run JavaScript Outside the Browser</h2>
+    <div class="topic-sub">Node gives JS a runtime without a DOM</div>
+    <div class="two-col">
+      <div class="col">
+        <p>Create a file and run it:</p>
+        <div class="code-block">
+<span class="comment">// hello.js</span>
+<span class="kw">const</span> name <span class="op">=</span> <span class="str">"Co-op Seeker"</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">\`Hello, \${name}! 👋\`</span>);
+
+<span class="kw">const</span> time <span class="op">=</span> <span class="kw">new</span> <span class="fn">Date</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">\`Node.js runs at \${time.toLocaleTimeString()}\`</span>);
+        </div>
+      </div>
+      <div class="col">
+        <p>Run it in the terminal:</p>
+        <div class="code-block">
+$ node hello.js
+Hello, Co-op Seeker! 👋
+Node.js runs at 9:42:17 AM
+        </div>
+        <div class="callout" style="margin-top:8px;padding:8px 12px;font-size:14px;">
+          <strong>Key insight:</strong> No <code>&lt;script&gt;</code> tag. No browser. Node is a <strong>runtime</strong> that runs JS directly on your machine.
+        </div>
+      </div>
+    </div>
+  `));
+
+  // 6 — Node vs Browser
+  slides.push(createSlide(6, 'content-slide', `
+    <h2>🧠 Node.js vs the Browser</h2>
+    <div class="topic-sub">Same language, different superpowers</div>
+    <div class="two-col">
+      <div class="col">
+        <h3 style="font-size:16px;color:var(--accent);margin-bottom:6px;">🌐 Browser</h3>
+        <ul style="font-size:15px;">
+          <li>Has <code>document</code>, <code>window</code>, DOM APIs</li>
+          <li>Renders HTML/CSS</li>
+          <li>User-facing — clicks, forms, animations</li>
+          <li>Sandboxed — no filesystem, no process control</li>
+          <li>One tab = one thread per page</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3 style="font-size:16px;color:var(--accent);margin-bottom:6px;">⚙️ Node.js</h3>
+        <ul style="font-size:15px;">
+          <li>Has <code>fs</code>, <code>http</code>, <code>process</code>, <code>os</code></li>
+          <li>Runs server-side scripts</li>
+          <li>System-facing — files, network, processes</li>
+          <li>Full access — read/write files, spawn processes</li>
+          <li><code>cluster</code> module for multi-core</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px;font-size:15px;">
+      <strong>Rule of thumb:</strong> If your code doesn't touch the DOM, it probably runs fine in Node.
+    </div>
+  `));
+
+  // 7 — Section break: Modules
+  slides.push(createSlide(7, 'section-slide', `
+    <div class="phase-label">Step 3</div>
+    <h2>Modules: require / import</h2>
+    <p style="color:var(--text-muted);font-size:18px;margin-top:12px;">Organising code into reusable files</p>
+  `));
+
+  // 8 — CommonJS modules
+  slides.push(createSlide(8, 'content-slide', `
+    <h2>📦 CommonJS — <code>require</code> / <code>module.exports</code></h2>
+    <div class="topic-sub">Node's default module system (.js files)</div>
+    <div class="two-col">
+      <div class="col">
+        <p><strong>Export</strong> — <code>greet.js</code></p>
+        <div class="code-block">
+<span class="kw">function</span> <span class="fn">greet</span>(name) {
+  <span class="kw">return</span> <span class="str">\`Hey \${name}, ready to code?\`</span>;
+}
+
+<span class="kw">function</span> <span class="fn">add</span>(a, b) { <span class="kw">return</span> a <span class="op">+</span> b; }
+
+<span class="comment">// Export multiple</span>
+<span class="kw">module.exports</span> <span class="op">=</span> { greet, add };
+        </div>
+      </div>
+      <div class="col">
+        <p><strong>Import</strong> — <code>main.js</code></p>
+        <div class="code-block">
+<span class="kw">const</span> utils <span class="op">=</span> <span class="fn">require</span>(<span class="str">'./greet.js'</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(utils.<span class="fn">greet</span>(<span class="str">'Alex'</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'2 + 3 ='</span>, utils.<span class="fn">add</span>(<span class="num">2</span>, <span class="num">3</span>));
+        </div>
+        <p>Run: <code>node main.js</code></p>
+        <div class="callout" style="margin-top:6px;padding:8px 10px;font-size:13px;">
+          <strong>Note:</strong> <code>require</code> is <em>synchronous</em> — it loads and evaluates the module immediately.
+        </div>
+      </div>
+    </div>
+  `));
+
+  // 9 — ESM modules
+  slides.push(createSlide(9, 'content-slide', `
+    <h2>📦 ESM — <code>import</code> / <code>export</code></h2>
+    <div class="topic-sub">Modern JS module syntax (use <code>.mjs</code> or <code>"type":"module"</code>)</div>
+    <div class="two-col">
+      <div class="col">
+        <p><strong>Export</strong> — <code>math.mjs</code></p>
+        <div class="code-block">
+<span class="kw">export const</span> PI <span class="op">=</span> <span class="num">3.14159</span>;
+
+<span class="kw">export function</span> <span class="fn">square</span>(n) {
+  <span class="kw">return</span> n <span class="op">*</span> n;
+}
+
+<span class="kw">export default function</span> <span class="fn">double</span>(n) {
+  <span class="kw">return</span> n <span class="op">*</span> <span class="num">2</span>;
+}
+        </div>
+      </div>
+      <div class="col">
+        <p><strong>Import</strong> — <code>app.mjs</code></p>
+        <div class="code-block">
+<span class="kw">import</span> double, { PI, square } <span class="kw">from</span> <span class="str">'./math.mjs'</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(PI);            <span class="comment">// 3.14159</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">square</span>(<span class="num">5</span>));      <span class="comment">// 25</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">double</span>(<span class="num">7</span>));      <span class="comment">// 14</span>
+        </div>
+        <p>Run: <code>node app.mjs</code></p>
+        <div class="callout tip" style="margin-top:6px;padding:8px 10px;font-size:13px;">
+          <strong>Tip:</strong> Add <code>"type": "module"</code> to <code>package.json</code> to use ESM in <code>.js</code> files.
+        </div>
+      </div>
+    </div>
+  `));
+
+  // 10 — Module comparison
+  slides.push(createSlide(10, 'content-slide', `
+    <h2>⚖️ CommonJS vs ESM — Which to Use?</h2>
+    <div class="topic-sub">Both work. Here's when to reach for each.</div>
+    <div class="two-col" style="grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="col" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <h3 style="color:var(--accent);font-size:16px;margin-bottom:8px;">CommonJS (CJS)</h3>
+        <ul style="font-size:14px;">
+          <li>Default in Node <code>.js</code> files</li>
+          <li>Synchronous — great for servers</li>
+          <li>Dynamic <code>require()</code> (in if-blocks)</li>
+          <li>Wider ecosystem compatibility</li>
+          <li>No tree-shaking in bundlers</li>
+        </ul>
+      </div>
+      <div class="col" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <h3 style="color:var(--accent);font-size:16px;margin-bottom:8px;">ES Modules (ESM)</h3>
+        <ul style="font-size:14px;">
+          <li>Official JS standard (ES2015+)</li>
+          <li>Async — works in browser too</li>
+          <li>Static analysis — bundlers love it</li>
+          <li>Top-level <code>await</code> support</li>
+          <li>Stricter: no <code>__dirname</code> by default</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px;font-size:14px;">
+      <strong>For co-op prep:</strong> Learn both. Most tutorials use CJS. Modern frameworks (Next.js, SvelteKit) use ESM. Being bilingual here is a flex in interviews.
+    </div>
+  `));
+
+  // 11 — Section break: Built-in modules
+  slides.push(createSlide(11, 'section-slide', `
+    <div class="phase-label">Step 4</div>
+    <h2>Built-in Modules</h2>
+    <p style="color:var(--text-muted);font-size:18px;margin-top:12px;">fs, path, os — Node's standard library</p>
+  `));
+
+  // 12 — fs module
+  slides.push(createSlide(12, 'content-slide', `
+    <h2>📁 File System — <code>fs</code></h2>
+    <div class="topic-sub">Read and write files from JavaScript</div>
+    <div class="two-col">
+      <div class="col">
+        <div class="code-block" style="font-size:13px;">
+<span class="comment">// file-demo.js</span>
+<span class="kw">const</span> fs <span class="op">=</span> <span class="fn">require</span>(<span class="str">'fs'</span>);
+
+<span class="comment">// Read (synchronous)</span>
+<span class="kw">const</span> data <span class="op">=</span> fs.<span class="fn">readFileSync</span>(
+  <span class="str">'notes.txt'</span>, <span class="str">'utf8'</span>
+);
+<span class="fn">console</span>.<span class="fn">log</span>(data);
+
+<span class="comment">// Write</span>
+fs.<span class="fn">writeFileSync</span>(
+  <span class="str">'output.txt'</span>,
+  <span class="str">'Hello from Node!\\n'</span>
+);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'File written!'</span>);
+        </div>
+      </div>
+      <div class="col">
+        <div class="code-block" style="font-size:13px;">
+<span class="comment">// Async version (preferred)</span>
+fs.<span class="fn">readFile</span>(<span class="str">'notes.txt'</span>, <span class="str">'utf8'</span>,
+  (err, data) <span class="op">=></span> {
+    <span class="kw">if</span> (err) {
+      <span class="fn">console</span>.<span class="fn">error</span>(<span class="str">'Error:'</span>, err);
+      <span class="kw">return</span>;
+    }
+    <span class="fn">console</span>.<span class="fn">log</span>(data);
+  }
+);
+
+<span class="comment">// Promises API (modern)</span>
+<span class="kw">const</span> fsp <span class="op">=</span> <span class="fn">require</span>(<span class="str">'fs/promises'</span>);
+<span class="kw">const</span> content <span class="op">=</span> <span class="kw">await</span> fsp.<span class="fn">readFile</span>(
+  <span class="str">'notes.txt'</span>, <span class="str">'utf8'</span>
+);
+        </div>
+        <div class="callout" style="margin-top:6px;padding:8px 10px;font-size:13px;">
+          <strong>Prefer async</strong> (callback or Promises). <code>Sync</code> versions block the entire process — fine in scripts, bad in servers.
+        </div>
+      </div>
+    </div>
+  `));
+
+  // 13 — path and os
+  slides.push(createSlide(13, 'content-slide', `
+    <h2>🛤️ <code>path</code> &amp; <code>os</code> — Everyday Helpers</h2>
+    <div class="topic-sub">Path manipulation and system info</div>
+    <div class="two-col">
+      <div class="col">
+        <div class="code-block" style="font-size:13px;">
+<span class="comment">// path — cross-platform paths</span>
+<span class="kw">const</span> path <span class="op">=</span> <span class="fn">require</span>(<span class="str">'path'</span>);
+
+<span class="kw">const</span> fullPath <span class="op">=</span>
+  path.<span class="fn">join</span>(__dirname, <span class="str">'data'</span>, <span class="str">'users.json'</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(fullPath);
+<span class="comment">// /home/user/project/data/users.json</span>
+
+<span class="fn">console</span>.<span class="fn">log</span>(path.<span class="fn">extname</span>(<span class="str">'index.html'</span>));
+<span class="comment">// .html</span>
+
+<span class="fn">console</span>.<span class="fn">log</span>(path.<span class="fn">basename</span>(<span class="str">'/a/b/c.js'</span>));
+<span class="comment">// c.js</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="code-block" style="font-size:13px;">
+<span class="comment">// os — operating system info</span>
+<span class="kw">const</span> os <span class="op">=</span> <span class="fn">require</span>(<span class="str">'os'</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'Platform:'</span>, os.<span class="fn">platform</span>());
+<span class="comment">// linux, darwin, win32</span>
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'CPUs:'</span>, os.<span class="fn">cpus</span>().length);
+<span class="comment">// 8, 12, 16...</span>
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'Free mem:'</span>,
+  os.<span class="fn">freemem</span>() / <span class="num">1024</span> ** <span class="num">3</span>, <span class="str">'GB'</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'Home dir:'</span>, os.<span class="fn">homedir</span>());
+        </div>
+        <p style="font-size:14px;color:var(--text-muted);margin-top:8px;">Useful for CLI tools — adapt behaviour based on the OS automatically.</p>
+      </div>
+    </div>
+  `));
+
+  // 14 — Section break: Practice
+  slides.push(createSlide(14, 'section-slide', `
+    <div class="phase-label">Step 5</div>
+    <h2>Practice Time ✏️</h2>
+    <p style="color:var(--text-muted);font-size:18px;margin-top:12px;">Build a tiny CLI tool</p>
+  `));
+
+  // 15 — Exercise 1
+  slides.push(createSlide(15, 'content-slide', `
+    <h2>🏋️ Exercise 1 — File Reader</h2>
+    <div class="topic-sub">Build a program that reads and displays a file</div>
+    <div class="exercise-box">
+      <h3>Task</h3>
+      <ol>
+        <li>Create <code>reader.js</code> that reads <code>data.txt</code> (create this file with some text)</li>
+        <li>Print the file content to the console</li>
+        <li>If the file doesn't exist, print a friendly error message instead of crashing</li>
+        <li>Bonus: Accept the filename from <code>process.argv[2]</code></li>
+      </ol>
+      <div class="hint">💡 Hint: Use <code>fs.readFileSync</code> with try/catch, or the async callback version. <code>process.argv</code> is an array of command-line arguments.</div>
+    </div>
+    <div class="code-block" style="font-size:14px;">
+<span class="comment"># Expected usage:</span>
+$ node reader.js data.txt
+📄 Contents of data.txt:
+Hello from my first Node program!
+    </div>
+  `));
+
+  // 16 — Exercise 2
+  slides.push(createSlide(16, 'content-slide', `
+    <h2>🏋️ Exercise 2 — System Reporter</h2>
+    <div class="topic-sub">Combine <code>os</code> and <code>path</code> to build a system reporter</div>
+    <div class="exercise-box">
+      <h3>Task</h3>
+      <ol>
+        <li>Create <code>sysinfo.js</code></li>
+        <li>Import <code>os</code> and <code>path</code></li>
+        <li>Print: OS type, total RAM (GB), CPU count, home directory</li>
+        <li>Format it as a clean report</li>
+      </ol>
+      <div class="hint">💡 Hint: <code>os.totalmem() / 1024**3</code> gives GB. Use <code>os.type()</code> for OS name.</div>
+    </div>
+    <div class="code-block" style="font-size:14px;">
+<span class="comment"># Expected output:</span>
+═══════════════════════════
+  System Report
+═══════════════════════════
+  OS:        Linux
+  CPUs:      8
+  RAM:       15.6 GB
+  Home:      /home/user
+═══════════════════════════
+    </div>
+  `));
+
+  // 17 — Exercise 3 (bonus)
+  slides.push(createSlide(17, 'content-slide', `
+    <h2>🏋️ Exercise 3 — Module Exporter (Bonus)</h2>
+    <div class="topic-sub">Create your own reusable module</div>
+    <div class="exercise-box">
+      <h3>Task</h3>
+      <ol>
+        <li>Create <code>math-utils.js</code> that exports: <code>add</code>, <code>subtract</code>, <code>multiply</code>, <code>divide</code></li>
+        <li>Create <code>calc.js</code> that imports and uses them</li>
+        <li>Accept two numbers and an operation via <code>process.argv</code></li>
+        <li>Print the result</li>
+      </ol>
+      <div class="hint">💡 Hint: Parse <code>process.argv[2]</code> as operation, <code>argv[3]</code> and <code>argv[4]</code> as numbers. Handle <code>NaN</code> and division by zero gracefully.</div>
+    </div>
+    <div class="code-block" style="font-size:14px;">
+<span class="comment"># Expected usage:</span>
+$ node calc.js add 5 3
+Result: 8
+
+$ node calc.js divide 10 0
+Error: Cannot divide by zero
+    </div>
+  `));
+
+  // 18 — Project Milestones
+  slides.push(createSlide(18, 'content-slide', `
+    <h2>🗺️ Co-op Prep — Project Roadmap</h2>
+    <div class="topic-sub">Where Node.js fits in your portfolio</div>
+    <div class="recap-grid">
+      <div class="recap-card">
+        <div class="num">Project 1</div>
+        <h4>CLI Todo List</h4>
+        <p>After Week 3 — File-based todo app using <code>fs</code></p>
+      </div>
+      <div class="recap-card">
+        <div class="num">Project 2 ✓</div>
+        <h4>Bookmark Saver</h4>
+        <p>After Week 6 — CLI bookmark manager with JSON storage</p>
+      </div>
+      <div class="recap-card" style="border-color:var(--accent);">
+        <div class="num" style="color:var(--accent);">Project 3 →</div>
+        <h4>Weather Dashboard</h4>
+        <p>After Week 8 — HTTP + API calls with <code>https</code></p>
+      </div>
+      <div class="recap-card">
+        <div class="num">Project 5</div>
+        <h4>Full-Stack App</h4>
+        <p>After Week 12 — Express + database + frontend</p>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:8px;font-size:14px;">
+      Today's Node basics are the <strong>foundation</strong> for every project from here. Modules, file I/O, and the Node runtime are used everywhere.
+    </div>
+  `));
+
+  // 19 — Summary
+  slides.push(createSlide(19, 'content-slide', `
+    <h2>🎯 Key Takeaways</h2>
+    <div class="topic-sub">What to remember from Day 40</div>
+    <div class="recap-grid">
+      <div class="recap-card">
+        <div class="num">1</div>
+        <h4>Node.js = JS outside the browser</h4>
+        <p>Same language, new superpowers — filesystem, network, OS access via built-in modules.</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">2</div>
+        <h4>Two module systems</h4>
+        <p>CJS (<code>require</code>) is the default. ESM (<code>import</code>) is the future. Know both.</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">3</div>
+        <h4><code>fs</code> + <code>path</code> = CLI superpowers</h4>
+        <p>Read/write files, join paths safely. These two modules alone unlock most CLI tool use cases.</p>
+      </div>
+      <div class="recap-card">
+        <div class="num">4</div>
+        <h4>Async > Sync (for servers)</h4>
+        <p>Callback and Promise APIs (<code>fs/promises</code>) keep your program responsive. Save Sync for simple scripts.</p>
+      </div>
+    </div>
+  `));
+
+  // 20 — Next steps
+  slides.push(createSlide(20, 'content-slide', `
+    <h2>🔜 Next Up — Day 41</h2>
+    <div class="topic-sub">Keep the momentum going</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-top:12px;">
+      <h3 style="color:var(--accent);font-size:20px;margin-bottom:12px;">Tomorrow: npm &amp; package.json</h3>
+      <ul style="font-size:17px;">
+        <li>Installing dependencies with <code>npm install</code></li>
+        <li><code>package.json</code> — the metadata file for every Node project</li>
+        <li>Semantic versioning (semver)</li>
+        <li>Writing npm scripts</li>
+        <li>Publishing your first package</li>
+      </ul>
+      <div style="margin-top:16px;font-size:15px;color:var(--text-muted);">
+        <strong>Prep:</strong> Make sure Node is installed (Step 1). Try Exercises 1-3 tonight.
+      </div>
+    </div>
+  `));
+
+  } /* end buildSlides */
+
+  function createSlide(index, className, html) {
+    const section = document.createElement('section');
+    section.className = `slide ${className}`;
+    section.dataset.slide = index;
+    section.innerHTML = html;
+    return section;
+  }
+
+  function render() {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === current);
+    });
+    bar.style.width = `${((current + 1) / slides.length) * 100}%`;
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    window.location.hash = `#${current}`;
+  }
+
+  function go(n) {
+    current = Math.max(0, Math.min(slides.length - 1, n));
+    render();
+  }
+
+  buildSlides();
+  slides.forEach(s => stage.appendChild(s));
+  render();
+
+  /* Hash restore */
+  if (window.location.hash) {
+    const n = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < slides.length) { current = n; render(); }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); go(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); go(current - 1);
+    } else if (e.key === 'f') {
+      e.preventDefault();
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  /* Touch support */
+  let tx = 0;
+  stage.addEventListener('touchstart', e => { tx = e.changedTouches[0].screenX; }, {passive:true});
+  stage.addEventListener('touchend', e => {
+    const dx = tx - e.changedTouches[0].screenX;
+    if (Math.abs(dx) > 50) go(current + (dx > 0 ? 1 : -1));
+  }, {passive:true});
+
+})();
+</script>
+</body>
+</html>
