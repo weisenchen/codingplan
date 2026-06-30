@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 41 — Express.js: Your First API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-alt: #1a1d27;
+  --bg-code: #151821;
+  --fg: #e3e5ef;
+  --fg-dim: #8b8fa3;
+  --accent: #5fc3d0;
+  --accent-dim: #3a8a95;
+  --accent-bg: rgba(95, 195, 208, 0.08);
+  --green: #7ecb8e;
+  --yellow: #e6c87a;
+  --red: #e57373;
+  --radius: 8px;
+  --font-sans: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #08090e; font-family: var(--font-sans); color: var(--fg); }
+
+/* slide deck wrapper */
+#deck {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #08090e;
+}
+#stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 16/9));
+  height: min(100vh, calc(100vw * 9/16));
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: 4px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+
+/* slides */
+.slide {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  padding: 48px 56px;
+  opacity: 0; transition: opacity 0.25s;
+  overflow-y: auto;
+}
+.slide.active { display: flex; opacity: 1; }
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--fg-dim); border-radius: 2px; }
+
+/* progress bar */
+#progress-bar {
+  position: absolute; bottom: 0; left: 0; height: 3px;
+  background: var(--accent);
+  transition: width 0.3s;
+  z-index: 10;
+}
+#slide-counter {
+  position: absolute; bottom: 12px; right: 20px;
+  font-size: 12px; color: var(--fg-dim);
+  font-family: var(--font-sans);
+  z-index: 10;
+  letter-spacing: 0.5px;
+}
+
+/* typography */
+h1 {
+  font-family: var(--font-serif);
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.3;
+  margin-bottom: 20px;
+}
+h3 {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+p, li { font-size: 18px; line-height: 1.6; color: var(--fg); }
+p { margin-bottom: 12px; }
+.small { font-size: 15px; color: var(--fg-dim); }
+
+/* code blocks */
+pre {
+  background: var(--bg-code);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 8px 0 16px 0;
+}
+code { font-family: var(--font-sans); font-size: 15px; }
+pre .kw { color: var(--accent); }
+pre .fn { color: var(--yellow); }
+pre .str { color: var(--green); }
+pre .cm { color: var(--fg-dim); font-style: italic; }
+pre .num { color: var(--red); }
+pre .op { color: var(--fg); }
+
+/* lists */
+ul, ol { padding-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 6px; }
+li strong { color: var(--accent); }
+
+/* accent highlight box */
+.info-box {
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 18px;
+  margin: 12px 0;
+}
+.info-box p { margin: 0; font-size: 16px; }
+.info-box code { font-size: 14px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 3px; }
+
+/* exercise boxes */
+.exercise-box {
+  background: rgba(126, 203, 142, 0.06);
+  border: 1px solid rgba(126, 203, 142, 0.2);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 12px 0;
+}
+.exercise-box h4 { color: var(--green); font-size: 16px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.exercise-box p, .exercise-box li { font-size: 16px; }
+
+/* hint / reveal */
+.reveal-content { display: none; margin-top: 10px; }
+.reveal-btn {
+  background: transparent;
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.reveal-btn:hover { background: var(--accent-bg); }
+
+/* layout helpers */
+.flex { display: flex; gap: 24px; flex: 1; }
+.flex-col { display: flex; flex-direction: column; }
+.col { flex: 1; }
+.mt-auto { margin-top: auto; }
+.center { display: flex; align-items: center; justify-content: center; }
+.text-center { text-align: center; }
+
+/* grid for exercise steps */
+.step-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+/* section break background */
+.slide.section-bg { background: linear-gradient(135deg, #0f1117 0%, #1a2830 100%); }
+
+/* terminal simulator */
+.terminal-line::before { content: "$ "; color: var(--green); }
+
+/* mobile */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 24px; }
+  p, li { font-size: 15px; }
+  .step-grid { grid-template-columns: 1fr; }
+  .flex { flex-direction: column; }
+  pre { font-size: 13px; padding: 12px 14px; }
+}
+
+/* print */
+@media print {
+  #deck { position: relative; background: white; }
+  #stage { width: 100%; height: auto; box-shadow: none; border-radius: 0; }
+  .slide { display: block !important; position: relative; opacity: 1 !important; page-break-after: always; height: auto; min-height: 50vh; padding: 40px; }
+  #progress-bar, #slide-counter { display: none; }
+  body { background: white; }
+  :root { --bg: white; --fg: #111; --fg-dim: #555; --bg-code: #f5f5f5; --bg-alt: #eee; --accent-bg: #e6f7f9; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+<div id="stage" role="main" aria-label="Slideshow presentation">
+
+<!-- SLIDE 0: Title -->
+<section class="slide active" data-slide="0" aria-label="Title slide">
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <h3 style="margin-bottom:8px;">90-Day Co-op Prep Plan — Week 7</h3>
+    <h1 style="font-size:56px; margin-bottom:12px;">Express.js:<br>Your First API</h1>
+    <p style="font-size:22px; color:var(--accent); margin-bottom:24px;">
+      Install Express. GET endpoint. Return JSON. Test with curl.
+    </p>
+    <div style="display:flex; gap:20px; align-items:center; margin-top:8px;">
+      <span style="padding:6px 14px; background:var(--accent-bg); border:1px solid rgba(95,195,208,0.25); border-radius:4px; font-size:14px; color:var(--accent);">Phase III — API</span>
+      <span style="font-size:14px; color:var(--fg-dim);">Day 41 · 60 min</span>
+    </div>
+  </div>
+  <p style="font-size:13px; color:var(--fg-dim); margin-top:auto; text-align:right;">June 30, 2026</p>
+</section>
+
+<!-- SLIDE 1: Learning Objectives -->
+<section class="slide" data-slide="1" aria-label="Learning objectives">
+  <h3>Learning Objectives</h3>
+  <h2>By the end of this session you'll be able to:</h2>
+  <div style="flex:1; display:flex; flex-direction:column; gap:16px; justify-content:center; max-width:720px;">
+    <div style="display:flex; align-items:flex-start; gap:14px;">
+      <span style="color:var(--accent); font-size:22px;">→</span>
+      <div><strong style="color:var(--fg); font-size:20px;">Initialize</strong><br><span style="color:var(--fg-dim);">Scaffold a Node.js project and install Express via npm</span></div>
+    </div>
+    <div style="display:flex; align-items:flex-start; gap:14px;">
+      <span style="color:var(--accent); font-size:22px;">→</span>
+      <div><strong style="color:var(--fg); font-size:20px;">Create</strong><br><span style="color:var(--fg-dim);">Write a GET endpoint that returns JSON using Express route handlers</span></div>
+    </div>
+    <div style="display:flex; align-items:flex-start; gap:14px;">
+      <span style="color:var(--accent); font-size:22px;">→</span>
+      <div><strong style="color:var(--fg); font-size:20px;">Test</strong><br><span style="color:var(--fg-dim);">Verify your API works using both a browser and curl</span></div>
+    </div>
+    <div style="display:flex; align-items:flex-start; gap:14px;">
+      <span style="color:var(--accent); font-size:22px;">→</span>
+      <div><strong style="color:var(--fg); font-size:20px;">Extend</strong><br><span style="color:var(--fg-dim);">Add multiple routes and understand route parameters</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 2: What is Express.js? -->
+<section class="slide" data-slide="2" aria-label="What is Express">
+  <h3>Concept</h3>
+  <h2>What is Express.js?</h2>
+  <div class="flex" style="flex:1;">
+    <div class="col" style="display:flex; flex-direction:column; justify-content:center;">
+      <p><strong>Express</strong> is a minimal, unopinionated web framework for Node.js. It gives you:</p>
+      <ul>
+        <li><strong>Routing</strong> — map URLs to handler functions</li>
+        <li><strong>Middleware</strong> — process requests through a pipeline</li>
+        <li><strong>HTTP helpers</strong> — send JSON, files, status codes easily</li>
+      </ul>
+      <p style="margin-top:16px;">Think of it as the <strong>glue</strong> between your JavaScript logic and the internet. Everything you build in Phase III rides on Express.</p>
+    </div>
+    <div class="col" style="display:flex; flex-direction:column; justify-content:center; gap:8px;">
+      <div style="background:var(--bg-alt); border-radius:var(--radius); padding:20px; text-align:center;">
+        <p style="font-size:14px; color:var(--fg-dim); margin:0;">Without Express</p>
+        <p style="font-size:32px; color:var(--red); margin:6px 0;">~200 lines</p>
+        <p style="font-size:13px; color:var(--fg-dim); margin:0;">raw <code>http.createServer</code></p>
+      </div>
+      <div style="background:var(--bg-alt); border-radius:var(--radius); padding:20px; text-align:center;">
+        <p style="font-size:14px; color:var(--fg-dim); margin:0;">With Express</p>
+        <p style="font-size:32px; color:var(--accent); margin:6px 0;">~5 lines</p>
+        <p style="font-size:13px; color:var(--fg-dim); margin:0;">same server in one file</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 3: Setup — Node project + Express install -->
+<section class="slide" data-slide="3" aria-label="Setup">
+  <h3>Walkthrough</h3>
+  <h2>Scaffold the Project</h2>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <p class="small" style="margin-bottom:8px;">Open a terminal and run these commands step by step:</p>
+    <pre><span class="cm"># 1. Create the project folder</span>
+mkdir my-first-api && cd my-first-api
+
+<span class="cm"># 2. Initialize package.json (accept defaults)</span>
+npm init -y
+
+<span class="cm"># 3. Install Express</span>
+npm install express
+
+<span class="cm"># 4. Verify it worked — check package.json for "express"</span>
+cat package.json | grep express</pre>
+    <div class="info-box">
+      <p>✅ After step 4 you should see <code>"express": "^4.21.x"</code> in the dependencies. If not, try <code>npm install express</code> again.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: Your first endpoint -->
+<section class="slide" data-slide="4" aria-label="First endpoint">
+  <h3>Code</h3>
+  <h2>Your First GET Endpoint</h2>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <p>Create <code>index.js</code> with this:</p>
+    <pre><span class="kw">const</span> express = require(<span class="str">'express'</span>);
+<span class="kw">const</span> app = express();
+<span class="kw">const</span> PORT = <span class="num">3000</span>;
+
+<span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/'</span>, (req, res) => {
+  res.<span class="fn">json</span>({ message: <span class="str">'Hello, world!'</span> });
+});
+
+<span class="fn">app</span>.<span class="fn">listen</span>(PORT, () => {
+  console.<span class="fn">log</span>(<span class="str">`Server running at http://localhost:${PORT}`</span>);
+});</pre>
+    <p><strong>What's going on?</strong></p>
+    <ul>
+      <li><code>express()</code> creates the app object</li>
+      <li><code>app.get(path, handler)</code> registers a route for GET requests</li>
+      <li><code>res.json(data)</code> sends a JSON response with the right headers</li>
+      <li><code>app.listen()</code> starts the server on a port</li>
+    </ul>
+  </div>
+</section>
+
+<!-- SLIDE 5: Test with browser & curl -->
+<section class="slide" data-slide="5" aria-label="Testing">
+  <h3>Walkthrough</h3>
+  <h2>Test Your API</h2>
+  <div class="step-grid" style="flex:1; align-content:start;">
+    <div>
+      <p><strong>1. Start the server</strong></p>
+      <pre style="font-size:14px; padding:12px 16px;">node index.js</pre>
+      <p class="small">You should see: <code>Server running at http://localhost:3000</code></p>
+    </div>
+    <div>
+      <p><strong>2. Open in browser</strong></p>
+      <p class="small">Go to <code>http://localhost:3000</code> in your browser. You'll see:</p>
+      <pre style="font-size:14px; padding:12px 16px;">{"message":"Hello, world!"}</pre>
+    </div>
+    <div>
+      <p><strong>3. Test with curl</strong></p>
+      <pre style="font-size:14px; padding:12px 16px;">curl http://localhost:3000</pre>
+      <p class="small">Same JSON, no browser needed.</p>
+    </div>
+    <div>
+      <p><strong>4. Pretty-print (optional)</strong></p>
+      <pre style="font-size:14px; padding:12px 16px;">curl http://localhost:3000 | jq</pre>
+      <p class="small">If you have <code>jq</code> installed — gives syntax-highlighted output.</p>
+    </div>
+  </div>
+  <div class="info-box">
+    <p>⚠️ Keep the server running in one terminal window. Open a <strong>second terminal</strong> for curl commands.</p>
+  </div>
+</section>
+
+<!-- SLIDE 6: Adding more routes -->
+<section class="slide" data-slide="6" aria-label="More routes">
+  <h3>Code</h3>
+  <h2>Add More Routes</h2>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <p>Replace <code>index.js</code> with a multi-route API:</p>
+    <pre><span class="kw">const</span> express = require(<span class="str">'express'</span>);
+<span class="kw">const</span> app = express();
+<span class="kw">const</span> PORT = <span class="num">3000</span>;
+
+<span class="cm">// GET / returns a greeting</span>
+<span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/'</span>, (req, res) => {
+  res.<span class="fn">json</span>({ message: <span class="str">'Welcome to my API!'</span> });
+});
+
+<span class="cm">// GET /time returns the current time</span>
+<span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/time'</span>, (req, res) => {
+  res.<span class="fn">json</span>({ serverTime: <span class="kw">new</span> Date().<span class="fn">toISOString</span>() });
+});
+
+<span class="cm">// GET /hello/:name uses a route parameter</span>
+<span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/hello/:name'</span>, (req, res) => {
+  res.<span class="fn">json</span>({ greeting: <span class="str">`Hello, ${req.params.name}!`</span> });
+});
+
+<span class="fn">app</span>.<span class="fn">listen</span>(PORT, () => {
+  console.<span class="fn">log</span>(<span class="str">`🚀 Server running at http://localhost:${PORT}`</span>);
+});</pre>
+    <div class="info-box">
+      <p><strong>Route parameters:</strong> <code>:name</code> in the path captures whatever is in that position as <code>req.params.name</code>. Try <code>/hello/Alice</code> → <code>{"greeting":"Hello, Alice!"}</code></p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 7: Testing multiple routes -->
+<section class="slide" data-slide="7" aria-label="Test multiple routes">
+  <h3>Demo</h3>
+  <h2>Test the Extended API</h2>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:8px;">
+    <p>With the updated server running, try these in a browser or curl:</p>
+    <pre style="font-size:14px; padding:12px 16px;"><span class="cm"># Root route</span>
+curl http://localhost:3000
+<span class="cm"># {"message":"Welcome to my API!"}</span>
+
+<span class="cm"># Time endpoint</span>
+curl http://localhost:3000/time
+<span class="cm"># {"serverTime":"2026-06-30T12:00:00.000Z"}</span>
+
+<span class="cm"># Route parameter — change "Bob" to your own name</span>
+curl http://localhost:3000/hello/Bob
+<span class="cm"># {"greeting":"Hello, Bob!"}</span></pre>
+    <p class="small" style="color:var(--fg-dim);">Each curl should return JSON immediately. If you get connection refused, make sure <code>node index.js</code> is still running.</p>
+  </div>
+</section>
+
+<!-- SLIDE 8: Exercises -->
+<section class="slide" data-slide="8" aria-label="Exercises">
+  <h3>Practice</h3>
+  <h2>Exercises</h2>
+  <p>Try these on your own. Read the hint if you get stuck.</p>
+  <div style="flex:1; display:flex; flex-direction:column; gap:14px; justify-content:center;">
+    <div class="exercise-box">
+      <h4>Exercise 1: Random Quote</h4>
+      <p>Add a <code>GET /quote</code> endpoint that returns a random quote from a hardcoded array of 3-5 quotes.</p>
+      <button class="reveal-btn" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</button>
+      <div class="reveal-content">
+        <pre style="font-size:13px; padding:10px 14px;"><span class="kw">const</span> quotes = [<span class="str">"The only limit is your imagination."</span>, <span class="str">"Code is poetry."</span>, <span class="str">"First, solve the problem."</span>];
+<span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/quote'</span>, (req, res) => {
+  <span class="kw">const</span> i = Math.<span class="fn">floor</span>(Math.<span class="fn">random</span>() * quotes.length);
+  res.<span class="fn">json</span>({ quote: quotes[i] });
+});</pre>
+      </div>
+    </div>
+    <div class="exercise-box">
+      <h4>Exercise 2: Route Echo</h4>
+      <p>Add a <code>GET /echo/:word</code> endpoint that returns the word back to the user along with its character count.</p>
+      <button class="reveal-btn" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</button>
+      <div class="reveal-content">
+        <pre style="font-size:13px; padding:10px 14px;"><span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/echo/:word'</span>, (req, res) => {
+  res.<span class="fn">json</span>({ word: req.params.word, length: req.params.word.length });
+});</pre>
+        <p style="font-size:14px; margin-top:6px;">Test: <code>curl http://localhost:3000/echo/express</code> → <code>{"word":"express","length":7}</code></p>
+      </div>
+    </div>
+    <div class="exercise-box">
+      <h4>Exercise 3: Status Quiz</h4>
+      <p>Create <code>GET /status/:code</code> that takes a number and returns its HTTP status description. Support at least 200 (OK), 404 (Not Found), 500 (Internal Server Error). Return an error if the code isn't recognized.</p>
+      <button class="reveal-btn" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">Show hint</button>
+      <div class="reveal-content">
+        <pre style="font-size:13px; padding:10px 14px;"><span class="kw">const</span> statusMap = { <span class="str">'200'</span>: <span class="str">'OK'</span>, <span class="str">'404'</span>: <span class="str">'Not Found'</span>, <span class="str">'500'</span>: <span class="str">'Internal Server Error'</span> };
+<span class="fn">app</span>.<span class="fn">get</span>(<span class="str">'/status/:code'</span>, (req, res) => {
+  <span class="kw">const</span> desc = statusMap[req.params.code];
+  <span class="kw">if</span> (!desc) res.<span class="fn">status</span>(<span class="num">404</span>).<span class="fn">json</span>({ error: <span class="str">'Unknown status code'</span> });
+  <span class="kw">else</span> res.<span class="fn">json</span>({ code: +req.params.code, description: desc });
+});</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 9: Summary -->
+<section class="slide section-bg" data-slide="9" aria-label="Summary">
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+    <h3 style="text-align:center;">Key Takeaways</h3>
+    <div style="display:flex; flex-direction:column; gap:20px; max-width:700px; margin:24px auto 0;">
+      <div style="background:var(--bg); border-radius:var(--radius); padding:18px 22px;">
+        <p style="font-size:20px; margin:0;"><span style="color:var(--accent); font-weight:700;">01</span>  Express turns Node.js into a web server in ~5 lines</p>
+      </div>
+      <div style="background:var(--bg); border-radius:var(--radius); padding:18px 22px;">
+        <p style="font-size:20px; margin:0;"><span style="color:var(--accent); font-weight:700;">02</span>  <code>app.get(path, handler)</code> is your bread and butter for GET routes</p>
+      </div>
+      <div style="background:var(--bg); border-radius:var(--radius); padding:18px 22px;">
+        <p style="font-size:20px; margin:0;"><span style="color:var(--accent); font-weight:700;">03</span>  <code>res.json()</code> sends JSON — always use it, not res.send()</p>
+      </div>
+      <div style="background:var(--bg); border-radius:var(--radius); padding:18px 22px;">
+        <p style="font-size:20px; margin:0;"><span style="color:var(--accent); font-weight:700;">04</span>  Route params (<code>:name</code>) let you build dynamic endpoints</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 10: Milestones & Next Steps -->
+<section class="slide" data-slide="10" aria-label="Next steps">
+  <h3>Next Up</h3>
+  <h2>What's Ahead</h2>
+  <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:16px;">
+    <p>You've built your first API. Here's how it fits into the bigger picture:</p>
+    <div style="display:flex; gap:14px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:160px; background:var(--bg-alt); border-radius:var(--radius); padding:16px; text-align:center;">
+        <p style="font-size:13px; color:var(--fg-dim); margin:0;">Project 1</p>
+        <p style="font-size:16px; margin:4px 0;">CLI Todo List</p>
+        <p style="font-size:12px; color:var(--fg-dim);">Week 3 ✅</p>
+      </div>
+      <div style="flex:1; min-width:160px; background:var(--bg-alt); border-radius:var(--radius); padding:16px; text-align:center;">
+        <p style="font-size:13px; color:var(--fg-dim); margin:0;">Project 2</p>
+        <p style="font-size:16px; margin:4px 0;">Bookmark Saver</p>
+        <p style="font-size:12px; color:var(--fg-dim);">Week 6 ✅</p>
+      </div>
+      <div style="flex:1; min-width:160px; background:var(--bg-alt); border-radius:var(--radius); padding:16px; text-align:center;">
+        <p style="font-size:13px; color:var(--fg-dim); margin:0;">Project 3</p>
+        <p style="font-size:16px; margin:4px 0;">Weather Dashboard</p>
+        <p style="font-size:12px; color:var(--accent);">Week 8 ←</p>
+      </div>
+      <div style="flex:1; min-width:160px; background:var(--bg-alt); border-radius:var(--radius); padding:16px; text-align:center;">
+        <p style="font-size:13px; color:var(--fg-dim); margin:0;">Project 5</p>
+        <p style="font-size:16px; margin:4px 0;">Full-Stack App</p>
+        <p style="font-size:12px; color:var(--fg-dim);">Week 12</p>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <p><strong>Tomorrow:</strong> POST endpoints & request body parsing — building APIs that <em>receive</em> data.</p>
+      <p class="small" style="color:var(--fg-dim);">Keep your <code>my-first-api</code> folder handy; you'll extend it throughout the week.</p>
+    </div>
+  </div>
+</section>
+
+<!-- progress bar -->
+<div id="progress-bar" style="width:0%;"></div>
+<div id="slide-counter">1 / 11</div>
+
+</div></div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const slides = Array.from(stage.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const progress = document.getElementById('progress-bar');
+  const counter = document.getElementById('slide-counter');
+
+  function showSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= total) index = total - 1;
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === index);
+      s.style.display = i === index ? 'flex' : 'none';
+    });
+    current = index;
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + total;
+    location.hash = '#' + current;
+  }
+
+  function next() { showSlide(current + 1); }
+  function prev() { showSlide(current - 1); }
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } else if (e.key === 'n' || e.key === 'N') {
+      toggleNotes();
+    }
+  });
+
+  // hash navigation
+  window.addEventListener('hashchange', function() {
+    const n = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < total) showSlide(n);
+  });
+
+  // restore from hash
+  const start = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(start) && start >= 0 && start < total) showSlide(start);
+  else showSlide(0);
+
+  // touch swipe support
+  let touchX = 0;
+  stage.addEventListener('touchstart', function(e) {
+    touchX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  stage.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchX;
+    if (Math.abs(dx) > 60) dx < 0 ? next() : prev();
+  }, { passive: true });
+
+  // speaker notes toggle
+  function toggleNotes() {
+    // no speaker notes on these slides
+  }
+
+  // reveal buttons (delegated)
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('reveal-btn')) {
+      const content = e.target.nextElementSibling;
+      if (content && content.classList.contains('reveal-content')) {
+        content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        e.target.textContent = content.style.display === 'block' ? 'Hide hint' : 'Show hint';
+      }
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
