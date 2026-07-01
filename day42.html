@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 42 — REST API Concepts in Practice</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --slide-bg: #161b22;
+  --accent: #00d4aa;
+  --accent-dim: #009e7f;
+  --accent-glow: rgba(0,212,170,0.15);
+  --fg: #e6edf3;
+  --fg-dim: #8b949e;
+  --fg-muted: #484f58;
+  --font: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', monospace;
+  --code-bg: #0d1117;
+  --code-border: #30363d;
+  --radius: 12px;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  font-family: var(--font);
+  color: var(--fg);
+  overflow: hidden;
+}
+.deck {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.slide {
+  width: var(--slide-w); height: var(--slide-h);
+  max-width: 95vw; max-height: 90vh;
+  background: var(--slide-bg);
+  border-radius: var(--radius);
+  border: 1px solid #21262d;
+  padding: 52px 64px;
+  position: absolute;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.slide.active { opacity: 1; pointer-events: auto; position: relative; }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--fg-muted); border-radius: 3px; }
+
+/* progress */
+.progress {
+  position: absolute;
+  bottom: 16px; right: 28px;
+  font-size: 13px;
+  color: var(--fg-dim);
+  font-family: var(--font);
+  letter-spacing: 0.5px;
+}
+.progress-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+/* slide header bar */
+.slide-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* typography */
+h1 {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+h1 .accent { color: var(--accent); }
+h2 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 20px;
+}
+h2 .accent { color: var(--accent); }
+h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.subtitle {
+  font-size: 20px;
+  color: var(--fg-dim);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.meta {
+  font-size: 15px;
+  color: var(--fg-muted);
+  margin-top: 12px;
+}
+p, li { font-size: 18px; line-height: 1.6; color: var(--fg-dim); }
+li { margin-bottom: 8px; }
+ul { padding-left: 24px; margin-bottom: 16px; }
+ol { padding-left: 24px; margin-bottom: 16px; }
+strong { color: var(--fg); font-weight: 600; }
+.code-inline {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--accent);
+}
+
+/* code blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0 16px 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg);
+}
+pre .kw { color: #ff7b72; }
+pre .fn { color: #d2a8ff; }
+pre .str { color: #a5d6ff; }
+pre .cm { color: #484f58; }
+pre .num { color: #79c0ff; }
+pre .prop { color: #79c0ff; }
+pre .op { color: #ffa657; }
+pre .comment { color: #8b949e; font-style: italic; }
+pre .highlight { background: rgba(0,212,170,0.12); display: inline-block; width: 100%; }
+
+/* cards */
+.card-grid {
+  display: grid;
+  gap: 16px;
+  margin: 12px 0;
+}
+.card-grid-2 { grid-template-columns: 1fr 1fr; }
+.card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.card {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 18px;
+}
+.card .card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.card p { font-size: 15px; }
+.time-badge {
+  display: inline-block;
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--accent-dim);
+  margin-bottom: 12px;
+}
+
+/* status code pills */
+.status-pill {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+.status-2xx { background: rgba(0,212,170,0.15); color: #00d4aa; }
+.status-3xx { background: rgba(121,192,255,0.15); color: #79c0ff; }
+.status-4xx { background: rgba(255,167,87,0.15); color: #ffa657; }
+.status-5xx { background: rgba(255,123,114,0.15); color: #ff7b72; }
+
+/* section break */
+.slide.section-break {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.section-break h2 {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.section-break p {
+  font-size: 22px;
+  color: var(--fg-dim);
+}
+
+/* title slide */
+.title-slide {
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+}
+.title-slide .day-badge {
+  display: inline-block;
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--accent-dim);
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+.title-slide h1 { font-size: 56px; margin-bottom: 12px; }
+.title-slide .subtitle { font-size: 24px; margin-bottom: 8px; }
+.title-slide .meta { font-size: 16px; margin-top: 24px; }
+
+/* exercise box */
+.exercise-box {
+  background: rgba(255,167,87,0.08);
+  border: 1px solid rgba(255,167,87,0.3);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+}
+.exercise-box .ex-title {
+  color: #ffa657;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.exercise-box .hint {
+  color: var(--fg-dim);
+  font-size: 14px;
+  font-style: italic;
+  margin-top: 6px;
+}
+
+/* tip box */
+.tip-box {
+  background: rgba(0,212,170,0.06);
+  border: 1px solid rgba(0,212,170,0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 15px;
+  color: var(--fg-dim);
+}
+.tip-box strong { color: var(--accent); }
+
+/* mobile */
+@media (max-width: 700px) {
+  .slide {
+    max-width: 100vw; max-height: 100vh;
+    border-radius: 0;
+    padding: 24px 20px;
+    width: 100vw; height: 100vh;
+  }
+  .title-slide h1 { font-size: 32px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 24px; }
+  p, li { font-size: 16px; }
+  pre { font-size: 13px; padding: 12px 14px; }
+  .card-grid-2, .card-grid-3 { grid-template-columns: 1fr; }
+  .progress { bottom: 8px; right: 14px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="slide-header"></div>
+  <div class="day-badge">WEEK 7 · PHASE III · DAY 42</div>
+  <h1>REST API Concepts<br><span class="accent">in Practice</span></h1>
+  <p class="subtitle">POST, DELETE, JSON, Status Codes &amp; HTML Forms</p>
+  <p class="meta">90-Day Co-op Prep Plan · 60 min</p>
+</section>
+
+<!-- SLIDE 1: Prerequisites -->
+<section class="slide" data-slide="1">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 2 min</span>
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>✅ You know what an <strong>API</strong> is — a waiter between frontend and backend</li>
+    <li>✅ You understand <strong>GET</strong> requests (fetching data from a server)</li>
+    <li>✅ You've seen <strong>fetch()</strong> in JavaScript</li>
+    <li>✅ Node.js + Express basics from <strong>Days 40–41</strong></li>
+    <li>✅ A local API server running (or ability to <code class="code-inline">npm init</code>)</li>
+  </ul>
+  <div class="tip-box">
+    <strong>Need a refresher?</strong> Day 41 covered Express.js + GET endpoints. Today we extend to POST and DELETE.
+  </div>
+</section>
+
+<!-- SLIDE 2: Learning Objectives -->
+<section class="slide" data-slide="2">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 1 min</span>
+  <h2>Learning Objectives</h2>
+  <p style="margin-bottom:20px;">By the end of today you will be able to:</p>
+  <ul>
+    <li><strong>🔧 Create</strong> a POST endpoint that accepts JSON and creates a resource</li>
+    <li><strong>🗑️ Implement</strong> a DELETE endpoint that removes a resource by ID</li>
+    <li><strong>📦 Handle</strong> JSON request bodies and send JSON responses</li>
+    <li><strong>🚦Use</strong> HTTP status codes correctly (201, 400, 404, 500)</li>
+    <li><strong>🔗 Connect</strong> an HTML form to an API using fetch()</li>
+  </ul>
+</section>
+
+<!-- SLIDE 3: Section Break — HTTP Methods Recap -->
+<section class="slide section-break" data-slide="3">
+  <div class="slide-header"></div>
+  <h2>HTTP Methods Recap</h2>
+  <p>GET → POST → DELETE — the three verbs of CRUD</p>
+</section>
+
+<!-- SLIDE 4: POST — Creating Resources -->
+<section class="slide" data-slide="4">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 8 min</span>
+  <h2>POST — Creating Resources</h2>
+  <p><strong>POST</strong> sends data <em>to</em> the server to create a new resource. Unlike GET, it has a <strong>body</strong>.</p>
+  <div class="card-grid card-grid-2" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">📤 Client → Server</div>
+      <p>POST /api/items<br>Content-Type: application/json<br>Body: <code class="code-inline">{ "name": "Buy milk" }</code></p>
+    </div>
+    <div class="card">
+      <div class="card-title">📥 Server → Client</div>
+      <p>Status: <span class="status-pill status-2xx">201 Created</span><br>Body: <code class="code-inline">{ "id": 3, "name": "Buy milk" }</code></p>
+    </div>
+  </div>
+  <p style="margin-top:8px;">The server <strong>parses</strong> the JSON body, creates the resource, and returns it with a <strong>201</strong> status.</p>
+</section>
+
+<!-- SLIDE 5: POST — Express Code -->
+<section class="slide" data-slide="5">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 8 min</span>
+  <h2>POST Endpoint — Express</h2>
+  <pre><span class="cm">// server.js — POST endpoint</span>
+<span class="kw">import</span> express <span class="kw">from</span> <span class="str">'express'</span>;
+<span class="kw">const</span> app = express();
+<span class="kw">const</span> PORT = 3000;
+
+app.<span class="fn">use</span>(express.<span class="fn">json</span>());  <span class="cm">// ← REQUIRED to parse JSON body</span>
+
+<span class="kw">let</span> items = [
+  { id: 1, name: <span class="str">"Learn REST APIs"</span> },
+  { id: 2, name: <span class="str">"Build a project"</span> }
+];
+<span class="kw">let</span> nextId = 3;
+
+app.<span class="fn">post</span>(<span class="str">'/api/items'</span>, (req, res) => {
+  <span class="kw">const</span> { name } = req.body;
+  <span class="kw">if</span> (!name) {
+    <span class="kw">return</span> res.<span class="fn">status</span>(400).<span class="fn">json</span>(
+      { error: <span class="str">"name is required"</span> }
+    );
+  }
+  <span class="kw">const</span> item = { id: nextId++, name };
+  items.<span class="fn">push</span>(item);
+  res.<span class="fn">status</span>(201).<span class="fn">json</span>(item);
+});
+</pre>
+  <div class="tip-box">
+    <strong>Key point:</strong> <code class="code-inline">express.json()</code> middleware is required before any route that reads <code class="code-inline">req.body</code>.
+  </div>
+</section>
+
+<!-- SLIDE 6: DELETE — Removing Resources -->
+<section class="slide" data-slide="6">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 8 min</span>
+  <h2>DELETE — Removing Resources</h2>
+  <p><strong>DELETE</strong> removes a resource. The resource ID goes in the <strong>URL</strong>, and the server responds with confirmation (or <strong>404</strong> if not found).</p>
+  <div class="card-grid card-grid-2" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">📤 Client → Server</div>
+      <p>DELETE /api/items/2<br>No body needed</p>
+    </div>
+    <div class="card">
+      <div class="card-title">📥 Server → Client</div>
+      <p><span class="status-pill status-2xx">200 OK</span> — deleted<br>or <span class="status-pill status-4xx">404 Not Found</span></p>
+    </div>
+  </div>
+  <pre><span class="cm">// DELETE /api/items/:id</span>
+app.<span class="fn">delete</span>(<span class="str">'/api/items/:id'</span>, (req, res) => {
+  <span class="kw">const</span> id = <span class="fn">Number</span>(req.params.id);
+  <span class="kw">const</span> idx = items.<span class="fn">findIndex</span>(i => i.id === id);
+
+  <span class="kw">if</span> (idx === -1) {
+    <span class="kw">return</span> res.<span class="fn">status</span>(404).<span class="fn">json</span>(
+      { error: <span class="str">"Item not found"</span> }
+    );
+  }
+
+  items.<span class="fn">splice</span>(idx, 1);
+  res.<span class="fn">json</span>({ message: <span class="str">"Deleted"</span> });
+});
+</pre>
+</section>
+
+<!-- SLIDE 7: HTTP Status Codes -->
+<section class="slide" data-slide="7">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 5 min</span>
+  <h2>HTTP Status Codes</h2>
+  <p style="margin-bottom:16px;">Every response includes a 3-digit code. Know these:</p>
+  <div class="card-grid card-grid-2">
+    <div class="card">
+      <div class="card-title"><span class="status-pill status-2xx">200 OK</span> Success</div>
+      <p>Standard success for GET, PUT, DELETE</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="status-pill status-2xx">201 Created</span></div>
+      <p>Resource was created (POST responses)</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="status-pill status-4xx">400 Bad Request</span></div>
+      <p>Missing or invalid data in the request</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="status-pill status-4xx">404 Not Found</span></div>
+      <p>Resource doesn't exist</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="status-pill status-4xx">409 Conflict</span></div>
+      <p>Duplicate or conflict (e.g. duplicate email)</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="status-pill status-5xx">500 Server Error</span></div>
+      <p>Something broke on the server (your bug!)</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 8: Section Break — Connect HTML Form -->
+<section class="slide section-break" data-slide="8">
+  <div class="slide-header"></div>
+  <h2>Connect Your HTML Form</h2>
+  <p>From browser to API — fetch() with method, body &amp; headers</p>
+</section>
+
+<!-- SLIDE 9: POST from HTML Form -->
+<section class="slide" data-slide="9">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 10 min</span>
+  <h2>POST from an HTML Form</h2>
+  <p style="margin-bottom:8px;">A simple form that sends JSON to your API:</p>
+  <pre><span class="cm">&lt;!-- index.html --&gt;</span>
+&lt;form id=<span class="str">"itemForm"</span>&gt;
+  &lt;input type=<span class="str">"text"</span> id=<span class="str">"nameInput"</span>
+         placeholder=<span class="str">"New item name"</span> required&gt;
+  &lt;button type=<span class="str">"submit"</span>&gt;Add Item&lt;/button&gt;
+&lt;/form&gt;
+&lt;ul id=<span class="str">"itemList"</span>&gt;&lt;/ul&gt;
+
+&lt;script&gt;
+  <span class="kw">const</span> form = document.<span class="fn">getElementById</span>(<span class="str">'itemForm'</span>);
+
+  form.<span class="fn">addEventListener</span>(<span class="str">'submit'</span>, <span class="kw">async</span> (e) => {
+    e.<span class="fn">preventDefault</span>();
+
+    <span class="kw">const</span> name = document.<span class="fn">getElementById</span>(<span class="str">'nameInput'</span>).value;
+
+    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/api/items'</span>, {
+      method: <span class="str">'POST'</span>,
+      headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+      body: <span class="fn">JSON</span>.<span class="fn">stringify</span>({ name })
+    });
+
+    <span class="kw">if</span> (res.<span class="fn">ok</span>) {
+      <span class="kw">const</span> item = <span class="kw">await</span> res.<span class="fn">json</span>();
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Created:"</span>, item);
+      <span class="cm">// → append item to the list</span>
+    }
+  });
+&lt;/script&gt;
+</pre>
+</section>
+
+<!-- SLIDE 10: DELETE from the Frontend -->
+<section class="slide" data-slide="10">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 8 min</span>
+  <h2>DELETE from the Frontend</h2>
+  <pre><span class="cm">// Delete button click handler</span>
+<span class="kw">async</span> <span class="kw">function</span> <span class="fn">deleteItem</span>(id) {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`/api/items/<span class="fn">${id}</span>`</span>, {
+    method: <span class="str">'DELETE'</span>
+  });
+
+  <span class="kw">if</span> (res.<span class="fn">ok</span>) {
+    <span class="cm">// Remove the item's DOM element</span>
+    document.<span class="fn">getElementById</span>(<span class="str">`item-<span class="fn">${id}</span>`</span>).<span class="fn">remove</span>();
+  } <span class="kw">else</span> {
+    <span class="kw">const</span> err = <span class="kw">await</span> res.<span class="fn">json</span>();
+    <span class="fn">alert</span>(err.error);
+  }
+}
+
+<span class="cm">// Example: render list items with delete buttons</span>
+<span class="kw">function</span> <span class="fn">renderItems</span>(items) {
+  <span class="kw">const</span> list = document.<span class="fn">getElementById</span>(<span class="str">'itemList'</span>);
+  list.<span class="fn">innerHTML</span> = <span class="str">''</span>;
+  <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> items) {
+    <span class="kw">const</span> li = document.<span class="fn">createElement</span>(<span class="str">'li'</span>);
+    li.id = <span class="str">`item-<span class="fn">${item.id}</span>`</span>;
+    li.<span class="fn">textContent</span> = item.name;
+    <span class="kw">const</span> btn = document.<span class="fn">createElement</span>(<span class="str">'button'</span>);
+    btn.<span class="fn">textContent</span> = <span class="str">'✕'</span>;
+    btn.<span class="fn">onclick</span> = () => <span class="fn">deleteItem</span>(item.id);
+    li.<span class="fn">appendChild</span>(btn);
+    list.<span class="fn">appendChild</span>(li);
+  }
+}
+</pre>
+</section>
+
+<!-- SLIDE 11: JSON Request / Response Deep Dive -->
+<section class="slide" data-slide="11">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 5 min</span>
+  <h2>JSON Request / Response</h2>
+  <p>Three things to always check when debugging:</p>
+  <div class="card-grid card-grid-3" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">1️⃣ Headers</div>
+      <p><code class="code-inline">Content-Type: application/json</code><br>must be set on <strong>every</strong> request with a body</p>
+    </div>
+    <div class="card">
+      <div class="card-title">2️⃣ Stringify</div>
+      <p><code class="code-inline">JSON.stringify()</code> converts JS objects to JSON string for the wire</p>
+    </div>
+    <div class="card">
+      <div class="card-title">3️⃣ Parse</div>
+      <p>Server: <code class="code-inline">express.json()</code><br>Client: <code class="code-inline">res.json()</code> to parse the response</p>
+    </div>
+  </div>
+  <div class="tip-box">
+    <strong>Pro tip:</strong> Open DevTools → Network tab → click a request to see the raw JSON. This is your best debugging tool!
+  </div>
+</section>
+
+<!-- SLIDE 12: Walkthrough — Full CRUD Flow -->
+<section class="slide" data-slide="12">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 8 min</span>
+  <h2>Walkthrough: Full CRUD Flow</h2>
+  <ol>
+    <li><strong>Start your server:</strong> <code class="code-inline">node server.js</code> → listening on port 3000</li>
+    <li><strong>GET all items</strong> — <code class="code-inline">fetch('/api/items')</code> to see the initial array</li>
+    <li><strong>POST a new item</strong> — send <code class="code-inline">{ "name": "Practice daily" }</code></li>
+    <li><strong>Verify</strong> — GET /api/items again, confirm it's now in the list</li>
+    <li><strong>DELETE an item</strong> — send DELETE with its ID</li>
+    <li><strong>Verify again</strong> — GET the list, confirm it's removed</li>
+    <li><strong>Try errors</strong> — DELETE a non-existent ID → get 404</li>
+  </ol>
+  <div class="tip-box">
+    <strong>Expected output:</strong> Each step returns a JSON response. Use <code class="code-inline">console.log()</code> to see every response in DevTools.
+  </div>
+</section>
+
+<!-- SLIDE 13: Exercise -->
+<section class="slide" data-slide="13">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 15 min</span>
+  <h2>Practice Exercise</h2>
+  <div class="exercise-box">
+    <div class="ex-title">📝 Exercise: Bookmark API</div>
+    <p>Build a mini bookmark manager API (add + delete bookmarks):</p>
+    <ol style="margin-top:8px;">
+      <li>Create a <strong>POST /api/bookmarks</strong> endpoint that accepts <code class="code-inline">{ "title", "url" }</code></li>
+      <li>Create a <strong>DELETE /api/bookmarks/:id</strong> endpoint</li>
+      <li>Add validation: both <code class="code-inline">title</code> and <code class="code-inline">url</code> are required</li>
+      <li>Return <strong>201</strong> on create, <strong>400</strong> on missing fields, <strong>404</strong> on delete for non-existent ID</li>
+    </ol>
+    <p class="hint">💡 Hint: Start from the Day 41 Express template. Use <code class="code-inline">req.body</code> and <code class="code-inline">req.params.id</code>.</p>
+  </div>
+  <p style="margin-top:8px;"><strong>Bonus:</strong> Build a simple HTML page with a form to add bookmarks and a list with delete buttons — all connected to your API!</p>
+</section>
+
+<!-- SLIDE 14: Common Mistakes -->
+<section class="slide" data-slide="14">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 3 min</span>
+  <h2>Common Pitfalls</h2>
+  <div class="card-grid card-grid-2" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">❌ <code class="code-inline">req.body</code> is undefined</div>
+      <p>Forgot <code class="code-inline">express.json()</code> middleware. Add it before routes!</p>
+    </div>
+    <div class="card">
+      <div class="card-title">❌ Wrong Content-Type</div>
+      <p>Client must set <code class="code-inline">'Content-Type': 'application/json'</code> in fetch headers.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">❌ Using GET for mutations</div>
+      <p>Use POST for create, DELETE for delete. GET should be read-only.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">❌ Not checking HTTP status</div>
+      <p>Always check <code class="code-inline">res.ok</code> or <code class="code-inline">res.status</code> — don't assume success!</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 15: Milestones Check-in -->
+<section class="slide" data-slide="15">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 2 min</span>
+  <h2>Project Milestones</h2>
+  <div class="card-grid" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">✅ Complete</div>
+      <p><strong>Project 1</strong> — CLI Todo List (after Week 3)<br>
+      <strong>Project 2</strong> — Bookmark Saver (after Week 6)</p>
+    </div>
+    <div class="card" style="border-color: rgba(0,212,170,0.3);">
+      <div class="card-title">⬆️ Next Up</div>
+      <p><strong>Project 3</strong> — Weather Dashboard (after Week 8)<br>
+      <strong>Project 5</strong> — Full-Stack App (after Week 12)</p>
+    </div>
+  </div>
+  <p style="margin-top:12px;">Today's POST/DELETE skills are <strong>essential</strong> for Project 3 — you'll build an API that fetches live weather data!</p>
+</section>
+
+<!-- SLIDE 16: Summary -->
+<section class="slide" data-slide="16">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 2 min</span>
+  <h2>Key Takeaways</h2>
+  <ul>
+    <li><strong>POST</strong> creates resources — send JSON body, get <span class="status-pill status-2xx">201</span> back</li>
+    <li><strong>DELETE</strong> removes resources — target by ID in URL, get <span class="status-pill status-2xx">200</span> or <span class="status-pill status-4xx">404</span></li>
+    <li><strong>express.json()</strong> middleware is non-negotiable for JSON APIs</li>
+    <li>Each <strong>status code</strong> tells a story — use them deliberately</li>
+    <li><strong>fetch()</strong> with <code class="code-inline">method</code>, <code class="code-inline">headers</code>, <code class="code-inline">body</code> connects any HTML form to your API</li>
+  </ul>
+</section>
+
+<!-- SLIDE 17: Next Steps / Closing -->
+<section class="slide" data-slide="17">
+  <div class="slide-header"></div>
+  <span class="time-badge">⏱ 1 min</span>
+  <h2>Next Steps</h2>
+  <ul>
+    <li><strong>Day 43:</strong> Middleware &amp; error handling — make your API robust</li>
+    <li><strong>Day 44:</strong> Query parameters &amp; filtering</li>
+    <li><strong>Day 45:</strong> Project 2 review — polish Bookmark Saver</li>
+    <li><strong>Practice:</strong> Build the Bookmark API exercise before Day 43</li>
+    <li><strong>Read:</strong> MDN docs on <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status" target="_blank" style="color:var(--accent);">HTTP status codes</a></li>
+  </ul>
+  <p style="margin-top:20px; color:var(--fg-muted); font-size:16px;">
+    Day 42 of 90 · Keep shipping 🚀
+  </p>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const deck = document.getElementById('deck');
+  const slides = deck.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    window.location.hash = '#' + (idx + 1);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    slides.forEach((s, i) => {
+      let bar = s.querySelector('.progress-bar');
+      let label = s.querySelector('.progress');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'progress-bar';
+        s.appendChild(bar);
+      }
+      if (!label) {
+        label = document.createElement('div');
+        label.className = 'progress';
+        s.appendChild(label);
+      }
+      bar.style.width = ((i + 1) / total * 100) + '%';
+      label.textContent = (i + 1) + ' / ' + total;
+    });
+  }
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n') {
+      const aside = slides[current].querySelector('aside');
+      if (aside) aside.style.display = aside.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+
+  // touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 60) {
+      if (dx < 0) next();
+      else prev();
+    }
+  });
+
+  // restore from hash
+  const hash = parseInt(window.location.hash.replace('#',''), 10);
+  if (hash && hash >= 1 && hash <= total) {
+    showSlide(hash - 1);
+  } else {
+    showSlide(0);
+  }
+})();
+</script>
+</body>
+</html>
