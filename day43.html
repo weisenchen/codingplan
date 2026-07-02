@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 43: React Components &amp; JSX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --fg: #e6edf3;
+  --fg2: #8b949e;
+  --accent: #58a6ff;
+  --react-blue: #61dafb;
+  --react-dark: #20232a;
+  --green: #3fb950;
+  --orange: #d29922;
+  --purple: #bc8cff;
+  --border: #30363d;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #000;
+  font-family: var(--font-sans);
+  color: var(--fg);
+  overflow: hidden;
+}
+.deck {
+  position: relative;
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: var(--slide-w); height: var(--slide-h);
+  max-width: 100vw; max-height: 100vh;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 48px 64px;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 0 0 1px var(--border);
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1; pointer-events: auto;
+  position: relative;
+}
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Progress */
+.progress {
+  position: absolute;
+  bottom: 16px; right: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg2);
+  z-index: 10;
+}
+.progress-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--react-blue);
+  transition: width 0.4s ease;
+  z-index: 10;
+}
+
+/* Typography */
+h1 { font-size: 48px; font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+h2 { font-size: 36px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 16px; }
+h3 { font-size: 28px; font-weight: 600; margin-bottom: 12px; }
+h4 { font-size: 22px; font-weight: 600; margin-bottom: 8px; color: var(--react-blue); }
+p, li { font-size: 20px; line-height: 1.5; color: var(--fg2); }
+ul, ol { padding-left: 24px; }
+li { margin-bottom: 8px; }
+strong { color: var(--fg); font-weight: 600; }
+code {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  background: var(--bg3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--react-blue);
+}
+pre {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+.highlight { background: rgba(97,218,251,0.12); border-left: 3px solid var(--react-blue); padding-left: 16px; }
+.tag { color: var(--react-blue); }
+.prop { color: var(--orange); }
+.str { color: var(--green); }
+.comment { color: var(--fg2); font-style: italic; }
+
+/* Title slide */
+.title-slide {
+  justify-content: center; align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, var(--react-dark) 0%, var(--bg) 100%);
+}
+.title-slide h1 {
+  font-size: 56px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--react-blue), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.title-slide .subtitle {
+  font-size: 22px;
+  color: var(--fg2);
+  margin-bottom: 24px;
+}
+.title-slide .meta {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--fg2);
+}
+.title-slide .phase-badge {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 6px 20px;
+  border: 1px solid var(--react-blue);
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--react-blue);
+  font-family: var(--font-mono);
+  background: rgba(97,218,251,0.08);
+}
+
+/* Section break */
+.section-break {
+  justify-content: center; align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #1a2332 100%);
+}
+.section-break h2 {
+  font-size: 42px;
+  margin-bottom: 8px;
+}
+.section-break .section-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* Code slide */
+.code-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.code-header .lang-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: var(--react-blue);
+  color: var(--react-dark);
+  font-weight: 600;
+}
+
+/* Two-column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+.two-col .col { display: flex; flex-direction: column; }
+
+/* Box card */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 8px 0;
+}
+.card.accent { border-color: var(--react-blue); background: rgba(97,218,251,0.06); }
+
+/* Step list for walkthrough */
+.step-list {
+  counter-reset: step;
+  list-style: none;
+  padding: 0;
+}
+.step-list li {
+  counter-increment: step;
+  padding: 10px 0 10px 44px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.step-list li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0; top: 10px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--react-blue);
+  color: var(--react-dark);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Output box */
+.output-box {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--green);
+  margin: 8px 0;
+}
+
+/* Hint reveal */
+.hint-toggle {
+  cursor: pointer;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.hint-content { display: none; margin-top: 8px; }
+.hint-content.visible { display: block; }
+
+/* Exercise */
+.exercise-box {
+  border: 2px dashed var(--orange);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 12px 0;
+  background: rgba(210,153,34,0.06);
+}
+.exercise-box h4 { color: var(--orange); }
+
+/* Checkbox list */
+.check-list { list-style: none; padding: 0; }
+.check-list li {
+  padding: 6px 0 6px 32px;
+  position: relative;
+}
+.check-list li::before {
+  content: '☐';
+  position: absolute;
+  left: 0;
+  color: var(--fg2);
+  font-size: 20px;
+}
+
+/* Project milestone */
+.milestone {
+  background: linear-gradient(135deg, rgba(61,167,79,0.1), rgba(97,218,251,0.05));
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 12px 0;
+}
+.milestone h4 { color: var(--green); }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; border-radius: 0; width: 100%; height: 100%; max-width: none; max-height: none; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 26px; }
+  h3 { font-size: 22px; }
+  p, li { font-size: 16px; }
+  code { font-size: 14px; }
+  pre { padding: 12px; }
+  pre code { font-size: 13px; }
+  .two-col { grid-template-columns: 1fr; gap: 12px; }
+  .title-slide h1 { font-size: 36px; }
+  .step-list li { padding-left: 38px; }
+  .step-list li::before { width: 26px; height: 26px; font-size: 12px; }
+}
+
+/* Print */
+@media print {
+  body { background: #fff; }
+  .slide { opacity: 1 !important; position: relative !important; page-break-after: always; width: 100%; height: auto; min-height: 100vh; border-radius: 0; box-shadow: none; background: #fff; color: #000; }
+  .slide.active { position: relative; }
+  .progress, .progress-bar { display: none; }
+  p, li { color: #333; }
+  strong { color: #000; }
+  .title-slide h1 { -webkit-text-fill-color: #61dafb; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+    <div style="font-size:64px;margin-bottom:16px;">⚛️</div>
+    <h1>React: Components &amp; JSX</h1>
+    <div class="subtitle">Build your first React component &mdash; no prior framework experience needed</div>
+    <div style="margin-top:24px;">
+      <span class="phase-badge">Phase III &middot; Week 8 &middot; Day 43</span>
+    </div>
+    <div class="meta" style="margin-top:32px;">
+      90-Day Co-op Prep Plan &middot; July 2, 2026
+    </div>
+  </div>
+  <div class="progress">0 / 12</div>
+  <div class="progress-bar" style="width:0%"></div>
+  <aside style="display:none;">Welcome to React! Today we cover the absolute fundamentals: what React is, how to create your first component, JSX syntax, and passing data via props.</aside>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>📋 Today's Plan</h2>
+  <p style="margin-bottom:16px;">A 60-minute introduction to React fundamentals.</p>
+  <div class="two-col">
+    <div class="col">
+      <div class="card">
+        <h4>🧠 Learn (20 min)</h4>
+        <ul>
+          <li>What is React?</li>
+          <li>JSX syntax &amp; rules</li>
+          <li>Props &mdash; passing data to components</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h4>✏️ Practice (25 min)</h4>
+        <ul>
+          <li>Create your first component</li>
+          <li>Build a reusable card with props</li>
+          <li>Exercise: Profile card + product list</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card accent">
+        <h4>🎯 Learning Objectives</h4>
+        <ul>
+          <li>Explain what React is and why its component model matters</li>
+          <li>Write a functional React component</li>
+          <li>Use JSX to describe UI structure</li>
+          <li>Pass data with <code>props</code></li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h4>📦 Prerequisites</h4>
+        <ul class="check-list">
+          <li>Node.js 18+ installed</li>
+          <li>Basic JavaScript (functions, objects, arrow syntax)</li>
+          <li>Familiarity with HTML tags &amp; attributes</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="progress">1 / 12</div>
+  <div class="progress-bar" style="width:8.3%"></div>
+  <aside style="display:none;">Today is your first day of React. We'll cover just enough to be dangerous: components, JSX, and props. No state, no hooks, no routing — that comes in the next few days.</aside>
+</section>
+
+<!-- SLIDE 2: What is React? -->
+<section class="slide" data-slide="2">
+  <h2>🤔 What is React?</h2>
+  <div class="two-col">
+    <div class="col">
+      <p style="margin-bottom:12px;">React is a <strong>JavaScript library</strong> for building user interfaces from <strong>reusable pieces called <em>components</em></strong>.</p>
+      <div class="card">
+        <h4>Key Ideas</h4>
+        <ul>
+          <li><strong>Declarative</strong> — describe <em>what</em> you want, not <em>how</em></li>
+          <li><strong>Component-based</strong> — encapsulate HTML, CSS, and logic together</li>
+          <li><strong>Reactive</strong> — when data changes, the UI updates automatically</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h4>Analogy: 🧱 LEGO</h4>
+        <p>Each component is a LEGO brick. Bricks are <strong>reusable</strong>, <strong>composable</strong> (stack on each other), and <strong>self-contained</strong>. A page is built from many bricks, not one giant piece of plastic.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card accent">
+        <h4>React vs. Plain JS</h4>
+        <p style="font-size:16px;margin-bottom:8px;"><strong>Plain JS:</strong> manually create elements, set attributes, append to DOM</p>
+        <pre style="font-size:13px;"><code><span class="comment">// Create a button with vanilla JS</span>
+const btn = document.<span style="color:var(--purple)">createElement</span>('button');
+btn.<span style="color:var(--orange)">textContent</span> = 'Click me';
+btn.<span style="color:var(--orange)">className</span> = 'btn-primary';
+btn.<span style="color:var(--orange)">onclick</span> = () => alert('Hi!');
+document.body.<span style="color:var(--purple)">appendChild</span>(btn);</code></pre>
+        <p style="font-size:16px;margin:8px 0;"><strong>React:</strong> describe what you want</p>
+        <pre style="font-size:13px;"><code><span class="comment">// Same button in React</span>
+function MyButton() {
+  return (
+    &lt;<span class="tag">button</span> <span class="prop">className</span>="btn-primary"
+            <span class="prop">onClick</span>={() => alert('Hi!')}&gt;
+      Click me
+    &lt;/<span class="tag">button</span>&gt;
+  );
+}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="progress">2 / 12</div>
+  <div class="progress-bar" style="width:16.7%"></div>
+  <aside style="display:none;">React removes the manual DOM manipulation. You describe the UI you want and React figures out how to update the real DOM efficiently.</aside>
+</section>
+
+<!-- SLIDE 3: Setup -->
+<section class="slide section-break" data-slide="3">
+  <div class="section-icon">⚙️</div>
+  <h2>Setting Up a React Project</h2>
+  <p style="color:var(--fg2);font-size:22px;">Vite + React in 3 commands</p>
+  <div class="progress">3 / 12</div>
+  <div class="progress-bar" style="width:25%"></div>
+  <aside style="display:none;">We'll use Vite (a modern build tool) to scaffold a React project. It's fast, simple, and the default choice for new React projects.</aside>
+</section>
+
+<!-- SLIDE 4: Walkthrough — First Component -->
+<section class="slide" data-slide="4">
+  <h2>🚀 Your First Component</h2>
+  <p style="margin-bottom:12px;">Let's create a new React project and write your first component.</p>
+  <div class="two-col">
+    <div class="col">
+      <ol class="step-list">
+        <li><strong>Scaffold a project:</strong><br><code>npm create vite@latest my-app -- --template react</code></li>
+        <li><strong>Install deps &amp; start:</strong><br><code>cd my-app &amp;&amp; npm install &amp;&amp; npm run dev</code></li>
+        <li><strong>Open</strong> <code>src/App.jsx</code> &mdash; that's your main component</li>
+        <li><strong>Replace</strong> everything with a greeting:</li>
+      </ol>
+      <pre><code><span class="comment">// src/App.jsx</span>
+function App() {
+  return (
+    &lt;<span class="tag">div</span>&gt;
+      &lt;<span class="tag">h1</span>&gt;Hello, React!&lt;/<span class="tag">h1</span>&gt;
+      &lt;<span class="tag">p</span>&gt;My first component 🎉&lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}
+
+export default App;</code></pre>
+    </div>
+    <div class="col">
+      <div class="card accent">
+        <h4>✅ Expected Output</h4>
+        <div class="output-box">&gt; VITE v6.x  ready in 200ms<br>&gt; Local:   http://localhost:5173/</div>
+        <p style="font-size:16px;margin-top:8px;">Open the browser — you should see a page with:</p>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px;font-size:18px;">
+          <div style="font-size:24px;font-weight:700;">Hello, React!</div>
+          <div style="color:var(--fg2);">My first component 🎉</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <h4>💡 Key Insight</h4>
+        <p style="font-size:16px;">A React component is just a <strong>JavaScript function</strong> that returns JSX. That's the whole idea. The function name is capitalized by convention (<code>App</code>, not <code>app</code>).</p>
+      </div>
+    </div>
+  </div>
+  <div class="progress">4 / 12</div>
+  <div class="progress-bar" style="width:33.3%"></div>
+  <aside style="display:none;">Make sure they actually run the commands — scafolding a Vite project and seeing it run in the browser is a huge confidence boost.</aside>
+</section>
+
+<!-- SLIDE 5: JSX Syntax -->
+<section class="slide" data-slide="5">
+  <h2>📝 JSX: JavaScript + XML</h2>
+  <div class="two-col">
+    <div class="col">
+      <p style="margin-bottom:8px;">JSX looks like HTML but runs inside JavaScript. Every JSX expression produces a React element.</p>
+      <div class="card">
+        <h4>📏 JSX Rules</h4>
+        <ul>
+          <li><strong>One root element</strong> — wrap siblings in a <code>&lt;div&gt;</code> or <code>&lt;&gt;...&lt;/&gt;</code> (Fragment)</li>
+          <li><strong>Close every tag</strong> — <code>&lt;br /&gt;</code>, <code>&lt;img /&gt;</code></li>
+          <li><strong><code>className</code></strong> instead of <code>class</code> (JS reserved word)</li>
+          <li><strong>Curly braces</strong> <code>{ }</code> embed JavaScript expressions</li>
+          <li><strong>Comments:</strong> <code>{/* comment */}</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <pre><code><span class="comment">// Simple JSX — one root, embedded expression</span>
+function Greeting() {
+  const name = "Alice";
+  return (
+    &lt;<span class="tag">div</span> <span class="prop">className</span>="greeting"&gt;
+      &lt;<span class="tag">h1</span>&gt;Hello, {name}!&lt;/<span class="tag">h1</span>&gt;
+      &lt;<span class="tag">p</span>&gt;2 + 2 = {2 + 2}&lt;/<span class="tag">p</span>&gt;
+      &lt;<span class="tag">img</span>
+        <span class="prop">src</span>={user.avatar}
+        <span class="prop">alt</span>="Avatar"
+        <span class="prop">className</span>="avatar"
+      /&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}</code></pre>
+      <p style="font-size:16px;margin-top:8px;">Anything inside <code>{ }</code> is evaluated as JavaScript — variables, arithmetic, function calls, ternary expressions.</p>
+    </div>
+  </div>
+  <div class="progress">5 / 12</div>
+  <div class="progress-bar" style="width:41.7%"></div>
+  <aside style="display:none;">JSX is the syntax that makes React feel like writing HTML. Emphasize the curly-brace escape hatch into JS — it's the most common 'aha' moment.</aside>
+</section>
+
+<!-- SLIDE 6: JSX gotchas -->
+<section class="slide" data-slide="6">
+  <h2>⚠️ JSX Gotchas to Know</h2>
+  <div class="two-col">
+    <div class="col">
+      <div class="card">
+        <h4>❌ HTML attribute names</h4>
+        <p style="font-size:16px;">JSX uses camelCase for most attributes:</p>
+        <pre><code><span class="comment">// HTML:</span>
+&lt;input onclick=<span class="str">"submit()"</span> maxlength=<span class="str">"10"</span> tabindex=<span class="str">"0"</span>&gt;
+
+<span class="comment">// JSX:</span>
+&lt;<span class="tag">input</span>
+  <span class="prop">onClick</span>={submit}
+  <span class="prop">maxLength</span>={10}
+  <span class="prop">tabIndex</span>={0}
+/&gt;</code></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h4>❌ Inline styles</h4>
+        <p style="font-size:16px;">Inline styles use a <strong>camelCase object</strong>, not a string:</p>
+        <pre><code><span class="comment">// HTML:</span>
+&lt;div style=<span class="str">"background-color: blue; font-size: 20px"</span>&gt;
+
+<span class="comment">// JSX:</span>
+&lt;<span class="tag">div</span> <span class="prop">style</span>={{
+  <span class="prop">backgroundColor</span>: 'blue',
+  <span class="prop">fontSize</span>: 20
+}}&gt;</code></pre>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <h4>❌ Conditional rendering</h4>
+        <pre><code><span class="comment">// Ternary works inside JSX:</span>
+{isLoggedIn
+  ? &lt;<span class="tag">Profile</span> /&gt;
+  : &lt;<span class="tag">LoginButton</span> /&gt;
+}
+
+<span class="comment">// && for "show if true":</span>
+{unreadCount &gt; 0 &amp;&amp;
+  &lt;<span class="tag">span</span>&gt;{unreadCount} new&lt;/<span class="tag">span</span>&gt;
+}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="progress">6 / 12</div>
+  <div class="progress-bar" style="width:50%"></div>
+  <aside style="display:none;">These three gotchas (camelCase attributes, style objects, conditional rendering) are where beginners trip up most. Cover them clearly.</aside>
+</section>
+
+<!-- SLIDE 7: Props Concept -->
+<section class="slide" data-slide="7">
+  <h2>🎁 Props: Passing Data to Components</h2>
+  <div class="two-col">
+    <div class="col">
+      <p style="margin-bottom:12px;">Props (short for "properties") let you pass data from a parent component to a child component &mdash; like <strong>function arguments for your UI</strong>.</p>
+      <div class="card">
+        <h4>How it works</h4>
+        <ol>
+          <li>Parent passes props as <strong>HTML-like attributes</strong></li>
+          <li>Child receives them as a <strong>single object</strong> (usually destructured)</li>
+          <li>Props are <strong>read-only</strong> — the child never modifies them</li>
+        </ol>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h4>Analogy: 📦 Shipping label</h4>
+        <p style="font-size:16px;">A parent component is like a sender putting a package together. The <strong>props</strong> are the shipping label — address, contents, handling instructions. The child component receives the package and uses the label info <em>as-is</em>.</p>
+      </div>
+    </div>
+    <div class="col">
+      <pre><code><span class="comment">// Parent passes props:</span>
+function App() {
+  return (
+    &lt;<span class="tag">UserCard</span>
+      <span class="prop">name</span>="Alice"
+      <span class="prop">age</span>={25}
+      <span class="prop">isOnline</span>={true}
+    /&gt;
+  );
+}
+
+<span class="comment">// Child receives props (destructured):</span>
+function UserCard({ name, age, isOnline }) {
+  return (
+    &lt;<span class="tag">div</span> <span class="prop">className</span>="card"&gt;
+      &lt;<span class="tag">h3</span>&gt;{name}&lt;/<span class="tag">h3</span>&gt;
+      &lt;<span class="tag">p</span>&gt;Age: {age}&lt;/<span class="tag">p</span>&gt;
+      &lt;<span class="tag">span</span>&gt;
+        {isOnline ? '🟢 Online' : '🔴 Offline'}
+      &lt;/<span class="tag">span</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}</code></pre>
+    </div>
+  </div>
+  <div class="progress">7 / 12</div>
+  <div class="progress-bar" style="width:58.3%"></div>
+  <aside style="display:none;">Props are the fundamental communication channel in React. Emphasize that props are immutable — the child should never assign to them.</aside>
+</section>
+
+<!-- SLIDE 8: Props in Action -->
+<section class="slide" data-slide="8">
+  <h2>🛠️ Props in Practice</h2>
+  <div class="two-col">
+    <div class="col">
+      <p style="margin-bottom:8px;">Let's build a reusable <code>ProductCard</code> component that renders product info from props.</p>
+      <pre><code><span class="comment">// ProductCard.jsx</span>
+function ProductCard({ title, price, inStock }) {
+  return (
+    &lt;<span class="tag">div</span> <span class="prop">className</span>="product"&gt;
+      &lt;<span class="tag">h3</span>&gt;{title}&lt;/<span class="tag">h3</span>&gt;
+      &lt;<span class="tag">p</span>&gt;${price.toFixed(2)}&lt;/<span class="tag">p</span>&gt;
+      &lt;<span class="tag">p</span>&gt;
+        {inStock
+          ? '✅ In stock'
+          : '❌ Out of stock'}
+      &lt;/<span class="tag">p</span>&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}
+
+<span class="comment">// App.jsx — using it:</span>
+function App() {
+  return (
+    &lt;<span class="tag">div</span>&gt;
+      &lt;<span class="tag">ProductCard</span>
+        <span class="prop">title</span>="Wireless Mouse"
+        <span class="prop">price</span>={29.99}
+        <span class="prop">inStock</span>={true}
+      /&gt;
+      &lt;<span class="tag">ProductCard</span>
+        <span class="prop">title</span>="Mechanical Keyboard"
+        <span class="prop">price</span>={89.99}
+        <span class="prop">inStock</span>={false}
+      /&gt;
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}</code></pre>
+      <p style="font-size:16px;margin-top:8px;">Same component, different data = two different cards.</p>
+    </div>
+    <div class="col">
+      <div class="card accent">
+        <h4>🔁 Reusability in Action</h4>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;">
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px;">
+            <div style="font-weight:700;font-size:18px;">Wireless Mouse</div>
+            <div style="color:var(--green);font-family:var(--font-mono);font-size:14px;">$29.99</div>
+            <div style="color:var(--green);font-size:14px;">✅ In stock</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px;">
+            <div style="font-weight:700;font-size:18px;">Mechanical Keyboard</div>
+            <div style="color:var(--green);font-family:var(--font-mono);font-size:14px;">$89.99</div>
+            <div style="color:var(--orange);font-size:14px;">❌ Out of stock</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <h4>💡 Default props pattern</h4>
+        <pre style="font-size:13px;"><code>function Greeting({ name = "Guest" }) {
+  return &lt;<span class="tag">h1</span>&gt;Hi, {name}!&lt;/<span class="tag">h1</span>&gt;;
+}
+<span class="comment">// Default: "Hi, Guest!"</span>
+<span class="comment">// Override: "Hi, Bob!"</span></code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="progress">8 / 12</div>
+  <div class="progress-bar" style="width:66.7%"></div>
+  <aside style="display:none;">Demonstrate that props make a component a template — one component, infinite instances, each with its own data.</aside>
+</section>
+
+<!-- SLIDE 9: Exercise 1 -->
+<section class="slide" data-slide="9">
+  <h2>✏️ Exercise 1: Profile Card</h2>
+  <div class="two-col">
+    <div class="col">
+      <div class="exercise-box">
+        <h4>Task</h4>
+        <p style="font-size:17px;">Create a <code>ProfileCard</code> component that accepts <code>name</code>, <code>role</code>, and <code>avatarUrl</code> props. Render it twice with different data.</p>
+        <ul style="margin-top:8px;">
+          <li>Show the avatar as an <code>&lt;img&gt;</code></li>
+          <li>Display the name in a heading</li>
+          <li>Show the role below the name</li>
+          <li>Use a fallback avatar if <code>avatarUrl</code> is not provided</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <h4>💡 Hints</h4>
+        <p style="font-size:16px;" class="hint-toggle" onclick="this.nextElementSibling.classList.toggle('visible')">Click to reveal →</p>
+        <div class="hint-content">
+          <ul>
+            <li>Default value: <code>avatarUrl = "https://i.pravatar.cc/100"</code></li>
+            <li>Use the <code>alt</code> attribute on <code>&lt;img&gt;</code></li>
+            <li>Style with a <code>className</code> &mdash; remember to use <em>camelCase</em> for CSS properties in style objects</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card accent">
+        <h4>✅ Expected Output</h4>
+        <div style="display:flex;gap:16px;">
+          <div style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+            <div style="width:60px;height:60px;border-radius:50%;background:var(--react-blue);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--react-dark);font-weight:700;">A</div>
+            <div style="font-weight:700;">Alice Chen</div>
+            <div style="color:var(--fg2);font-size:14px;">Software Engineer</div>
+          </div>
+          <div style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+            <div style="width:60px;height:60px;border-radius:50%;background:var(--purple);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;font-weight:700;">B</div>
+            <div style="font-weight:700;">Bob Martinez</div>
+            <div style="color:var(--fg2);font-size:14px;">Designer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress">9 / 12</div>
+  <div class="progress-bar" style="width:75%"></div>
+  <aside style="display:none;">This exercise reinforces the 'same component, different data' pattern and introduces default prop values.</aside>
+</section>
+
+<!-- SLIDE 10: Exercise 2 -->
+<section class="slide" data-slide="10">
+  <h2>✏️ Exercise 2: Product Listing</h2>
+  <div class="two-col">
+    <div class="col">
+      <div class="exercise-box">
+        <h4>Task</h4>
+        <p style="font-size:17px;">You have a product array. Render a list of <code>ProductCard</code> components using <code>Array.map()</code> inside JSX.</p>
+      </div>
+      <pre style="font-size:14px;"><code><span class="comment">// Data (put this in App.jsx):</span>
+const products = [
+  { id: 1, title: "USB-C Hub",
+    price: 34.99, inStock: true },
+  { id: 2, title: "Webcam HD",
+    price: 79.99, inStock: true },
+  { id: 3, title: "Monitor Arm",
+    price: 129.99, inStock: false },
+];
+
+<span class="comment">// Use .map() inside JSX:</span>
+function App() {
+  return (
+    &lt;<span class="tag">div</span> <span class="prop">className</span>="product-list"&gt;
+      {products.<span style="color:var(--purple)">map</span>(product =&gt;
+        &lt;<span class="tag">ProductCard</span>
+          <span class="prop">key</span>={product.id}
+          <span class="prop">title</span>={product.title}
+          <span class="prop">price</span>={product.price}
+          <span class="prop">inStock</span>={product.inStock}
+        /&gt;
+      )}
+    &lt;/<span class="tag">div</span>&gt;
+  );
+}</code></pre>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h4>⚠️ The <code>key</code> Prop</h4>
+        <p style="font-size:16px;">When rendering lists with <code>.map()</code>, each element needs a <strong>unique</strong> <code>key</code> prop. React uses it to track which items change. Use the item's <code>id</code> if available — never the array index.</p>
+      </div>
+      <div class="card" style="margin-top:8px;">
+        <h4>💡 Hints</h4>
+        <p style="font-size:16px;" class="hint-toggle" onclick="this.nextElementSibling.classList.toggle('visible')">Click to reveal →</p>
+        <div class="hint-content">
+          <ul>
+            <li>Use the <code>ProductCard</code> component from the code slide</li>
+            <li>The <code>key</code> prop goes on the <em>mapped</em> component, not a wrapper</li>
+            <li>Your output should show 3 cards — 2 in stock, 1 out of stock</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress">10 / 12</div>
+  <div class="progress-bar" style="width:83.3%"></div>
+  <aside style="display:none;">Mapping arrays into components is one of the most common React patterns. The 'key' prop is essential — mention it even if the full 'why' requires reconciliation internals.</aside>
+</section>
+
+<!-- SLIDE 11: Project Milestone -->
+<section class="slide" data-slide="11">
+  <h2>🏆 Project 3: Weather Dashboard</h2>
+  <div class="two-col">
+    <div class="col">
+      <div class="milestone">
+        <h4>Starting next week — Week 9!</h4>
+        <p style="font-size:17px;">After mastering React fundamentals this week, you'll build a <strong>Weather Dashboard</strong> that brings together everything:</p>
+        <ul>
+          <li>Component hierarchy (App &gt; SearchBar &gt; ForecastCard)</li>
+          <li>Data fetching with <code>fetch()</code></li>
+          <li>Passing API data via props</li>
+          <li>Conditional rendering (loading / error / results)</li>
+        </ul>
+        <div style="margin-top:12px;padding:10px;background:rgba(97,218,251,0.1);border-radius:6px;border:1px solid rgba(97,218,251,0.3);">
+          <code style="font-size:18px;font-weight:700;">npm create vite@latest weather-dashboard -- --template react</code>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="margin-bottom:12px;">
+        <h4>📅 Previous Projects</h4>
+        <ul>
+          <li><strong>Project 1</strong> — CLI Todo (Week 3) ✓</li>
+          <li><strong>Project 2</strong> — Bookmark Saver (Week 6) ✓</li>
+          <li><strong>Project 3</strong> — Weather Dashboard (Week 9) 🔜</li>
+          <li><strong>Project 5</strong> — Full-Stack App (Week 12)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>📚 What's Coming This Week</h4>
+        <ul>
+          <li>Day 44 — React state with <code>useState</code></li>
+          <li>Day 45 — Event handling &amp; forms</li>
+          <li>Day 46 — Conditional rendering</li>
+          <li>Day 47 — Lists &amp; keys</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="progress">11 / 12</div>
+  <div class="progress-bar" style="width:91.7%"></div>
+  <aside style="display:none;">Give them a preview of the Weather Dashboard project so they see where the fundamentals are leading.</aside>
+</section>
+
+<!-- SLIDE 12: Summary -->
+<section class="slide" data-slide="12">
+  <h2>🎯 Key Takeaways</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:800px;margin:0 auto;">
+    <div class="card accent" style="margin-bottom:16px;">
+      <h4>1️⃣ React is a component library</h4>
+      <p>Write reusable <strong>functions</strong> that return UI descriptions (JSX). Compose them like LEGO bricks.</p>
+    </div>
+    <div class="card accent" style="margin-bottom:16px;">
+      <h4>2️⃣ JSX blends HTML with JavaScript</h4>
+      <p>Use <code>{ }</code> for expressions, <code>className</code> for CSS, camelCase for attributes. One root element per component.</p>
+    </div>
+    <div class="card accent" style="margin-bottom:16px;">
+      <h4>3️⃣ Props make components reusable</h4>
+      <p>Pass data from parent to child via attributes. Props are <strong>read-only</strong> — a component never modifies its own props.</p>
+    </div>
+    <div class="card" style="margin-top:8px;border-color:var(--orange);">
+      <h4>📋 Practice for Tomorrow</h4>
+      <ul>
+        <li>Build 3 different card components using props</li>
+        <li>Render a list from an array with <code>.map()</code></li>
+        <li>Play with JSX: try <code>{ }</code> with math, ternaries, and functions</li>
+      </ul>
+    </div>
+  </div>
+  <div class="progress">12 / 12</div>
+  <div class="progress-bar" style="width:100%"></div>
+  <aside style="display:none;">Three takeaways + one practice prompt. Keep it tight — they should type these into their notes.</aside>
+</section>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+  var slides = document.querySelectorAll('.slide');
+  var current = 0;
+  var total = slides.length;
+
+  function showSlide(index) {
+    slides.forEach(function(s, i) {
+      s.classList.toggle('active', i === index);
+    });
+    history.replaceState(null, '', '#' + index);
+    var bar = slides[index].querySelector('.progress-bar');
+    if (bar) {
+      bar.style.width = ((index + 1) / total * 100) + '%';
+    }
+  }
+
+  function next() {
+    if (current < total - 1) {
+      current++;
+      showSlide(current);
+    }
+  }
+
+  function prev() {
+    if (current > 0) {
+      current--;
+      showSlide(current);
+    }
+  }
+
+  // Hash-based navigation
+  function goToHash() {
+    var hash = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(hash) && hash >= 0 && hash < total) {
+      current = hash;
+      showSlide(current);
+    }
+  }
+
+  window.addEventListener('hashchange', goToHash);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    switch (e.key) {
+      case 'ArrowRight': case ' ': e.preventDefault(); next(); break;
+      case 'ArrowLeft': e.preventDefault(); prev(); break;
+      case 'f': e.preventDefault(); document.documentElement.requestFullscreen(); break;
+    }
+  });
+
+  // Touch support
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    var diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next();
+      else prev();
+    }
+  });
+
+  // Initialize
+  goToHash();
+  showSlide(current);
+})();
+</script>
+</body>
+</html>
