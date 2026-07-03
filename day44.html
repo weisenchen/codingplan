@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 44 — React: State and useState</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #242836;
+  --surface: #2a2f3f;
+  --border: #363b4a;
+  --text: #e8eaed;
+  --text2: #9ba0ab;
+  --accent: #61dafb;
+  --accent-dim: #3ba9c9;
+  --accent-bg: rgba(97, 218, 251, 0.08);
+  --code-bg: #181b24;
+  --green: #4ade80;
+  --yellow: #facc15;
+  --red: #f87171;
+  --orange: #fb923c;
+  --purple: #a78bfa;
+  --radius: 10px;
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --slide-w: 960px;
+  --slide-h: 540px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #090b10; font-family: var(--font); color: var(--text); }
+#deck { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.slide {
+  position: absolute;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  max-width: 95vw;
+  max-height: calc(95vw * 540 / 960);
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 40px 52px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+@media (max-aspect-ratio: 16/9) {
+  .slide { max-height: 85vh; max-width: calc(85vh * 16 / 9); }
+}
+/* scrollbar */
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* progress */
+.progress {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  font-size: 12px;
+  color: var(--text2);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+/* progress bar */
+.pbar {
+  position: absolute;
+  bottom: 0; left: 0; height: 3px;
+  background: var(--accent);
+  transition: width 0.35s ease;
+  border-radius: 0 2px 0 0;
+  z-index: 10;
+}
+
+/* typography */
+h1 { font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 8px; }
+h2 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; color: var(--accent); }
+h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; }
+p, li { font-size: 17px; line-height: 1.6; color: var(--text2); }
+p { margin-bottom: 12px; }
+strong { color: var(--text); font-weight: 600; }
+code {
+  font-family: var(--mono);
+  font-size: 14px;
+  background: var(--code-bg);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 10px 0 14px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: var(--text2);
+}
+pre .hl { color: var(--accent); }
+pre .kw { color: var(--purple); }
+pre .fn { color: var(--yellow); }
+pre .str { color: var(--green); }
+pre .cm { color: var(--text2); font-style: italic; }
+pre .num { color: var(--orange); }
+pre .br { color: var(--red); }
+
+ul, ol { padding-left: 22px; margin-bottom: 12px; }
+li { margin-bottom: 5px; }
+li strong { color: var(--text); }
+
+/* title slide */
+.title-slide { justify-content: center; align-items: center; text-align: center; }
+.title-slide h1 { font-size: 50px; }
+.title-slide .subtitle { font-size: 22px; color: var(--accent); font-weight: 500; margin-top: 6px; }
+.title-slide .meta { margin-top: 24px; font-size: 15px; color: var(--text2); }
+.title-slide .badge {
+  display: inline-block;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+
+/* section break */
+.section-break {
+  justify-content: center; align-items: center; text-align: center;
+  background: linear-gradient(135deg, #0f1a24 0%, #1a1d27 100%);
+}
+.section-break h2 { font-size: 40px; margin-bottom: 8px; }
+.section-break p { font-size: 18px; }
+
+/* two-column */
+.two-col { display: flex; gap: 28px; flex: 1; min-height: 0; }
+.two-col > * { flex: 1; }
+.col h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+.col p, .col li { font-size: 14.5px; }
+.col pre { font-size: 12.5px; padding: 12px 14px; margin: 6px 0 10px; }
+.col code { font-size: 12.5px; }
+
+/* exercise box */
+.ex-box {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 10px 0;
+}
+.ex-box h3 { color: var(--accent); margin-bottom: 6px; }
+.ex-box p, .ex-box li { font-size: 15px; }
+
+/* tip box */
+.tip {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin: 8px 0;
+  font-size: 14px;
+  color: var(--green);
+}
+.tip strong { color: var(--green); }
+
+/* checklist */
+.checklist { list-style: none; padding-left: 0; }
+.checklist li::before { content: "☐ "; color: var(--text2); margin-right: 4px; }
+.checklist li.done::before { content: "☑ "; color: var(--green); }
+
+/* objectives list */
+.obj-list { list-style: none; padding: 0; }
+.obj-list li {
+  padding: 8px 0 8px 32px;
+  position: relative;
+  font-size: 17px;
+}
+.obj-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 13px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  border: 2px solid var(--accent-dim);
+}
+
+/* arrow highlight for code */
+.arrow { color: var(--accent); font-weight: 600; }
+
+/* venue icon placeholder */
+.icon-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-dim);
+  font-size: 22px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/* Print support */
+@media print {
+  body { background: white; overflow: visible; }
+  #deck { position: static; display: block; }
+  .slide { position: static; opacity: 1; pointer-events: auto; page-break-after: always; break-inside: avoid; box-shadow: none; border: 1px solid #ccc; max-width: 100%; max-height: none; margin: 0 auto 20px; padding: 30px; background: white; }
+  .progress, .pbar { display: none; }
+  h1, h2, h3, strong { color: #111; }
+  p, li, .meta { color: #333; }
+  pre { background: #f5f5f5; border-color: #ddd; }
+  code { background: #eee; color: #0a5; }
+  :root { --text: #111; --text2: #444; --bg: white; --code-bg: #f5f5f5; --border: #ddd; --accent: #0891b2; --accent-dim: #0891b2; --accent-bg: #e0f2fe; --green: #15803d; }
+}
+
+/* mobile */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; border-radius: 0; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 14px; }
+  pre { font-size: 12px; padding: 10px; }
+  .two-col { flex-direction: column; gap: 12px; }
+  .title-slide h1 { font-size: 32px; }
+  .section-break h2 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<div id="deck"></div>
+
+<script>
+(function(){
+
+const slides = [
+  // --- Slide 0: Title ---
+  `<section class="slide title-slide active" data-slide="0">
+    <div class="badge">Week 8 · Phase III · React</div>
+    <h1>React: State and useState</h1>
+    <div class="subtitle">useState Hook · Counter · Toggle · Form Input</div>
+    <div class="meta">Day 44 of the 90-Day Co-op Prep Plan &mdash; 60 min session</div>
+    <div class="progress">1 / 13</div>
+  </section>`,
+
+  // --- Slide 1: Prerequisites ---
+  `<section class="slide" data-slide="1">
+    <h2>📋 Prerequisites</h2>
+    <p>Before starting, make sure you're comfortable with:</p>
+    <ul>
+      <li><strong>JavaScript ES6</strong> — arrow functions, destructuring, template literals</li>
+      <li><strong>JSX</strong> — writing HTML-like syntax inside JavaScript (Day 43)</li>
+      <li><strong>React components</strong> — creating and rendering functional components</li>
+      <li><strong>Event handlers</strong> — <code>onClick</code>, <code>onChange</code> in JSX</li>
+    </ul>
+    <div class="tip"><strong>Need a refresher?</strong> Revisit Day 43 (Intro to React &amp; JSX) before proceeding. These concepts are the foundation for today.</div>
+    <div class="progress">2 / 13</div>
+  </section>`,
+
+  // --- Slide 2: Learning Objectives ---
+  `<section class="slide" data-slide="2">
+    <h2>🎯 Learning Objectives</h2>
+    <p>By the end of this session, you will be able to:</p>
+    <ul class="obj-list">
+      <li><strong>Explain</strong> what React state is and why it's needed over regular variables</li>
+      <li><strong>Use</strong> the <code>useState</code> hook to add state to functional components</li>
+      <li><strong>Build</strong> interactive components: a counter, a toggle switch, and a form input</li>
+      <li><strong>Handle</strong> controlled form inputs with <code>useState</code></li>
+    </ul>
+    <div class="tip" style="margin-top:16px;">💡 Today is hands-on — follow along by coding in your browser or a React playground.</div>
+    <div class="progress">3 / 13</div>
+  </section>`,
+
+  // --- Slide 3: What is State? ---
+  `<section class="slide" data-slide="3">
+    <h2>🧠 What is State?</h2>
+    <p><strong>State</strong> is data that <em>changes over time</em> and determines how a component renders.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>❌ Without state</h3>
+        <pre><code>function Counter() {
+  let count = 0;
+
+  function increment() {
+    count++; <span class="cm">// variable changes but...</span>
+  }
+
+  return <span class="br">&lt;</span>button <span class="fn">onClick</span><span class="br">=</span>{increment}<span class="br">&gt;</span>
+    {count}
+  <span class="br">&lt;/</span>button<span class="br">&gt;</span>;
+}</code></pre>
+        <p style="font-size:13px;color:var(--red);">❌ The <em>variable</em> updates, but the <em>DOM</em> doesn't re-render.</p>
+      </div>
+      <div class="col">
+        <h3>✅ With state</h3>
+        <pre><code>function Counter() {
+  const [count, setCount] = <span class="fn">useState</span>(0);
+
+  function increment() {
+    setCount(count + 1);
+  }
+
+  return <span class="br">&lt;</span>button <span class="fn">onClick</span><span class="br">=</span>{increment}<span class="br">&gt;</span>
+    {count}
+  <span class="br">&lt;/</span>button<span class="br">&gt;</span>;
+}</code></pre>
+        <p style="font-size:13px;color:var(--green);">✅ <code>setCount</code> triggers a <em>re-render</em> with the new value.</p>
+      </div>
+    </div>
+    <p style="font-size:14px;margin-top:6px;"><strong>Key insight:</strong> React re-renders the component whenever state changes. Regular variables don't trigger re-renders — that's why we need <code>useState</code>.</p>
+    <div class="progress">4 / 13</div>
+  </section>`,
+
+  // --- Slide 4: The useState Hook ---
+  `<section class="slide" data-slide="4">
+    <h2>⚛️ The useState Hook</h2>
+    <p><code>useState</code> is a <strong>React Hook</strong> — a function that lets you "hook into" React features from functional components.</p>
+    <pre><code><span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>;
+
+<span class="kw">function</span> <span class="fn">MyComponent</span>() {
+  <span class="cm">// Destructure: [currentValue, setterFunction] = useState(initialValue)</span>
+  const [state, setState] = <span class="fn">useState</span>(initialValue);
+  <span class="kw">return</span> <span class="br">&lt;</span>...<span class="br">&gt;</span>;
+}</code></pre>
+    <div class="two-col" style="margin-top:4px;">
+      <div class="col">
+        <h3>useState returns an array of 2:</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tr><td style="padding:4px 8px;border:1px solid var(--border);font-family:var(--mono);color:var(--accent);">count</td><td style="padding:4px 8px;border:1px solid var(--border);color:var(--text2);">Current value (read-only)</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid var(--border);font-family:var(--mono);color:var(--yellow);">setCount</td><td style="padding:4px 8px;border:1px solid var(--border);color:var(--text2);">Function to update it and trigger re-render</td></tr>
+        </table>
+      </div>
+      <div class="col">
+        <h3>Rules of Hooks:</h3>
+        <ul style="font-size:13px;">
+          <li>Only call hooks at the <strong>top level</strong> of a component</li>
+          <li>Never call hooks inside <strong>loops, conditions, or nested functions</strong></li>
+          <li>Hooks must be called in the <strong>same order</strong> every render</li>
+        </ul>
+      </div>
+    </div>
+    <div class="progress">5 / 13</div>
+  </section>`,
+
+  // --- Slide 5: Counter ---
+  `<section class="slide" data-slide="5">
+    <h2>🔢 Example 1: Counter</h2>
+    <p>The classic "Hello World" of React state — a button that counts clicks.</p>
+    <pre><code><span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>;
+
+<span class="kw">function</span> <span class="fn">Counter</span>() {
+  const [count, <span class="hl">setCount</span>] = <span class="fn">useState</span>(0);
+
+  <span class="kw">return</span> (
+    <span class="br">&lt;</span>div style<span class="br">=</span>{{ textAlign: <span class="str">'center'</span> }}<span class="br">&gt;</span>
+      <span class="br">&lt;</span>h2<span class="br">&gt;</span>Count: {count}<span class="br">&lt;/</span>h2<span class="br">&gt;</span>
+      <span class="br">&lt;</span>button <span class="fn">onClick</span><span class="br">=</span>{() =<span class="br">&gt;</span> <span class="hl">setCount(count + 1)</span>}<span class="br">&gt;</span>
+        +1
+      <span class="br">&lt;/</span>button<span class="br">&gt;</span>
+      <span class="br">&lt;</span>button <span class="fn">onClick</span><span class="br">=</span>{() =<span class="br">&gt;</span> <span class="hl">setCount(count - 1)</span>}<span class="br">&gt;</span>
+        -1
+      <span class="br">&lt;/</span>button<span class="br">&gt;</span>
+      <span class="br">&lt;</span>button <span class="fn">onClick</span><span class="br">=</span>{() =<span class="br">&gt;</span> <span class="hl">setCount(0)</span>}<span class="br">&gt;</span>
+        Reset
+      <span class="br">&lt;/</span>button<span class="br">&gt;</span>
+    <span class="br">&lt;/</span>div<span class="br">&gt;</span>
+  );
+}</code></pre>
+    <p><strong>Try it:</strong> Each button calls <code>setCount</code> with a new value — React re-renders the component, and the displayed <code>{count}</code> updates on screen.</p>
+    <div class="progress">6 / 13</div>
+  </section>`,
+
+  // --- Slide 6: Toggle ---
+  `<section class="slide" data-slide="6">
+    <h2>🔀 Example 2: Toggle</h2>
+    <p>State doesn't have to be a number — it can be <strong>any type</strong>: booleans, strings, objects, arrays.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>Boolean state for a toggle</h3>
+        <pre><code><span class="kw">function</span> <span class="fn">Toggle</span>() {
+  const [isOn, <span class="hl">setIsOn</span>] = <span class="fn">useState</span>(<span class="kw">false</span>);
+
+  <span class="kw">return</span> (
+    <span class="br">&lt;</span>div<span class="br">&gt;</span>
+      <span class="br">&lt;</span>div style<span class="br">=</span>{{
+        width: 60, height: 30,
+        borderRadius: 15,
+        backgroundColor: isOn
+          ? <span class="str">'#4ade80'</span>
+          : <span class="str">'#555'</span>,
+        cursor: <span class="str">'pointer'</span>,
+        transition: <span class="str">'0.2s'</span>
+      }}
+      <span class="fn">onClick</span><span class="br">=</span>{() =<span class="br">&gt;</span>
+        <span class="hl">setIsOn(!isOn)</span>
+      } <span class="br">/&gt;</span>
+      <span class="br">&lt;</span>p<span class="br">&gt;</span>
+        Switch is <strong>{isOn ? <span class="str">'ON'</span> : <span class="str">'OFF'</span>}</strong>
+      <span class="br">&lt;/</span>p<span class="br">&gt;</span>
+    <span class="br">&lt;/</span>div<span class="br">&gt;</span>
+  );
+}</code></pre>
+      </div>
+      <div class="col">
+        <h3>Why this pattern?</h3>
+        <ul style="font-size:13.5px;">
+          <li><strong>!isOn</strong> flips the boolean — concise and clear</li>
+          <li>The ternary <code>isOn ? 'green' : 'gray'</code> drives the visual state</li>
+          <li>Same pattern works for <strong>dark mode</strong>, <strong>accordions</strong>, <strong>modals</strong>, and <strong>menu toggles</strong></li>
+        </ul>
+        <div class="tip" style="margin-top:8px;font-size:13px;">
+          💡 <strong>Pro tip:</strong> You can also pass a <em>function</em> to setState: <code>setIsOn(prev =&gt; !prev)</code>. This guarantees you're using the latest value.
+        </div>
+      </div>
+    </div>
+    <div class="progress">7 / 13</div>
+  </section>`,
+
+  // --- Slide 7: Functional Updates ---
+  `<section class="slide" data-slide="7">
+    <h2>🔄 Functional Updates &amp; Stale Closure</h2>
+    <p>When the new state <em>depends on the previous state</em>, use the <strong>functional form</strong>:</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>❌ Direct (can be wrong)</h3>
+        <pre><code><span class="kw">function</span> <span class="fn">handleClick</span>() {
+  setCount(count + 1);   <span class="cm">// may use stale</span>
+  setCount(count + 1);   <span class="cm">// count!</span>
+}
+<span class="cm">// Both use the SAME count value —</span>
+<span class="cm">// net result: +1, not +2</span></code></pre>
+      </div>
+      <div class="col">
+        <h3>✅ Functional (always correct)</h3>
+        <pre><code><span class="kw">function</span> <span class="fn">handleClick</span>() {
+  setCount(<span class="hl">prev</span> =&gt; <span class="hl">prev</span> + 1);  <span class="cm">// reads latest</span>
+  setCount(<span class="hl">prev</span> =&gt; <span class="hl">prev</span> + 1);  <span class="cm">// queues each</span>
+}
+<span class="cm">// React processes them in order:</span>
+<span class="cm">// prev=0 → 1 → 2 ✓</span></code></pre>
+      </div>
+    </div>
+    <p style="font-size:14px;"><strong>Rule of thumb:</strong> If you reference <code>state</code> inside <code>setState(...)</code>, prefer the functional form <code>setState(prev =&gt; ...)</code>. This avoids stale-closure bugs, especially with rapid clicks or timers.</p>
+    <div class="progress">8 / 13</div>
+  </section>`,
+
+  // --- Slide 8: Form Input State ---
+  `<section class="slide" data-slide="8">
+    <h2>📝 Example 3: Form Input State</h2>
+    <p>In React, form inputs are <strong>controlled components</strong> — the input's value is driven by state, and changes update state.</p>
+    <pre><code><span class="kw">function</span> <span class="fn">NameForm</span>() {
+  const [name, <span class="hl">setName</span>] = <span class="fn">useState</span>(<span class="str">''</span>);
+  const [email, <span class="hl">setEmail</span>] = <span class="fn">useState</span>(<span class="str">''</span>);
+
+  <span class="kw">function</span> <span class="fn">handleSubmit</span>(e) {
+    e.preventDefault();               <span class="cm">// stop page reload</span>
+    alert(`Hi ${name}! Check ${email}`);
+  }
+
+  <span class="kw">return</span> (
+    <span class="br">&lt;</span>form <span class="fn">onSubmit</span><span class="br">=</span>{handleSubmit}<span class="br">&gt;</span>
+      <span class="br">&lt;</span>input
+        placeholder=<span class="str">"Name"</span>
+        value={<span class="hl">name</span>}              <span class="cm">// controlled by state</span>
+        <span class="fn">onChange</span>={<span class="hl">e =&gt; setName(e.target.value)</span>}
+      <span class="br">/&gt;</span>
+      <span class="br">&lt;</span>input
+        placeholder=<span class="str">"Email"</span>
+        value={<span class="hl">email</span>}
+        <span class="fn">onChange</span>={<span class="hl">e =&gt; setEmail(e.target.value)</span>}
+      <span class="br">/&gt;</span>
+      <span class="br">&lt;</span>button type=<span class="str">"submit"</span><span class="br">&gt;</span>Submit<span class="br">&lt;/</span>button<span class="br">&gt;</span>
+    <span class="br">&lt;/</span>form<span class="br">&gt;</span>
+  );
+}</code></pre>
+    <p><strong>Key pattern:</strong> <code>value={state} onChange={e =&gt; setState(e.target.value)}</code> — this is a <strong>controlled input</strong>. React, not the DOM, owns the value.</p>
+    <div class="progress">9 / 13</div>
+  </section>`,
+
+  // --- Slide 9: Multiple Fields ---
+  `<section class="slide" data-slide="9">
+    <h2>📋 Multiple Fields &amp; Object State</h2>
+    <p>For forms with 3+ fields, use a <strong>single state object</strong> instead of individual <code>useState</code> calls.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3>Object state</h3>
+        <pre><code><span class="kw">function</span> <span class="fn">SignupForm</span>() {
+  const [form, <span class="hl">setForm</span>] = <span class="fn">useState</span>({
+    username: <span class="str">''</span>,
+    email: <span class="str">''</span>,
+    password: <span class="str">''</span>
+  });
+
+  <span class="kw">function</span> <span class="fn">handleChange</span>(e) {
+    const { name, value } = e.target;
+    <span class="hl">setForm</span>(prev =&gt; ({
+      ...prev,        <span class="cm">// copy existing fields</span>
+      [name]: value   <span class="cm">// overwrite changed field</span>
+    }));
+  }
+
+  <span class="kw">return</span> (
+    <span class="br">&lt;</span>form<span class="br">&gt;</span>
+      <span class="br">&lt;</span>input name=<span class="str">"username"</span> value={<span class="hl">form.username</span>} <span class="fn">onChange</span>={handleChange} <span class="br">/&gt;</span>
+      <span class="br">&lt;</span>input name=<span class="str">"email"</span>    value={<span class="hl">form.email</span>}    <span class="fn">onChange</span>={handleChange} <span class="br">/&gt;</span>
+      <span class="br">&lt;</span>input name=<span class="str">"password"</span> type=<span class="str">"password"</span> value={<span class="hl">form.password</span>} <span class="fn">onChange</span>={handleChange} <span class="br">/&gt;</span>
+    <span class="br">&lt;/</span>form<span class="br">&gt;</span>
+  );
+}</code></pre>
+      </div>
+      <div class="col">
+        <h3>Why this works</h3>
+        <ul style="font-size:13.5px;">
+          <li><strong>One handler</strong> for all fields — <code>name</code> attribute connects input to state key</li>
+          <li><strong>Spread <code>...prev</code></strong> copies existing fields (immutable update)</li>
+          <li><strong>Computed key <code>[name]</code></strong> dynamically picks the field to update</li>
+        </ul>
+        <div class="tip" style="margin-top:8px;font-size:13px;">
+          ⚠️ <strong>Always spread the previous state!</strong> <code>setForm({ [name]: value })</code> would <em>replace</em> the entire object, losing other fields.
+        </div>
+      </div>
+    </div>
+    <div class="progress">10 / 13</div>
+  </section>`,
+
+  // --- Slide 10: Walkthrough - Build a Profile Card Editor ---
+  `<section class="slide" data-slide="10">
+    <h2>🧪 Walkthrough: Profile Card Editor</h2>
+    <p>Let's build an interactive profile card editor step by step.</p>
+    <ol>
+      <li><strong>Start</strong> — create a <code>ProfileEditor</code> component</li>
+      <li><strong>Add state</strong> — <code>const [name, setName] = useState('Alex')</code></li>
+      <li><strong>Add fields</strong> — input for name, bio, and favorite color</li>
+      <li><strong>Live preview</strong> — display a card that updates as you type</li>
+    </ol>
+    <pre><code><span class="kw">function</span> <span class="fn">ProfileEditor</span>() {
+  const [name, setName] = <span class="fn">useState</span>(<span class="str">'Alex'</span>);
+  const [bio, setBio] = <span class="fn">useState</span>(<span class="str">'React learner 🚀'</span>);
+  const [color, setColor] = <span class="fn">useState</span>(<span class="str">'#61dafb'</span>);
+
+  <span class="kw">return</span> (
+    <span class="br">&lt;</span>div style={{ display: <span class="str">'flex'</span>, gap: 20 }}<span class="br">&gt;</span>
+      <span class="br">&lt;</span>div<span class="br">&gt;</span>
+        <span class="br">&lt;</span>input placeholder=<span class="str">"Name"</span>
+          value={name} <span class="fn">onChange</span>={<span class="hl">e =&gt; setName(e.target.value)</span>} <span class="br">/&gt;</span>
+        <span class="br">&lt;</span>input placeholder=<span class="str">"Bio"</span>
+          value={bio} <span class="fn">onChange</span>={<span class="hl">e =&gt; setBio(e.target.value)</span>} <span class="br">/&gt;</span>
+        <span class="br">&lt;</span>input type=<span class="str">"color"</span>
+          value={color} <span class="fn">onChange</span>={<span class="hl">e =&gt; setColor(e.target.value)</span>} <span class="br">/&gt;</span>
+      <span class="br">&lt;/</span>div<span class="br">&gt;</span>
+      <span class="br">&lt;</span>div style={{ borderLeft: <span class="str">`4px solid ${color}`</span>, padding: 12 }}<span class="br">&gt;</span>
+        <span class="br">&lt;</span>h3<span class="br">&gt;</span>{name}<span class="br">&lt;/</span>h3<span class="br">&gt;</span>
+        <span class="br">&lt;</span>p<span class="br">&gt;</span>{bio}<span class="br">&lt;/</span>p<span class="br">&gt;</span>
+      <span class="br">&lt;/</span>div<span class="br">&gt;</span>
+    <span class="br">&lt;/</span>div<span class="br">&gt;</span>
+  );
+}</code></pre>
+    <p><strong>Expected behavior:</strong> Type in the inputs → the preview card updates instantly. This is the "unidirectional data flow" — state flows down, events flow up.</p>
+    <div class="progress">11 / 13</div>
+  </section>`,
+
+  // --- Slide 11: Exercises ---
+  `<section class="slide" data-slide="11">
+    <h2>🏋️ Practice Exercises</h2>
+
+    <div class="ex-box">
+      <h3>Exercise 1: Step Counter</h3>
+      <p>Build a <strong>StepCounter</strong> component. Show a step count and three buttons: +1, +10, and Reset. Use the <strong>functional form</strong> for the +10 increment to ensure correctness.</p>
+    </div>
+
+    <div class="ex-box">
+      <h3>Exercise 2: Light Switch</h3>
+      <p>Build a <strong>LightSwitch</strong> component. A boolean state <code>isLit</code> toggles between a "lit" (yellow background, bulb emoji 💡) and "unlit" (dark background, moon emoji 🌙) state. Bonus: add a timer that auto-turns off after 5 seconds.</p>
+    </div>
+
+    <div class="ex-box">
+      <h3>Exercise 3: Todo Input</h3>
+      <p>Build a <strong>TodoInput</strong> component with a text input and an "Add" button. Use <strong>object state</strong> <code>{ text: '', priority: 'medium' }</code> with a shared <code>handleChange</code> handler. Log the todo to console on submit.</p>
+    </div>
+
+    <div class="tip"><strong>Hint:</strong> For Exercise 3, give each input a <code>name</code> attribute that matches the state key. The computed property <code>[name]: value</code> pattern handles it all.</div>
+    <div class="progress">12 / 13</div>
+  </section>`,
+
+  // --- Slide 12: Summary ---
+  `<section class="slide" data-slide="12">
+    <h2>✅ Summary &amp; Key Takeaways</h2>
+    <div class="two-col">
+      <div class="col">
+        <h3>What you learned today:</h3>
+        <ul style="font-size:14px;">
+          <li><strong>State</strong> is data that changes and triggers re-renders</li>
+          <li><strong>useState</strong> returns <code>[value, setter]</code> — destructure it</li>
+          <li><strong>Counter</strong> — click events call <code>setCount(newVal)</code></li>
+          <li><strong>Toggle</strong> — <code>setIsOn(!isOn)</code> flips booleans</li>
+          <li><strong>Form inputs</strong> — <code>value={state} onChange={e =&gt; setState(e.target.value)}</code></li>
+          <li><strong>Functional updates</strong> — <code>setState(prev =&gt; prev + 1)</code> avoids stale closures</li>
+          <li><strong>Object state</strong> — spread <code>...prev</code> to keep other fields</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Coming up (Week 8-9):</h3>
+        <ul style="font-size:14px;">
+          <li>Day 45 — <strong>useEffect</strong> &amp; side effects</li>
+          <li>Day 46 — <strong>Props</strong> &amp; component composition</li>
+          <li>Day 47 — <strong>Lifting state up</strong></li>
+          <li>Day 48 — <strong>Project 3: Weather Dashboard</strong> 🏆</li>
+        </ul>
+        <div style="margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);">
+          <p style="font-size:13px;margin:0;"><strong>📌 Milestone progress:</strong><br>
+          ✅ Project 1: CLI Todo List (Week 3)<br>
+          ✅ Project 2: Bookmark Saver (Week 6)<br>
+          🔜 Project 3: Weather Dashboard (Week 8)</p>
+        </div>
+      </div>
+    </div>
+    <div class="progress">13 / 13</div>
+  </section>`
+];
+
+// Build DOM
+const deck = document.getElementById('deck');
+slides.forEach(html => { deck.insertAdjacentHTML('beforeend', html); });
+
+const slideElems = deck.querySelectorAll('.slide');
+const total = slideElems.length;
+let current = 0;
+
+function goTo(n) {
+  if (n < 0 || n >= total) return;
+  slideElems.forEach((el, i) => el.classList.toggle('active', i === n));
+  current = n;
+  location.hash = n;
+  // update progress text
+  slideElems.forEach(el => {
+    const p = el.querySelector('.progress');
+    if (p) p.textContent = `${n + 1} / ${total}`;
+  });
+  // update progress bar
+  let bar = deck.querySelector('.pbar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'pbar';
+    deck.appendChild(bar);
+  }
+  bar.style.width = `${((n + 1) / total) * 100}%`;
+}
+
+// Hash change
+window.addEventListener('hashchange', () => {
+  const n = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(n) && n !== current) goTo(n);
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); goTo(current + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goTo(current - 1); }
+  if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+  if (e.key === 'n' || e.key === 'N') toggleNotes();
+});
+
+// Speaker notes
+function toggleNotes() {
+  const currentSlide = slideElems[current];
+  const aside = currentSlide.querySelector('aside');
+  if (!aside) return;
+  let noteDiv = currentSlide.querySelector('.speaker-note');
+  if (!noteDiv) {
+    noteDiv = document.createElement('div');
+    noteDiv.className = 'speaker-note';
+    noteDiv.style.cssText = 'position:fixed;bottom:60px;right:20px;width:280px;max-height:180px;overflow-y:auto;background:#1a1d27;border:1px solid #363b4a;border-radius:8px;padding:12px;font-size:13px;color:#9ba0ab;z-index:100;';
+    noteDiv.textContent = aside.textContent;
+    currentSlide.appendChild(noteDiv);
+  } else {
+    noteDiv.remove();
+  }
+}
+
+// Init
+const hashN = parseInt(location.hash.slice(1), 10);
+goTo(isNaN(hashN) ? 0 : Math.min(hashN, total - 1));
+
+})();
+</script>
+</body>
+</html>
