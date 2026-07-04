@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 45 — React: Lists, Keys &amp; Conditional Rendering</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --slide-bg: #1a1d27;
+      --text: #e4e6ef;
+      --text-dim: #8b8fa3;
+      --accent: #61dafb;
+      --accent-dim: #3a9abb;
+      --code-bg: #141822;
+      --code-text: #e4e6ef;
+      --keyword: #c792ea;
+      --string: #c3e88d;
+      --func: #82aaff;
+      --builtin: #ffcb6b;
+      --comment: #546e7a;
+      --header-font: 'Inter', system-ui, sans-serif;
+      --body-font: 'Inter', system-ui, sans-serif;
+      --mono-font: 'JetBrains Mono', 'Fira Code', monospace;
+      --slide-w: 960px;
+      --slide-h: 540px;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body-font);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .deck-container {
+      position: relative;
+      width: min(96vw, calc(100vh * 16/9 - 2vh));
+      max-width: 1200px;
+      aspect-ratio: 16 / 9;
+    }
+
+    .deck {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 48px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      background: var(--slide-bg);
+      overflow-y: auto;
+    }
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      position: relative;
+    }
+
+    /* Title slide */
+    .slide.title {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, #1a1d27 0%, #0d1b2a 100%);
+    }
+    .slide.title h1 {
+      font-family: var(--header-font);
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .slide.title .subtitle {
+      font-size: 1.3rem;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    .slide.title .meta {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      opacity: 0.7;
+    }
+    .slide.title .phase-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #0f1117;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Section break */
+    .slide.section-break {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, #0d1b2a, #1a1d27);
+    }
+    .slide.section-break h2 {
+      font-size: 2.6rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .slide.section-break p {
+      color: var(--text-dim);
+      margin-top: 8px;
+      font-size: 1.1rem;
+    }
+
+    /* Headings */
+    h2 {
+      font-family: var(--header-font);
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+    h3 {
+      font-family: var(--header-font);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    /* Body text */
+    p, li {
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    ul, ol {
+      padding-left: 24px;
+      margin: 8px 0;
+    }
+    li { margin-bottom: 4px; }
+    .text-dim { color: var(--text-dim); }
+
+    /* Code */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: var(--mono-font);
+      font-size: 0.85rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 10px 0;
+      tab-size: 2;
+    }
+    code {
+      font-family: var(--mono-font);
+      font-size: 0.85rem;
+    }
+    pre .kw { color: var(--keyword); }
+    pre .str { color: var(--string); }
+    pre .fn { color: var(--func); }
+    pre .cm { color: var(--comment); font-style: italic; }
+    pre .bl { color: var(--builtin); }
+    pre .hl { background: rgba(97, 218, 251, 0.12); display: inline-block; width: 100%; }
+
+    /* Layout helpers */
+    .row { display: flex; gap: 20px; flex: 1; min-height: 0; }
+    .col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .mt-auto { margin-top: auto; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-16 { margin-bottom: 16px; }
+
+    /* Highlight box */
+    .tip-box {
+      background: rgba(97, 218, 251, 0.08);
+      border-left: 3px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 8px 0;
+    }
+    .tip-box p { font-size: 0.9rem; color: var(--text-dim); }
+
+    /* Progress */
+    .progress {
+      position: absolute;
+      bottom: 12px;
+      right: 20px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      opacity: 0.6;
+      z-index: 10;
+      font-family: var(--mono-font);
+    }
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--accent);
+      transition: width 0.35s ease;
+      z-index: 10;
+    }
+
+    /* Speaker notes */
+    .notes-overlay {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(600px, 90vw);
+      background: #222639;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 16px 20px;
+      z-index: 100;
+      display: none;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    .notes-overlay.visible { display: block; }
+    .notes-overlay strong { color: var(--accent); display: block; margin-bottom: 6px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Controls hint */
+    .controls-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 20px;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      opacity: 0.35;
+      z-index: 10;
+      font-family: var(--mono-font);
+      letter-spacing: 0.03em;
+    }
+
+    /* Exercise slides */
+    .exercise-box {
+      background: rgba(255, 203, 107, 0.08);
+      border: 1px solid rgba(255, 203, 107, 0.2);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 8px 0;
+    }
+    .exercise-box h3 { color: var(--builtin); font-size: 1rem; }
+
+    /* Solution reveal */
+    .solution-hidden { display: none; }
+    .solution-hidden.revealed { display: block; }
+
+    /* Checkboxes */
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li::before { content: "☐ "; color: var(--accent-dim); }
+    .checklist li.done::before { content: "☑ "; color: var(--accent); }
+
+    @media (max-width: 700px) {
+      .slide { padding: 24px 20px; }
+      .slide.title h1 { font-size: 2rem; }
+      h2 { font-size: 1.4rem; }
+      .row { flex-direction: column; gap: 12px; }
+      pre { font-size: 0.75rem; padding: 10px 12px; }
+    }
+
+    @media print {
+      body { overflow: visible; }
+      .deck-container { width: 100%; max-width: none; }
+      .slide { opacity: 1 !important; position: relative !important; page-break-after: always; height: auto; min-height: 540px; }
+      .progress, .progress-bar, .controls-hint, .notes-overlay { display: none; }
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="deck-container">
+  <div class="deck" id="deck">
+
+    <!-- SLIDE 0: Title -->
+    <section class="slide title" data-slide="0">
+      <div class="phase-badge">Phase III — Week 8</div>
+      <h1>React: Lists, Keys &amp; Conditional Rendering</h1>
+      <p class="subtitle">.map() for lists · the key prop · ternary rendering · filterable list</p>
+      <p class="meta">Day 45 · 90-Day Co-op Prep · July 4, 2026</p>
+    </section>
+
+    <!-- SLIDE 1: Overview -->
+    <section class="slide" data-slide="1">
+      <h2>📋 What You'll Learn Today</h2>
+      <p class="text-dim mb-16">60-minute session — by the end, you'll build a filterable product list from scratch.</p>
+      <div class="row">
+        <div class="col">
+          <h3>Concepts</h3>
+          <ul>
+            <li>Rendering arrays with <code>.map()</code></li>
+            <li>The <code>key</code> prop — why it matters</li>
+            <li>Conditional rendering: ternary &amp; <code>&amp;&amp;</code></li>
+            <li>Filter + render patterns</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h3>Project Milestones</h3>
+          <ul>
+            <li>✅ Project 1: CLI Todo list (Wk 3)</li>
+            <li>✅ Project 2: Bookmark Saver (Wk 6)</li>
+            <li>🔷 <strong>Project 3: Weather Dashboard (Wk 8)</strong></li>
+            <li>⬜ Project 5: Full-Stack App (Wk 12)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tip-box">
+        <p><strong>Prerequisites:</strong> Basic React (JSX, components, props) from Day 43-44. Comfortable with arrays and <code>useState</code>.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Rendering Lists with .map() -->
+    <section class="slide" data-slide="2">
+      <h2>📦 Rendering Lists with <code>.map()</code></h2>
+      <p class="mb-8">The bread-and-butter of dynamic UIs: transform an array of data into an array of JSX elements.</p>
+      <div class="row">
+        <div class="col">
+          <pre><span class="kw">function</span> <span class="fn">FruitList</span>() {
+  <span class="kw">const</span> fruits = [<span class="str">'Apple'</span>, <span class="str">'Banana'</span>, <span class="str">'Cherry'</span>];
+
+  <span class="kw">return</span> (
+    &lt;ul&gt;
+      {fruits.<span class="fn">map</span>(fruit =&gt;
+        &lt;li&gt;{fruit}&lt;/li&gt;
+      )}
+    &lt;/ul&gt;
+  );
+}</pre>
+        </div>
+        <div class="col">
+          <div class="tip-box">
+            <p><strong>How it works:</strong></p>
+            <p><code>['Apple','Banana','Cherry'].map(fn)</code><br>→ <code>[&lt;li&gt;Apple&lt;/li&gt;, ...]</code></p>
+          </div>
+          <p class="text-dim" style="font-size:0.85rem;margin-top:8px;">⚠️ You'll see a React warning — we need <code>key</code>. Next slide!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: The key prop -->
+    <section class="slide" data-slide="3">
+      <h2>🔑 The <code>key</code> Prop — Why It Matters</h2>
+      <p class="mb-8">React uses <code>key</code> to track which items changed, moved, or were removed. Without it, re-renders are buggy and slow.</p>
+      <div class="row">
+        <div class="col">
+          <h3>✅ Correct</h3>
+          <pre>{items.<span class="fn">map</span>(item =&gt;
+  &lt;li <span class="hl">key={item.id}</span>&gt;
+    {item.name}
+  &lt;/li&gt;
+)}</pre>
+        </div>
+        <div class="col">
+          <h3>❌ Bad</h3>
+          <pre>{items.<span class="fn">map</span>((item, i) =&gt;
+  &lt;li <span class="hl">key={i}</span>&gt;  <span class="cm">// index!</span>
+    {item.name}
+  &lt;/li&gt;
+)}</pre>
+        </div>
+      </div>
+      <div class="tip-box">
+        <p><strong>Rule:</strong> Use a stable, unique ID from your data. <em>Never</em> use array index unless the list never changes (no add/remove/reorder).</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Conditional Rendering -->
+    <section class="slide" data-slide="4">
+      <h2>🔀 Conditional Rendering — Ternary &amp;&amp;</h2>
+      <p class="mb-8">Show or hide parts of the UI based on state. Two essential patterns:</p>
+      <div class="row">
+        <div class="col">
+          <h3>Ternary (<code>? :</code>)</h3>
+          <pre>{isLoggedIn <span class="bl">?</span>
+  <span class="str">'Welcome back!'</span> <span class="bl">:</span>
+  <span class="str">'Please sign in'</span>
+}</pre>
+          <p class="text-dim" style="font-size:0.85rem;">Use for either/or choices.</p>
+        </div>
+        <div class="col">
+          <h3>Logical AND (<code>&amp;&amp;</code>)</h3>
+          <pre>{hasError <span class="bl">&amp;&amp;</span>
+  &lt;div <span class="kw">className</span>=<span class="str">"error"</span>&gt;
+    {errorMessage}
+  &lt;/div&gt;
+}</pre>
+          <p class="text-dim" style="font-size:0.85rem;">Use for show/hide without an else.</p>
+        </div>
+      </div>
+      <div class="tip-box">
+        <p>⚠️ <strong>Gotcha:</strong> Don't use <code>&amp;&amp;</code> with <code>0</code> or empty array — <code>0 &amp;&amp; &lt;Thing/&gt;</code> renders <code>0</code>! Use <code>!!</code> or compare explicitly.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Walkthrough — Filterable List (setup) -->
+    <section class="slide section-break" data-slide="5">
+      <h2>🛠️ Build a Filterable Product List</h2>
+      <p>Walkthrough — ~20 min, ~50 lines of code</p>
+    </section>
+
+    <!-- SLIDE 6: Walkthrough Step 1-3 -->
+    <section class="slide" data-slide="6">
+      <h2>🛠️ Step 1–3: State &amp; Data</h2>
+      <pre><span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>;
+
+<span class="kw">const</span> PRODUCTS = [
+  { id: 1, name: <span class="str">'Laptop'</span>, category: <span class="str">'Electronics'</span>, price: 999 },
+  { id: 2, name: <span class="str">'T-shirt'</span>, category: <span class="str">'Clothing'</span>, price: 29 },
+  { id: 3, name: <span class="str">'Headphones'</span>, category: <span class="str">'Electronics'</span>, price: 149 },
+  { id: 4, name: <span class="str">'Mug'</span>, category: <span class="str">'Home'</span>, price: 12 },
+];
+
+<span class="kw">function</span> <span class="fn">FilterableList</span>() {
+  <span class="kw">const</span> [search, setSearch] = <span class="fn">useState</span>(<span class="str">''</span>);
+  <span class="kw">const</span> [category, setCategory] = <span class="fn">useState</span>(<span class="str">'All'</span>);</pre>
+      <p class="text-dim" style="font-size:0.85rem;">Step 1: Import useState. Step 2: Define product data (stable IDs!). Step 3: Two pieces of filter state.</p>
+    </section>
+
+    <!-- SLIDE 7: Walkthrough Step 4-6 -->
+    <section class="slide" data-slide="7">
+      <h2>🛠️ Step 4–6: Filtering + Render</h2>
+      <div class="row">
+        <div class="col">
+          <p><strong>Step 4 — Filter logic:</strong></p>
+          <pre><span class="kw">const</span> filtered = PRODUCTS.<span class="fn">filter</span>(p =&gt; {
+  <span class="kw">const</span> matchSearch = p.name
+    .<span class="fn">toLowerCase</span>()
+    .<span class="fn">includes</span>(search.<span class="fn">toLowerCase</span>());
+  <span class="kw">const</span> matchCat = category === <span class="str">'All'</span> <span class="bl">?</span>
+    <span class="kw">true</span> <span class="bl">:</span> p.category === category;
+  <span class="kw">return</span> matchSearch <span class="bl">&amp;&amp;</span> matchCat;
+});</pre>
+        </div>
+        <div class="col">
+          <p><strong>Steps 5–6 — Render:</strong></p>
+          <pre>&lt;input value={search}
+  onChange={e =&gt; setSearch(e.target.value)}
+  placeholder=<span class="str">"Search products..."</span> /&gt;
+
+&lt;ul&gt;
+  {filtered.<span class="fn">map</span>(p =&gt;
+    &lt;li <span class="hl">key={p.id}</span>&gt;
+      {p.name} — ${p.price}
+    &lt;/li&gt;
+  )}
+&lt;/ul&gt;</pre>
+        </div>
+      </div>
+      <div class="tip-box">
+        <p>💡 <code>.filter()</code> + <code>.map()</code> chained together — filter first, then render. Both return new arrays; original data is untouched.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Walkthrough Step 7 — category buttons + empty state -->
+    <section class="slide" data-slide="8">
+      <h2>🛠️ Step 7: Category Buttons &amp; Empty State</h2>
+      <div class="row">
+        <div class="col">
+          <p><strong>Category selector:</strong></p>
+          <pre>{[<span class="str">'All'</span>, <span class="str">'Electronics'</span>, <span class="str">'Clothing'</span>, <span class="str">'Home'</span>].<span class="fn">map</span>(c =&gt;
+  &lt;button
+    <span class="hl">key={c}</span>
+    onClick={() =&gt; setCategory(c)}
+    <span class="hl">style={{ fontWeight:
+      category === c ? 'bold' : 'normal' }}</span>
+  &gt;
+    {c}
+  &lt;/button&gt;
+)}</pre>
+        </div>
+        <div class="col">
+          <p><strong>Empty state (conditional):</strong></p>
+          <pre>{filtered.length === 0 <span class="bl">?</span>
+  &lt;p&gt;No products found.&lt;/p&gt; <span class="bl">:</span>
+  &lt;ul&gt;
+    {filtered.<span class="fn">map</span>(p =&gt;
+      &lt;li key={p.id}&gt;{p.name}&lt;/li&gt;
+    )}
+  &lt;/ul&gt;
+}</pre>
+        </div>
+      </div>
+      <div class="tip-box">
+        <p>🔁 Categories are also rendered with <code>.map()</code> + <code>key</code>. The active category gets bold text via ternary styling.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Complete component -->
+    <section class="slide" data-slide="9">
+      <h2>📄 The Complete Component</h2>
+      <pre><span class="kw">function</span> <span class="fn">FilterableList</span>() {
+  <span class="kw">const</span> [search, setSearch] = <span class="fn">useState</span>(<span class="str">''</span>);
+  <span class="kw">const</span> [category, setCategory] = <span class="fn">useState</span>(<span class="str">'All'</span>);
+
+  <span class="kw">const</span> filtered = PRODUCTS.<span class="fn">filter</span>(p =&gt; {
+    <span class="kw">const</span> textMatch = p.name
+      .<span class="fn">toLowerCase</span>()
+      .<span class="fn">includes</span>(search.<span class="fn">toLowerCase</span>());
+    <span class="kw">const</span> catMatch = category === <span class="str">'All'</span> <span class="bl">?</span>
+      <span class="kw">true</span> <span class="bl">:</span> p.category === category;
+    <span class="kw">return</span> textMatch <span class="bl">&amp;&amp;</span> catMatch;
+  });
+
+  <span class="kw">return</span> (
+    &lt;div&gt;
+      &lt;input value={search} onChange={e=&gt;setSearch(e.target.value)}
+        placeholder=<span class="str">"Search"</span> /&gt;
+      &lt;div&gt;
+        {[<span class="str">'All'</span>,<span class="str">'Electronics'</span>,<span class="str">'Clothing'</span>,<span class="str">'Home'</span>].<span class="fn">map</span>(c =&gt;
+          &lt;button key={c} onClick={()=&gt;setCategory(c)}
+            style={{fontWeight: category===c?<span class="str">'bold'</span>:<span class="str">'normal'</span>}}&gt;{c}&lt;/button&gt;
+        )}
+      &lt;/div&gt;
+      {filtered.length === 0 <span class="bl">?</span>
+        &lt;p&gt;No products found.&lt;/p&gt; <span class="bl">:</span>
+        &lt;ul&gt;{filtered.<span class="fn">map</span>(p =&gt;
+          &lt;li key={p.id}&gt;{p.name} — ${p.price}&lt;/li&gt;
+        )}&lt;/ul&gt;
+      }
+    &lt;/div&gt;
+  );
+}</pre>
+    </section>
+
+    <!-- SLIDE 10: Exercise slide -->
+    <section class="slide" data-slide="10">
+      <h2>✏️ Practice Exercises</h2>
+      <div class="exercise-box">
+        <h3>Exercise 1 — Add a Price Filter</h3>
+        <p>Add a "Max Price" input. Filter products to only show items ≤ that price.</p>
+        <p class="text-dim" style="font-size:0.85rem;margin-top:6px;">💡 Add <code>maxPrice</code> state, filter with <code>p.price &lt;= maxPrice</code>. Use <code>type="number"</code> for the input.</p>
+      </div>
+      <div class="exercise-box">
+        <h3>Exercise 2 — Empty Category Message</h3>
+        <p>Show a <em>different</em> empty message per category ("No electronics found" vs "No clothing found") instead of a generic message.</p>
+        <p class="text-dim" style="font-size:0.85rem;margin-top:6px;">💡 Use the <code>category</code> variable inside your ternary.</p>
+      </div>
+      <div class="exercise-box">
+        <h3>Exercise 3 — Highlight on Sale</h3>
+        <p>Add a boolean <code>onSale</code> property to each product. Render a green "SALE!" badge next to items where <code>onSale === true</code>.</p>
+        <p class="text-dim" style="font-size:0.85rem;margin-top:6px;">💡 <code>{p.onSale &amp;&amp; &lt;span&gt;SALE!&lt;/span&gt;}</code> inside the list item.</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: Solution reveal -->
+    <section class="slide" data-slide="11">
+      <h2>🔍 Exercise 1 — Hint / Solution</h2>
+      <p class="mb-8">Try for 10 minutes before peeking!</p>
+      <pre><span class="cm">// Add state</span>
+<span class="kw">const</span> [maxPrice, setMaxPrice] = <span class="fn">useState</span>(<span class="str">''</span>);
+
+<span class="cm">// Add input</span>
+&lt;input type=<span class="str">"number"</span> value={maxPrice}
+  onChange={e =&gt; setMaxPrice(e.target.value)}
+  placeholder=<span class="str">"Max price"</span> /&gt;
+
+<span class="cm">// Update filter — add price condition</span>
+<span class="kw">const</span> priceMatch = maxPrice === <span class="str">''</span> <span class="bl">?</span>
+  <span class="kw">true</span> <span class="bl">:</span> p.price &lt;= Number(maxPrice);
+<span class="cm">// Then: return textMatch &amp;&amp; catMatch &amp;&amp; priceMatch</span></pre>
+    </section>
+
+    <!-- SLIDE 12: Summary -->
+    <section class="slide" data-slide="12">
+      <h2>🎯 Key Takeaways</h2>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;">
+        <div style="display:flex;align-items:start;gap:12px;">
+          <span style="font-size:1.5rem;">1</span>
+          <div>
+            <strong style="color:var(--accent);">Use <code>.map()</code> to convert data → JSX</strong>
+            <p class="text-dim">Every dynamic list in React starts with <code>array.map(fn)</code> inside JSX.</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:start;gap:12px;">
+          <span style="font-size:1.5rem;">2</span>
+          <div>
+            <strong style="color:var(--accent);">Always provide a stable <code>key</code></strong>
+            <p class="text-dim">Use unique IDs from data, never array indices. React depends on keys for correct re-renders.</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:start;gap:12px;">
+          <span style="font-size:1.5rem;">3</span>
+          <div>
+            <strong style="color:var(--accent);">Ternary for either/or, <code>&amp;&amp;</code> for show/hide</strong>
+            <p class="text-dim">Chain filter + map for dynamic, filterable UIs. Empty states are conditional rendering too.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 13: Next steps / closing -->
+    <section class="slide title" data-slide="13">
+      <h1>🚀 Up Next: Day 46</h1>
+      <p class="subtitle">React: Forms, Controlled Components &amp; Events</p>
+      <p class="meta" style="margin-top:20px;">Practice today's exercises before the next session!</p>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <span style="background:#2a2d3a;padding:4px 12px;border-radius:6px;font-size:0.85rem;color:var(--text-dim);">Project 3: Weather Dashboard</span>
+        <span style="background:#2a2d3a;padding:4px 12px;border-radius:6px;font-size:0.85rem;color:var(--text-dim);">90-Day Co-op Prep</span>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="progress" id="progress">0 / 0</div>
+  <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  <div class="controls-hint">← / → navigate &middot; f fullscreen &middot; n notes</div>
+</div>
+
+<div class="notes-overlay" id="notesOverlay">
+  <strong>Speaker Notes</strong>
+  <div id="notesContent"></div>
+</div>
+
+<script>
+  (function() {
+    const deck = document.getElementById('deck');
+    const slides = deck.querySelectorAll('.slide');
+    const total = slides.length;
+    const progress = document.getElementById('progress');
+    const bar = document.getElementById('progressBar');
+    const notesOverlay = document.getElementById('notesOverlay');
+    const notesContent = document.getElementById('notesContent');
+    let current = 0;
+
+    // update progress label
+    function updateProgress() {
+      progress.textContent = (current + 1) + ' / ' + total;
+      bar.style.width = ((current + 1) / total * 100) + '%';
+    }
+
+    // show slide
+    function showSlide(i) {
+      slides.forEach(s => s.classList.remove('active'));
+      current = Math.max(0, Math.min(i, total - 1));
+      slides[current].classList.add('active');
+      window.location.hash = current;
+      updateProgress();
+
+      // speaker notes
+      const aside = slides[current].querySelector('aside');
+      if (aside) {
+        notesContent.textContent = aside.textContent;
+      } else {
+        notesContent.textContent = 'No notes for this slide.';
+      }
+    }
+
+    // keyboard
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        showSlide(current + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        showSlide(current - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } else if (e.key === 'n' || e.key === 'N') {
+        notesOverlay.classList.toggle('visible');
+      }
+    });
+
+    // hash
+    window.addEventListener('hashchange', function() {
+      const hash = parseInt(window.location.hash.slice(1), 10);
+      if (!isNaN(hash) && hash >= 0 && hash < total && hash !== current) {
+        showSlide(hash);
+      }
+    });
+
+    // init
+    const hash = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(hash) && hash >= 0 && hash < total) {
+      current = hash;
+    }
+    showSlide(current);
+  })();
+</script>
+</body>
+</html>
