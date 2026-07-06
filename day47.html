@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 47 — Weather Dashboard (Part 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0e14;
+  --surface: #131820;
+  --surface2: #1a2230;
+  --border: #263040;
+  --fg: #eaf0f6;
+  --fg2: #8a9bb5;
+  --accent: #38bdf8;
+  --accent-dim: #0e7490;
+  --accent-glow: rgba(56, 189, 248, 0.12);
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --code-bg: #0d1117;
+  --code-fg: #e6edf3;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #080b10; overflow: hidden; font-family: var(--font-display); color: var(--fg); }
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.deck-container {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  background: var(--bg);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 56px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Progress bar */
+.progress-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 100;
+  transition: width 0.3s ease;
+}
+.slide-counter {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg2);
+  z-index: 10;
+  opacity: 0.6;
+}
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(160deg, var(--bg) 0%, #0c1a2a 100%);
+}
+.title-slide .day-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  padding: 4px 16px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.title-slide h1 {
+  font-size: clamp(32px, 4.5vw, 56px);
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.title-slide h1 span { color: var(--accent); }
+.title-slide .subtitle {
+  font-size: clamp(18px, 2vw, 24px);
+  color: var(--fg2);
+  font-weight: 400;
+  max-width: 600px;
+  margin-bottom: 28px;
+}
+.title-slide .meta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg2);
+  letter-spacing: 0.3px;
+}
+.title-slide .meta span { color: var(--accent); }
+
+/* Section headers */
+.section-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, var(--bg) 0%, #0f1a2a 100%);
+}
+.section-slide h2 {
+  font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.section-slide p {
+  color: var(--fg2);
+  font-size: clamp(16px, 1.5vw, 20px);
+  max-width: 500px;
+}
+
+/* Content slides */
+.slide h2 {
+  font-size: clamp(22px, 2.5vw, 32px);
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.slide h2 .accent { color: var(--accent); }
+.slide .subhead {
+  font-size: clamp(14px, 1.2vw, 16px);
+  color: var(--fg2);
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+.slide .body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.card p { font-size: clamp(14px, 1.1vw, 16px); line-height: 1.6; color: var(--fg2); }
+.card p strong { color: var(--fg); }
+
+/* Lists */
+ul, ol { padding-left: 24px; }
+li {
+  font-size: clamp(14px, 1.1vw, 16px);
+  line-height: 1.7;
+  color: var(--fg2);
+  margin-bottom: 4px;
+}
+li strong { color: var(--fg); }
+li::marker { color: var(--accent); }
+
+/* Code */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 0.95vw, 14px);
+  line-height: 1.65;
+  color: var(--code-fg);
+  tab-size: 2;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--accent);
+}
+pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+.highlight { background: rgba(56, 189, 248, 0.15); display: inline; }
+
+/* Steps */
+.steps { counter-reset: step; }
+.step {
+  counter-increment: step;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.step::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.step p {
+  font-size: clamp(13px, 1.05vw, 15px);
+  line-height: 1.6;
+  color: var(--fg2);
+}
+.step p strong { color: var(--fg); }
+.step code { font-size: 0.85em; }
+
+/* Grid layouts */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 700px) {
+  .slide { padding: 28px 20px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* Callout boxes */
+.callout {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-glow);
+  font-size: clamp(13px, 1vw, 15px);
+  line-height: 1.5;
+  color: var(--fg2);
+}
+.callout strong { color: var(--accent); }
+.callout.warn { border-left-color: var(--yellow); background: rgba(251,191,36,0.08); }
+.callout.warn strong { color: var(--yellow); }
+.callout.success { border-left-color: var(--green); background: rgba(52,211,153,0.08); }
+.callout.success strong { color: var(--green); }
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(13px, 1vw, 15px);
+}
+th, td {
+  padding: 8px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  font-weight: 600;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+td { color: var(--fg2); }
+
+/* Speaker notes hidden by default */
+.speaker-notes {
+  display: none;
+  position: absolute;
+  bottom: 48px;
+  left: 56px;
+  right: 56px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--fg2);
+  z-index: 50;
+  max-height: 30%;
+  overflow-y: auto;
+}
+.speaker-notes.visible { display: block; }
+.speaker-notes::before {
+  content: "📋 SPEAKER NOTES";
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+/* Keyboard hint */
+.keyboard-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg2);
+  opacity: 0.35;
+  z-index: 10;
+}
+
+/* Print */
+@media print {
+  body { background: white; }
+  .deck-container { width: 100%; height: auto; box-shadow: none; border-radius: 0; }
+  .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; min-height: 100vh; z-index: auto; }
+  .progress-bar, .slide-counter, .keyboard-hint, .speaker-notes { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck-container" id="deck">
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="day-badge">Phase III · Week 8 · Project</div>
+  <h1>Weather Dashboard<br><span>Part 1</span></h1>
+  <p class="subtitle">Build a React app that fetches live weather data from a free API — city input, current conditions, and weather icons.</p>
+  <p class="meta">Day 47 · 90-Day Co-op Prep Plan &nbsp;·&nbsp; <span>60 min</span></p>
+  <aside class="speaker-notes">Welcome to Project 3! By now they've built a CLI Todo List (Week 3) and a Bookmark Saver (Week 6). This is their first API-integrated React app — a major milestone. Emphasize that the same pattern (fetch → state → render) is the backbone of every real web app they'll build on co-op.</aside>
+</section>
+
+<!-- SLIDE 1: Section Break — What We're Building -->
+<section class="slide section-slide" data-slide="1">
+  <h2>☀️ What We're Building</h2>
+  <p>A weather dashboard that displays real-time conditions for any city — temperature, humidity, wind speed, and weather description — powered by a free public API.</p>
+  <aside class="speaker-notes">Show a quick demo of a finished version if available. The goal is motivation: after today they can build apps that talk to the internet.</aside>
+</section>
+
+<!-- SLIDE 2: Learning Objectives -->
+<section class="slide" data-slide="2">
+  <h2>🎯 <span class="accent">Learning Objectives</span></h2>
+  <p class="subhead">By the end of today, you will be able to:</p>
+  <div class="body">
+    <div class="grid-2">
+      <div class="card">
+        <p><strong>🔗 Fetch data from a REST API</strong><br>Use <code>fetch()</code> to call a third-party API from React.</p>
+      </div>
+      <div class="card">
+        <p><strong>🧠 Manage async state</strong><br>Handle <code>loading</code>, <code>error</code>, and <code>data</code> states cleanly.</p>
+      </div>
+      <div class="card">
+        <p><strong>🔑 Work with API keys</strong><br>Store, access, and protect API credentials in a React app.</p>
+      </div>
+      <div class="card">
+        <p><strong>⚛️ Connect forms to API calls</strong><br>Send user input (city name) to an API and display the result.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>📌 Milestone check:</strong> Project 3 (Weather Dashboard) wraps up after Week 8. You've come from a CLI todo list → bookmark saver → a live API-driven web app.
+    </div>
+  </div>
+  <aside class="speaker-notes">These four objectives are the core of every API-integrated frontend. If they master these today, they can build any data-driven UI.</aside>
+</section>
+
+<!-- SLIDE 3: Prerequisites -->
+<section class="slide" data-slide="3">
+  <h2>📋 <span class="accent">Prerequisites</span></h2>
+  <p class="subhead">Make sure you have these ready before starting:</p>
+  <div class="body">
+    <div class="steps" style="display:flex;flex-direction:column;gap:8px;">
+      <div class="step"><p><strong>Node.js 18+</strong> installed — run <code>node -v</code> to check</p></div>
+      <div class="step"><p><strong>A code editor</strong> (VS Code recommended)</p></div>
+      <div class="step"><p><strong>A free OpenWeatherMap API key</strong> — sign up at <strong>openweathermap.org/api</strong></p></div>
+      <div class="step"><p><strong>Basic React knowledge</strong> — components, props, <code>useState</code>, <code>useEffect</code></p></div>
+      <div class="step"><p><strong>Git</strong> configured — <code>git --version</code> to verify</p></div>
+    </div>
+    <div class="callout warn" style="margin-top:8px;">
+      <strong>⚠️ API key tip:</strong> OpenWeatherMap sends your key by email after sign-up. It can take an hour to activate. Get it <em>before</em> starting this session.
+    </div>
+  </div>
+  <aside class="speaker-notes">If anyone doesn't have their API key yet, they can still follow along with the scaffolding and add the key later.</aside>
+</section>
+
+<!-- SLIDE 4: Section Break — Project Setup -->
+<section class="slide section-slide" data-slide="4">
+  <h2>🛠️ Project Setup</h2>
+  <p>Scaffold the React app, install dependencies, and lay out the file structure.</p>
+</section>
+
+<!-- SLIDE 5: Scaffold with Vite -->
+<section class="slide" data-slide="5">
+  <h2>📦 <span class="accent">Step 1:</span> Scaffold with Vite</h2>
+  <p class="subhead">Create the project and install dependencies</p>
+  <div class="body">
+    <div class="steps" style="display:flex;flex-direction:column;gap:8px;">
+      <div class="step"><p>Create the app: <code>npm create vite@latest weather-dashboard -- --template react</code></p></div>
+      <div class="step"><p>Enter the directory: <code>cd weather-dashboard</code></p></div>
+      <div class="step"><p>Install dependencies: <code>npm install</code></p></div>
+      <div class="step"><p>Start the dev server: <code>npm run dev</code> — open the URL it prints</p></div>
+    </div>
+    <pre><code>weather-dashboard/
+├── index.html
+├── src/
+│   ├── App.jsx
+│   ├── App.css
+│   ├── main.jsx
+│   └── assets/
+├── public/
+├── package.json
+└── vite.config.js</code></pre>
+    <div class="callout" style="margin-top:4px;">
+      <strong>💡 Why Vite?</strong> Faster than Create React App, better DX, and it's now the React team's recommended starter.
+    </div>
+  </div>
+  <aside class="speaker-notes">If anyone has issues with Vite, use create-react-app as a fallback — but encourage Vite. Show the directory tree so they know where each file lives.</aside>
+</section>
+
+<!-- SLIDE 6: File structure for today -->
+<section class="slide" data-slide="6">
+  <h2>📁 <span class="accent">Step 2:</span> Plan Your Files</h2>
+  <p class="subhead">We'll create these files during the session:</p>
+  <div class="body">
+    <pre><code>src/
+├── App.jsx          ← Main app — holds city input + fetches weather
+├── App.css          ← All styling
+├── components/
+│   ├── SearchBar.jsx     ← City name input + submit button
+│   ├── WeatherCard.jsx   ← Displays current conditions
+│   └── WeatherIcon.jsx   ← Weather condition icon (emoji-based)
+└── hooks/
+    └── useWeather.js     ← Custom hook: manages API call + state</code></pre>
+    <div class="grid-2" style="margin-top:8px;">
+      <div class="card"><p><strong>Why components?</strong> Each piece is self-contained — easier to test, reuse, and reason about.</p></div>
+      <div class="card"><p><strong>Why a custom hook?</strong> Keeps data-fetching logic out of the UI — clean separation of concerns.</p></div>
+    </div>
+  </div>
+  <aside class="speaker-notes">This architecture (smart hook + dumb components) is the standard pattern for React apps. Emphasize that the hook doesn't render anything — it just returns data and state.</aside>
+</section>
+
+<!-- SLIDE 7: Section Break — The API Layer -->
+<section class="slide section-slide" data-slide="7">
+  <h2>🌐 The API Layer</h2>
+  <p>Understanding the OpenWeatherMap API and how to call it from JavaScript.</p>
+</section>
+
+<!-- SLIDE 8: OpenWeatherMap API -->
+<section class="slide" data-slide="8">
+  <h2>🔌 <span class="accent">Understanding the API</span></h2>
+  <p class="subhead">The OpenWeatherMap Current Weather endpoint</p>
+  <div class="body">
+    <div class="card">
+      <p><strong>Endpoint:</strong></p>
+      <pre style="margin-top:6px;"><code>https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric</code></pre>
+    </div>
+    <div class="card">
+      <p><strong>Sample response (JSON):</strong></p>
+      <pre style="margin-top:6px;"><code>{
+  "name": "London",
+  "main": {
+    "temp": 15.3,
+    "feels_like": 14.1,
+    "humidity": 72
+  },
+  "weather": [
+    { "main": "Clouds", "description": "overcast clouds", "icon": "04d" }
+  ],
+  "wind": { "speed": 4.5 }
+}</code></pre>
+    </div>
+    <table>
+      <tr><th>Parameter</th><th>Value</th><th>Notes</th></tr>
+      <tr><td><code>q</code></td><td>City name</td><td>e.g. <code>London</code> or <code>Tokyo,JP</code></td></tr>
+      <tr><td><code>appid</code></td><td>Your API key</td><td>Free tier: 60 calls/min</td></tr>
+      <tr><td><code>units</code></td><td><code>metric</code> or <code>imperial</code></td><td>Metric = °C, m/s</td></tr>
+    </table>
+  </div>
+  <aside class="speaker-notes">Walk through the response structure. Point out that `weather` is an array (usually one element). The `icon` code maps to URL `https://openweathermap.org/img/wn/{icon}@2x.png`.</aside>
+</section>
+
+<!-- SLIDE 9: Custom Hook — useWeather -->
+<section class="slide" data-slide="9">
+  <h2>🎣 <span class="accent">Step 3:</span> The <code>useWeather</code> Hook</h2>
+  <p class="subhead">Manage loading, error, and data states for the API call</p>
+  <div class="body">
+    <pre><code>import { useState } from 'react';
+
+const API_KEY = import.meta.env.VITE_OWM_API_KEY;
+const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
+
+export function useWeather() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchWeather = async (city) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${BASE_URL}?q=${city}&appid=${API_KEY}&units=metric`
+      );
+      if (!res.ok) throw new Error('City not found');
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { data, loading, error, fetchWeather };
+}</code></pre>
+    <div class="callout" style="margin-top:4px;">
+      <strong>🔑 API Key:</strong> Create a <code>.env</code> file with <code>VITE_OWM_API_KEY=your_key_here</code>. Vite exposes env vars prefixed with <code>VITE_</code>.
+    </div>
+  </div>
+  <aside class="speaker-notes">The three-state pattern (loading/error/data) is universal. Show how the finally block ensures loading is always reset. Note that Vite requires the VITE_ prefix for client-side env vars.</aside>
+</section>
+
+<!-- SLIDE 10: SearchBar Component -->
+<section class="slide" data-slide="10">
+  <h2>⌨️ <span class="accent">Step 4:</span> SearchBar Component</h2>
+  <p class="subhead">A controlled form that sends the city name to the parent</p>
+  <div class="body">
+    <pre><code>import { useState } from 'react';
+
+export function SearchBar({ onSearch }) {
+  const [city, setCity] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (city.trim()) onSearch(city.trim());
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="search-bar">
+      <input
+        type="text"
+        value={city}
+        onChange={(e) => setCity(e.target.value)}
+        placeholder="Enter city name..."
+      />
+      <button type="submit">Search</button>
+    </form>
+  );
+}</code></pre>
+    <div class="grid-2" style="margin-top:4px;">
+      <div><p><strong>Key concepts:</strong></p>
+      <ul>
+        <li>Controlled input via <code>useState</code></li>
+        <li><code>e.preventDefault()</code> stops page reload</li>
+        <li>Lifting state up via <code>onSearch</code> prop</li>
+      </ul></div>
+      <div class="callout">
+        <strong>💡 Pattern:</strong> The parent (<code>App</code>) passes a callback. <code>SearchBar</code> calls it with the city — it never touches the API directly.
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">Emphasize that SearchBar is a "dumb" component — it just collects input and calls a prop. All the logic lives in App and useWeather.</aside>
+</section>
+
+<!-- SLIDE 11: WeatherCard Component -->
+<section class="slide" data-slide="11">
+  <h2>🌡️ <span class="accent">Step 5:</span> WeatherCard Component</h2>
+  <p class="subhead">Displays the current conditions from the API response</p>
+  <div class="body">
+    <pre><code>export function WeatherCard({ data }) {
+  if (!data) return null;
+
+  const { name, main, weather, wind } = data;
+  const condition = weather[0];
+
+  return (
+    &lt;div className="weather-card"&gt;
+      &lt;h2&gt;{name}&lt;/h2&gt;
+      &lt;p className="temp"&gt;{Math.round(main.temp)}°C&lt;/p&gt;
+      &lt;p className="desc"&gt;{condition.description}&lt;/p&gt;
+      &lt;div className="details"&gt;
+        &lt;span&gt;💧 {main.humidity}%&lt;/span&gt;
+        &lt;span&gt;🌬️ {wind.speed} m/s&lt;/span&gt;
+        &lt;span&gt;🤔 Feels like {Math.round(main.feels_like)}°C&lt;/span&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+    <div class="callout">
+      <strong>📐 Destructuring tip:</strong> Pulling <code>name, main, weather, wind</code> from <code>data</code> in one line keeps the render clean and readable.
+    </div>
+  </div>
+  <aside class="speaker-notes">Notice the guard clause: if !data return null. This is a common React pattern for conditional rendering — don't render until the data arrives.</aside>
+</section>
+
+<!-- SLIDE 12: WeatherIcon -->
+<section class="slide" data-slide="12">
+  <h2>🎨 <span class="accent">Step 6:</span> WeatherIcon Component</h2>
+  <p class="subhead">Map OpenWeatherMap icon codes to emoji or image</p>
+  <div class="body">
+    <pre><code>const ICON_MAP = {
+  '01d': '☀️', '01n': '🌙',
+  '02d': '⛅', '02n': '☁️',
+  '03d': '☁️', '03n': '☁️',
+  '04d': '☁️', '04n': '☁️',
+  '09d': '🌧️', '09n': '🌧️',
+  '10d': '🌦️', '10n': '🌧️',
+  '11d': '⛈️', '11n': '⛈️',
+  '13d': '❄️', '13n': '❄️',
+  '50d': '🌫️', '50n': '🌫️',
+};
+
+export function WeatherIcon({ code }) {
+  return (
+    &lt;span className="weather-icon" title={code}&gt;
+      {ICON_MAP[code] || '🌡️'}
+    &lt;/span&gt;
+  );
+}</code></pre>
+    <div class="callout success" style="margin-top:4px;">
+      <strong>✅ Alternative:</strong> Use the official OpenWeatherMap icon image: <code>https://openweathermap.org/img/wn/{code}@2x.png</code>. Emoji is faster and needs no network request.
+    </div>
+  </div>
+  <aside class="speaker-notes">Emoji icons are zero-dependency and load instantly. The fallback '🌡️' handles any unknown code gracefully.</aside>
+</section>
+
+<!-- SLIDE 13: Section Break — Bring It Together -->
+<section class="slide section-slide" data-slide="13">
+  <h2>🧩 Bringing It Together</h2>
+  <p>Wire everything up in <code>App.jsx</code> and add the styling.</p>
+</section>
+
+<!-- SLIDE 14: App.jsx — The Orchestrator -->
+<section class="slide" data-slide="14">
+  <h2>⚡ <span class="accent">Step 7:</span> Wire Up App.jsx</h2>
+  <p class="subhead">The parent component that connects hook → input → display</p>
+  <div class="body">
+    <pre><code>import { useWeather } from './hooks/useWeather';
+import { SearchBar } from './components/SearchBar';
+import { WeatherCard } from './components/WeatherCard';
+import { WeatherIcon } from './components/WeatherIcon';
+
+export default function App() {
+  const { data, loading, error, fetchWeather } = useWeather();
+
+  return (
+    &lt;div className="app"&gt;
+      &lt;h1&gt;🌤️ Weather Dashboard&lt;/h1&gt;
+      &lt;SearchBar onSearch={fetchWeather} /&gt;
+
+      {loading && &lt;p className="status"&gt;Loading...&lt;/p&gt;}
+      {error && &lt;p className="status error"&gt;{error}&lt;/p&gt;}
+
+      {data && (
+        &lt;div className="result"&gt;
+          &lt;WeatherIcon code={data.weather[0].icon} /&gt;
+          &lt;WeatherCard data={data} /&gt;
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+}</code></pre>
+    <div class="callout" style="margin-top:4px;">
+      <strong>🧠 Conditional rendering pattern:</strong> Only one of loading/error/data shows at a time. The hook guarantees mutual exclusivity via its state machine.
+    </div>
+  </div>
+  <aside class="speaker-notes">This is the "smart" component that wires everything. The pattern is: one hook call, one SearchBar, and three conditional renders for the three states. Clean and easy to reason about.</aside>
+</section>
+
+<!-- SLIDE 15: CSS Styling -->
+<section class="slide" data-slide="15">
+  <h2>🎨 <span class="accent">Step 8:</span> Add Styling (App.css)</h2>
+  <p class="subhead">Simple, clean, mobile-friendly styles</p>
+  <div class="body">
+    <pre><code>.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  text-align: center;
+  font-family: system-ui, sans-serif;
+}
+.search-bar { display: flex; gap: 8px; margin: 20px 0; }
+.search-bar input {
+  flex: 1; padding: 10px 14px;
+  border: 1px solid #ccc; border-radius: 8px;
+  font-size: 16px;
+}
+.search-bar button {
+  padding: 10px 20px;
+  background: #3b82f6; color: white;
+  border: none; border-radius: 8px;
+  font-size: 16px; cursor: pointer;
+}
+.weather-card { margin-top: 20px; padding: 20px;
+  background: #f0f9ff; border-radius: 12px; }
+.weather-card .temp { font-size: 48px; font-weight: 700; }
+.weather-card .desc { text-transform: capitalize; color: #555; }
+.details { display: flex; gap: 16px; justify-content: center;
+  margin-top: 12px; font-size: 14px; }
+.status { margin-top: 16px; color: #666; }
+.status.error { color: #dc2626; }</code></pre>
+    <div class="callout" style="margin-top:4px;">
+      <strong>🎯 Keep it simple:</strong> This is a learning project. Don't over-engineer the CSS — focus on the React/API patterns. You can polish later.
+    </div>
+  </div>
+  <aside class="speaker-notes">The styling is intentionally plain — this is a learning project, not a polished product. Encourage learners to customize after the functionality works.</aside>
+</section>
+
+<!-- SLIDE 16: Complete App Demo -->
+<section class="slide" data-slide="16">
+  <h2>🚀 <span class="accent">Live Demo:</span> How It Works</h2>
+  <p class="subhead">End-to-end data flow when the user searches a city</p>
+  <div class="body">
+    <div class="card">
+      <pre style="border:none;background:transparent;text-align:center;font-size:16px;line-height:2;">
+① User types "Tokyo" + clicks Search
+        ↓
+② SearchBar calls onSearch("Tokyo") → fetchWeather("Tokyo")
+        ↓
+③ useWeather sets loading=true, calls fetch()
+        ↓
+④ OpenWeatherMap returns JSON with temperature, humidity, wind
+        ↓
+⑤ useWeather sets data=json, loading=false
+        ↓
+⑥ App renders WeatherCard + WeatherIcon with the data
+      </pre>
+    </div>
+    <div class="grid-2">
+      <div class="card"><p><strong>✅ Success path:</strong> <code>input → fetch → JSON → render</code></p></div>
+      <div class="card"><p><strong>❌ Error path:</strong> <code>city not found → error state → error message</code></p></div>
+    </div>
+  </div>
+  <aside class="speaker-notes">Trace the data flow visually. This is the "aha" moment — show how the pieces connect. Emphasize that every API-integrated app follows this same flow.</aside>
+</section>
+
+<!-- SLIDE 17: Section Break — Practice -->
+<section class="slide section-slide" data-slide="17">
+  <h2>✏️ Practice Exercises</h2>
+  <p>Try these on your own — solutions on the next slides.</p>
+</section>
+
+<!-- SLIDE 18: Exercise 1 -->
+<section class="slide" data-slide="18">
+  <h2>🏋️ <span class="accent">Exercise 1:</span> Add Country Flag</h2>
+  <p class="subhead">Enhance the WeatherCard to show a country flag next to the city name</p>
+  <div class="body">
+    <div class="card">
+      <p><strong>Task:</strong> The API response includes a <code>sys.country</code> field (e.g. <code>"JP"</code> for Japan). Use the <strong>emoji flag API</strong> to display it alongside the city name.</p>
+    </div>
+    <div class="card">
+      <p><strong>Hint:</strong> Each country code letter maps to a regional indicator emoji. <br>
+      Formula: <code>String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65)</code> for each letter.</p>
+    </div>
+    <div class="callout warn">
+      <strong>⏱️ Expected output:</strong> The city name renders as <code>"🇯🇵 Tokyo"</code> with the flag displayed inline.
+    </div>
+  </div>
+  <aside class="speaker-notes">This is a creative exercise that teaches them to explore the API response and implement a small utility function. The formula trick is fun — no external library needed for country flags.</aside>
+</section>
+
+<!-- SLIDE 19: Exercise 2 -->
+<section class="slide" data-slide="19">
+  <h2>🏋️ <span class="accent">Exercise 2:</span> Recent Searches</h2>
+  <p class="subhead">Keep a list of recently searched cities</p>
+  <div class="body">
+    <div class="card">
+      <p><strong>Task:</strong> Track the last 5 cities searched. Display them as clickable buttons so the user can quickly re-query a city.</p>
+    </div>
+    <div class="card">
+      <p><strong>Hint:</strong> Use <code>useState</code> in App to store an array of recent cities. Use the <code>fetchWeather</code> function as the click handler. Cap the array at 5 with <code>.slice(0, 5)</code>.</p>
+    </div>
+    <pre><code>// Structure hint:
+const [recent, setRecent] = useState([]);
+
+const handleSearch = (city) => {
+  setRecent(prev => [city, ...prev.filter(c => c !== city)].slice(0, 5));
+  fetchWeather(city);
+};</code></pre>
+  </div>
+  <aside class="speaker-notes">This teaches array state management and the "deduplicate + cap" pattern. It's a UX feature they'll use on real apps.</aside>
+</section>
+
+<!-- SLIDE 20: Exercise 3 -->
+<section class="slide" data-slide="20">
+  <h2>🏋️ <span class="accent">Exercise 3:</span> Temperature Toggle</h2>
+  <p class="subhead">Let the user switch between °C and °F</p>
+  <div class="body">
+    <div class="card">
+      <p><strong>Task:</strong> Add a toggle button (switch) that converts the temperature between Celsius and Fahrenheit. The API returns data in whatever <code>units</code> parameter you sent — you'll need a conversion function.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <p><strong>Formula:</strong></p>
+        <pre style="margin-top:4px;"><code>C → F: (c * 9/5) + 32
+F → C: (f - 32) * 5/9</code></pre>
+      </div>
+      <div class="card">
+        <p><strong>Hint:</strong> Store the unit preference in a <code>useState</code> in App. Pass it down to WeatherCard. Display the converted value using the formula.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>💡 Bonus:</strong> Persist the unit preference in <code>localStorage</code> so it survives page reloads.
+    </div>
+  </div>
+  <aside class="speaker-notes">This touches on derived state — the API gives you °C and you compute °F from it rather than making a second API call. Also introduces localStorage for persistence.</aside>
+</section>
+
+<!-- SLIDE 21: Section Break — Recap -->
+<section class="slide section-slide" data-slide="21">
+  <h2>📌 Recap</h2>
+  <p>Three things to remember from today.</p>
+</section>
+
+<!-- SLIDE 22: Key Takeaways -->
+<section class="slide" data-slide="22">
+  <h2>🎯 <span class="accent">Key Takeaways</span></h2>
+  <p class="subhead">Write these down — they'll serve you on every API-integrated project.</p>
+  <div class="body">
+    <div class="grid-2" style="grid-template-columns: 1fr;">
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <p><strong>1. Three-state async pattern</strong><br>
+        Every API call has exactly three states: <code>loading</code>, <code>error</code>, and <code>data</code>. Always render a UI for all three. Never assume the request will succeed.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--green);">
+        <p><strong>2. Separate concerns with custom hooks</strong><br>
+        Move data-fetching logic into a custom hook. Keep components "dumb" — they receive props and render. This makes testing, reusing, and reasoning about code easier.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--yellow);">
+        <p><strong>3. Lifting state up</strong><br>
+        App.jsx is the orchestrator. It owns the state, passes callbacks down to SearchBar, and passes data down to WeatherCard. Data flows down, events flow up.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="speaker-notes">These three patterns (async state management, custom hooks, and unidirectional data flow) are the foundation of every React app they'll work on.</aside>
+</section>
+
+<!-- SLIDE 23: Next Steps -->
+<section class="slide" data-slide="23">
+  <h2>📅 <span class="accent">Next Steps</span></h2>
+  <p class="subhead">What's coming up and how to prepare</p>
+  <div class="body">
+    <div class="grid-2">
+      <div class="card">
+        <p><strong>🔜 Next time — Day 48:</strong> Weather Dashboard Part 2 — 5-day forecast, charts, and geolocation. We'll add a forecast section with a bar chart and auto-detect the user's location.</p>
+      </div>
+      <div class="card">
+        <p><strong>🏁 Project 3 deadline:</strong> End of Week 8. The full Weather Dashboard should have: current conditions, 5-day forecast, search history, and unit toggle.</p>
+      </div>
+      <div class="card">
+        <p><strong>📚 Before next session:</strong></p>
+        <ul>
+          <li>Complete all three exercises above</li>
+          <li>Explore the OpenWeatherMap API docs</li>
+          <li>Read about <code>useEffect</code> cleanup</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p><strong>🔗 Useful links:</strong></p>
+        <ul>
+          <li>openweathermap.org/api</li>
+          <li>vitejs.dev/guide/env-and-mode</li>
+          <li>react.dev/reference/react</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout success">
+      <strong>🌟 Milestone recap:</strong> Project 1 (CLI Todo List) ✓ Week 3 · Project 2 (Bookmark Saver) ✓ Week 6 · Project 3 (Weather Dashboard) ← <strong>You are here</strong> · Project 5 (Full-Stack App) → Week 12
+    </div>
+  </div>
+  <aside class="speaker-notes">Encourage learners to submit questions before the next session. The exercises are designed to bridge Part 1 and Part 2 — completing them makes the second session much smoother.</aside>
+</section>
+
+<!-- SLIDE 24: Q&A / Closing -->
+<section class="slide section-slide" data-slide="24">
+  <h2>❓ Q&A</h2>
+  <p>Questions? Reach out before the next session.</p>
+  <p style="margin-top:20px;font-family:var(--font-mono);font-size:13px;color:var(--fg2);">Day 47 · Weather Dashboard (Part 1) · 90-Day Co-op Prep Plan</p>
+  <aside class="speaker-notes">Today they built a real API-powered React app. The same skills (fetch → state → render) power everything from e-commerce stores to analytics dashboards. Proud of them!</aside>
+</section>
+
+<div class="slide-counter" id="slideCounter">1 / 25</div>
+<div class="keyboard-hint">←  →  navigate &nbsp;·&nbsp; f fullscreen &nbsp;·&nbsp; n notes</div>
+</div>
+
+<script>
+(function() {
+  const deck = document.getElementById('deck');
+  const slides = deck.querySelectorAll('.slide');
+  const progress = document.getElementById('progressBar');
+  const counter = document.getElementById('slideCounter');
+  let current = 0;
+  let notesVisible = false;
+
+  function updateSlide(index) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === index);
+    });
+    const total = slides.length;
+    progress.style.width = ((index + 1) / total * 100) + '%';
+    counter.textContent = (index + 1) + ' / ' + total;
+    window.location.hash = '#' + index;
+  }
+
+  function goTo(index) {
+    if (index < 0 || index >= slides.length) return;
+    current = index;
+    updateSlide(current);
+  }
+
+  function toggleNotes() {
+    notesVisible = !notesVisible;
+    slides.forEach(s => {
+      const notes = s.querySelector('.speaker-notes');
+      if (notes) notes.classList.toggle('visible', notesVisible);
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      toggleNotes();
+    } else if (e.key === 'Home') {
+      goTo(0);
+    } else if (e.key === 'End') {
+      goTo(slides.length - 1);
+    }
+  });
+
+  // Hash navigation
+  window.addEventListener('hashchange', () => {
+    const hash = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(hash) && hash !== current) goTo(hash);
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0, touchStartY = 0;
+  deck.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, {passive: true});
+  deck.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      goTo(current + (dx < 0 ? 1 : -1));
+    }
+  }, {passive: true});
+
+  // Init from hash
+  const initHash = parseInt(window.location.hash.slice(1), 10);
+  if (!isNaN(initHash) && initHash >= 0 && initHash < slides.length) {
+    current = initHash;
+  }
+  updateSlide(current);
+})();
+</script>
+</body>
+</html>
