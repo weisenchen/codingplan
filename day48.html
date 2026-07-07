@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 48 — Weather Dashboard (Part 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --slide-bg: #161b22;
+  --surface: #1c2333;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-glow: rgba(88,166,255,0.15);
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --cyan: #39d2c0;
+  --font: 'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono: 'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+  --radius: 12px;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
+.slides { width: 100%; height: 100%; position: relative; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 48px 64px; opacity: 0; pointer-events: none;
+  transition: opacity .45s ease;
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+.slide-inner {
+  width: 100%; max-width: 960px; height: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+}
+/* Progress bar */
+.progress-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 100;
+  background: var(--border);
+}
+.progress-bar__fill {
+  height: 100%; background: var(--accent);
+  transition: width .4s ease;
+}
+/* Slide counter */
+.slide-counter {
+  position: fixed; bottom: 20px; right: 24px;
+  font-family: var(--mono); font-size: 13px; color: var(--text-muted);
+  z-index: 100; letter-spacing: .5px;
+}
+/* Last updated */
+.footer {
+  position: fixed; bottom: 20px; left: 24px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+  z-index: 100; opacity: .6;
+}
+/* Title slide */
+.title-slide .slide-inner { text-align: center; align-items: center; }
+.title-slide .day-badge {
+  display: inline-block;
+  background: var(--accent-glow); color: var(--accent);
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+  padding: 6px 18px; border-radius: 20px; border: 1px solid rgba(88,166,255,.3);
+  margin-bottom: 24px; letter-spacing: .5px;
+}
+.title-slide h1 {
+  font-size: clamp(36px,5vw,56px); font-weight: 800; line-height: 1.15;
+  background: linear-gradient(135deg,var(--accent),var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; max-width: 800px;
+}
+.title-slide .subtitle {
+  font-size: clamp(18px,2vw,24px); color: var(--text-muted);
+  margin-top: 16px; font-weight: 400;
+}
+.title-slide .meta {
+  margin-top: 28px; font-family: var(--mono); font-size: 13px; color: var(--text-muted);
+  display: flex; gap: 20px; align-items: center; justify-content: center;
+}
+.title-slide .meta span { display: flex; align-items: center; gap: 6px; }
+.title-slide .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); display: inline-block; }
+/* Section break */
+.section-break { background: linear-gradient(135deg,#0d1117 0%,#161b22 100%); }
+.section-break .slide-inner { text-align: center; align-items: center; }
+.section-break h2 {
+  font-size: clamp(28px,4vw,44px); font-weight: 700; letter-spacing: -.5px;
+  color: var(--accent);
+}
+.section-break .phase-tag {
+  font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;
+}
+/* Content slides */
+.content-slide h2 {
+  font-size: clamp(22px,2.8vw,32px); font-weight: 700; margin-bottom: 20px;
+  line-height: 1.2; letter-spacing: -.3px;
+}
+.content-slide p, .content-slide li {
+  font-size: clamp(15px,1.6vw,18px); line-height: 1.65; color: var(--text-muted);
+}
+.content-slide p + p { margin-top: 12px; }
+.content-slide ul, .content-slide ol { padding-left: 24px; display: flex; flex-direction: column; gap: 8px; }
+.content-slide li::marker { color: var(--accent); }
+.content-slide li strong { color: var(--text); }
+.content-slide .code-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; margin: 16px 0;
+  font-family: var(--mono); font-size: clamp(12px,1.2vw,14px); line-height: 1.55;
+  overflow-x: auto; white-space: pre;
+}
+.content-slide .code-block .hl { color: var(--accent); }
+.content-slide .code-block .kw { color: var(--purple); }
+.content-slide .code-block .str { color: var(--green); }
+.content-slide .code-block .cm { color: var(--text-muted); }
+.content-slide .code-block .num { color: var(--orange); }
+.content-slide .code-block .fn { color: var(--cyan); }
+.content-slide .highlight-box {
+  background: var(--accent-glow); border: 1px solid rgba(88,166,255,.25);
+  border-radius: var(--radius); padding: 14px 18px; margin: 12px 0;
+  font-size: clamp(14px,1.4vw,16px); line-height: 1.5;
+}
+.content-slide .highlight-box strong { color: var(--accent); }
+.content-slide .tip-box {
+  background: rgba(63,185,80,.08); border: 1px solid rgba(63,185,80,.25);
+  border-radius: var(--radius); padding: 12px 16px; margin: 12px 0;
+  font-size: clamp(13px,1.3vw,15px);
+}
+.content-slide .tip-box strong { color: var(--green); }
+.content-slide .warn-box {
+  background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.25);
+  border-radius: var(--radius); padding: 12px 16px; margin: 12px 0;
+  font-size: clamp(13px,1.3vw,15px);
+}
+.content-slide .warn-box strong { color: var(--orange); }
+.content-slide .two-col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px;
+}
+.content-slide .two-col > div { min-width: 0; }
+/* Comparison slide */
+.comparison-slide .grid-3 {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 12px;
+}
+.comparison-slide .grid-2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;
+}
+.comparison-slide .card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; text-align: center;
+}
+.comparison-slide .card h3 {
+  font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--accent);
+}
+.comparison-slide .card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+/* Code slide */
+.code-slide h2 { margin-bottom: 12px; }
+.code-slide .code-block { font-size: clamp(11px,1.1vw,13px); margin: 8px 0; }
+/* Recap slide */
+.recap-slide { text-align: center; }
+.recap-slide h2 { margin-bottom: 28px; }
+.recap-slide .takeaways { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.recap-slide .takeaway {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 28px; max-width: 640px; width: 100%;
+  text-align: left; display: flex; align-items: flex-start; gap: 12px;
+}
+.recap-slide .takeaway .num {
+  font-family: var(--mono); font-weight: 700; font-size: 18px;
+  color: var(--accent); flex-shrink: 0; width: 28px;
+}
+.recap-slide .takeaway p { font-size: 16px; line-height: 1.5; color: var(--text-muted); }
+.recap-slide .takeaway p strong { color: var(--text); }
+/* Exercise slide */
+.exercise-slide .exercise-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px; margin: 16px 0;
+}
+.exercise-slide .exercise-box h3 {
+  font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--accent);
+  display: flex; align-items: center; gap: 8px;
+}
+.exercise-slide .exercise-box .hint {
+  border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px;
+  font-size: 14px; color: var(--text-muted);
+}
+.exercise-slide .exercise-box .hint strong { color: var(--orange); }
+/* Checkbox list */
+.check-list { list-style: none; padding: 0 !important; }
+.check-list li {
+  display: flex; align-items: center; gap: 10px; padding: 6px 0;
+}
+.check-list li::before {
+  content: '☐'; font-size: 18px; color: var(--accent);
+  flex-shrink: 0; width: 22px;
+}
+.check-list li.done::before { content: '☑'; color: var(--green); }
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  .content-slide .two-col { grid-template-columns: 1fr; gap: 12px; }
+  .comparison-slide .grid-3, .comparison-slide .grid-2 { grid-template-columns: 1fr; }
+  .recap-slide .takeaway { padding: 12px 16px; }
+}
+/* Print */
+@media print {
+  .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 100vh; }
+  .progress-bar, .slide-counter, .footer { display: none; }
+  body { overflow: visible; }
+  .slide-inner { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="slides" id="slides">
+  <div class="progress-bar"><div class="progress-bar__fill" id="progressFill"></div></div>
+  <div class="slide-counter" id="slideCounter">1 / 18</div>
+  <div class="footer">Last updated: July 7, 2026</div>
+
+  <!-- SLIDE 1: TITLE -->
+  <section class="slide title-slide active" data-slide="0">
+    <div class="slide-inner">
+      <div class="day-badge">Day 48 · Week 8</div>
+      <h1>Weather Dashboard<br>(Part 2)</h1>
+      <p class="subtitle">Styling, Error States, 5-Day Forecast &bull; GitHub Pages Deployment</p>
+      <div class="meta">
+        <span>⏱ 60 min</span>
+        <span class="dot"></span>
+        <span>Phase III — Project</span>
+        <span class="dot"></span>
+        <span>🎯 Project 3 Milestone</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: OVERVIEW -->
+  <section class="slide content-slide" data-slide="1">
+    <div class="slide-inner">
+      <h2>📋 What You'll Build Today</h2>
+      <p>You already have a weather dashboard fetching current conditions from the <strong>OpenWeatherMap API</strong>. Today you'll polish it into a portfolio-ready project:</p>
+      <ul>
+        <li><strong>🎨 Style the UI</strong> — clean card-based design with weather icons</li>
+        <li><strong>⚠️ Handle errors gracefully</strong> — invalid city, API failure, network offline</li>
+        <li><strong>📅 Add a 5-day forecast</strong> — daily highs/lows with conditions</li>
+        <li><strong>🚀 Deploy on GitHub Pages</strong> — share your live dashboard with the world</li>
+      </ul>
+      <div class="highlight-box" style="margin-top:16px;">
+        <strong>🎯 Milestone:</strong> Project 3 — Weather Dashboard. You'll push to GitHub and deploy publicly by the end of this session.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: PREREQUISITES -->
+  <section class="slide content-slide" data-slide="2">
+    <div class="slide-inner">
+      <h2>📌 Prerequisites</h2>
+      <ul class="check-list">
+        <li class="done"><strong>Part 1 complete</strong> — HTML structure + OpenWeatherMap API integration for current weather</li>
+        <li class="done"><strong>API key ready</strong> — Your OpenWeatherMap API key in <code>config.js</code> or a <code>&lt;script&gt;</code> variable</li>
+        <li class="done"><strong>GitHub account</strong> — repo created, code pushed</li>
+        <li class="done"><strong>Node.js basics</strong> (optional) — for local dev server testing</li>
+        <li class="done"><strong>VS Code / editor</strong> — ready to write HTML, CSS, and JS</li>
+      </ul>
+      <div class="tip-box" style="margin-top:16px;">
+        <strong>⚡ Quick start:</strong> Open your <code>index.html</code> from Part 1. We'll be editing the same files — no new project needed.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: SECTION BREAK — STYLING -->
+  <section class="slide section-break" data-slide="3">
+    <div class="slide-inner">
+      <div class="phase-tag">Part 1 — UI Polish</div>
+      <h2>🎨 Styling the Dashboard</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: CARD-BASED LAYOUT -->
+  <section class="slide content-slide" data-slide="4">
+    <div class="slide-inner">
+      <h2>Card-Based Dashboard Layout</h2>
+      <p>Transform a flat page into a polished card layout. Each data section gets its own card with subtle shadows and consistent spacing.</p>
+      <div class="two-col">
+        <div>
+          <h3 style="font-size:15px;font-weight:600;color:var(--accent);margin-bottom:8px;">HTML Structure</h3>
+          <div class="code-block">&lt;main class="dashboard"&gt;
+  &lt;section class="card current"&gt;
+    &lt;h2&gt;Current Weather&lt;/h2&gt;
+    &lt;div class="weather-icon"&gt;☀️&lt;/div&gt;
+    &lt;div class="temp"&gt;22°C&lt;/div&gt;
+    &lt;div class="details"&gt;...&lt;/div&gt;
+  &lt;/section&gt;
+  &lt;section class="card forecast"&gt;
+    &lt;h2&gt;5-Day Forecast&lt;/h2&gt;
+    &lt;!-- forecast rows --&gt;
+  &lt;/section&gt;
+&lt;/main&gt;</div>
+        </div>
+        <div>
+          <h3 style="font-size:15px;font-weight:600;color:var(--accent);margin-bottom:8px;">CSS Foundation</h3>
+          <div class="code-block">.dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px <span class="hl">rgba(0,0,0,.08)</span>;
+  transition: transform .2s, box-shadow .2s;
+}
+.card:hover {
+  transform: <span class="hl">translateY(-2px)</span>;
+  box-shadow: 0 4px 20px <span class="hl">rgba(0,0,0,.12)</span>;
+}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: WEATHER ICONS + TYPOGRAPHY -->
+  <section class="slide content-slide" data-slide="5">
+    <div class="slide-inner">
+      <h2>Weather Icons &amp; Typography</h2>
+      <p>Use OpenWeatherMap's condition codes to display appropriate icons — emoji work great for a simple project, or use <strong>weather-icons</strong> CSS for production.</p>
+      <div class="code-block"><span class="cm">// Map condition codes to emoji/icons</span>
+<span class="kw">function</span> <span class="fn">getWeatherIcon</span>(code) {
+  <span class="kw">if</span> (code >= 200 && code < 300) <span class="kw">return</span> <span class="str">'⛈️'</span>;  <span class="cm">// Thunderstorm</span>
+  <span class="kw">if</span> (code >= 300 && code < 400) <span class="kw">return</span> <span class="str">'🌦️'</span>;  <span class="cm">// Drizzle</span>
+  <span class="kw">if</span> (code >= 500 && code < 600) <span class="kw">return</span> <span class="str">'🌧️'</span>;  <span class="cm">// Rain</span>
+  <span class="kw">if</span> (code >= 600 && code < 700) <span class="kw">return</span> <span class="str">'❄️'</span>;  <span class="cm">// Snow</span>
+  <span class="kw">if</span> (code >= 700 && code < 800) <span class="kw">return</span> <span class="str">'🌫️'</span>;  <span class="cm">// Atmosphere</span>
+  <span class="kw">if</span> (code === 800)               <span class="kw">return</span> <span class="str">'☀️'</span>;  <span class="cm">// Clear</span>
+  <span class="kw">if</span> (code > 800)                  <span class="kw">return</span> <span class="str">'☁️'</span>;  <span class="cm">// Clouds</span>
+  <span class="kw">return</span> <span class="str">'🌡️'</span>;                      <span class="cm">// Unknown</span>
+}
+
+<span class="cm">// Large icon display</span>
+document.querySelector(<span class="str">'.weather-icon'</span>).textContent =
+  <span class="fn">getWeatherIcon</span>(data.weather[0].id);
+document.querySelector(<span class="str">'.weather-icon'</span>).style.fontSize = <span class="str">'64px'</span>;</div>
+      <div class="tip-box">
+        <strong>💡 Pro tip:</strong> The OpenWeatherMap icon API (<code>https://openweathermap.org/img/wn/{icon}@2x.png</code>) also provides official icons. Use <code>data.weather[0].icon</code> for the filename.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: SECTION BREAK — ERROR STATES -->
+  <section class="slide section-break" data-slide="6">
+    <div class="slide-inner">
+      <div class="phase-tag">Part 2 — Robustness</div>
+      <h2>⚠️ Error States &amp; Edge Cases</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: ERROR HANDLING PATTERNS -->
+  <section class="slide content-slide" data-slide="7">
+    <div class="slide-inner">
+      <h2>Handling Three Types of Failure</h2>
+      <p>A production dashboard must handle these gracefully:</p>
+      <div class="comparison-slide">
+        <div class="grid-3">
+          <div class="card">
+            <h3>❌ Invalid City</h3>
+            <p>User types "xyzabc" — API returns <code>404</code>. Show a friendly error message, don't crash.</p>
+          </div>
+          <div class="card">
+            <h3>🔌 Network Error</h3>
+            <p>User loses internet. The <code>fetch()</code> throws a <code>TypeError</code>. Show "Check your connection."</p>
+          </div>
+          <div class="card">
+            <h3>⏳ Loading State</h3>
+            <p>While data is fetching, show a spinner or skeleton. Never show yesterday's data while loading new data.</p>
+          </div>
+        </div>
+      </div>
+      <div class="code-block"><span class="cm">// Unified fetch wrapper</span>
+<span class="kw">async function</span> <span class="fn">fetchWeather</span>(city) {
+  <span class="fn">showLoading</span>();
+  <span class="kw">try</span> {
+    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(
+      <span class="str">`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`</span>
+    );
+    <span class="kw">if</span> (!res.ok) {
+      <span class="kw">if</span> (res.status === 404) <span class="kw">throw</span> <span class="kw">new</span> Error(<span class="str">'City not found.'</span>);
+      <span class="kw">if</span> (res.status === 401) <span class="kw">throw</span> <span class="kw">new</span> Error(<span class="str">'Invalid API key.'</span>);
+      <span class="kw">throw</span> <span class="kw">new</span> Error(<span class="str">`Server error (${res.status})`</span>);
+    }
+    <span class="kw">const</span> data = <span class="kw">await</span> res.json();
+    <span class="fn">displayWeather</span>(data);
+    <span class="fn">hideLoading</span>();
+  } <span class="kw">catch</span> (err) {
+    <span class="fn">showError</span>(err.message);
+    <span class="fn">hideLoading</span>();
+  }
+}</div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: ERROR UI -->
+  <section class="slide content-slide" data-slide="8">
+    <div class="slide-inner">
+      <h2>Building the Error UI</h2>
+      <p>Add an error container to your HTML and style it to be visible but not jarring:</p>
+      <div class="two-col">
+        <div>
+          <div class="code-block"><span class="cm">&lt;!-- HTML --&gt;</span>
+&lt;div id="error-box" class="error-box <span class="hl">hidden</span>"&gt;
+  &lt;span class="error-icon"&gt;⚠️&lt;/span&gt;
+  &lt;p id="error-msg"&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+<span class="cm">&lt;!-- Loading spinner --&gt;</span>
+&lt;div id="spinner" class="<span class="hl">hidden</span>"&gt;
+  &lt;div class="spinner"&gt;&lt;/div&gt;
+&lt;/div&gt;</div>
+        </div>
+        <div>
+          <div class="code-block"><span class="cm">/* CSS */</span>
+.error-box {
+  background: <span class="hl">#fff5f5</span>;
+  border: 1px solid <span class="hl">#fecaca</span>;
+  border-radius: 12px; padding: 16px;
+  display: flex; align-items: center;
+  gap: 12px; margin: 12px 0;
+}
+.hidden { display: <span class="hl">none</span>; }
+
+<span class="cm">/* CSS spinner */</span>
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid <span class="hl">#e2e8f0</span>;
+  border-top-color: <span class="hl">#3b82f6</span>;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { <span class="hl">transform: rotate(360deg)</span>; } }</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: SECTION BREAK — 5-DAY FORECAST -->
+  <section class="slide section-break" data-slide="9">
+    <div class="slide-inner">
+      <div class="phase-tag">Part 3 — Forecast</div>
+      <h2>📅 5-Day Forecast</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: FORECAST API -->
+  <section class="slide content-slide" data-slide="10">
+    <div class="slide-inner">
+      <h2>OpenWeatherMap 5-Day API</h2>
+      <p>The <strong>5 Day / 3 Hour Forecast</strong> endpoint returns data at 3-hour intervals. We need to group by day and find the daily high/low.</p>
+      <div class="code-block"><span class="cm">// API endpoint (same API key)</span>
+<span class="kw">const</span> FORECAST_URL = <span class="str">'https://api.openweathermap.org/data/2.5/forecast'</span>;
+
+<span class="cm">// Response structure (list of 40 entries, 5 days × 8 per day)</span>
+{
+  list: [
+    {
+      dt: <span class="num">1688763600</span>,          <span class="cm">// Unix timestamp</span>
+      main: { temp: <span class="num">22.3</span>, temp_min: <span class="num">18.1</span>, temp_max: <span class="num">24.7</span> },
+      weather: [{ id: <span class="num">802</span>, description: <span class="str">'scattered clouds'</span>, icon: <span class="str">'03d'</span> }]
+    },
+    <span class="cm">// ... 39 more entries</span>
+  ]
+}
+</div>
+      <div class="warn-box">
+        <strong>⚠️ Important:</strong> The free tier <em>only</em> provides the 5 Day / 3 Hour endpoint. Group results by date (<code>dt_txt.split(' ')[0]</code>) to get daily summaries.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: GROUPING FORECAST BY DAY -->
+  <section class="slide content-slide code-slide" data-slide="11">
+    <div class="slide-inner">
+      <h2>Grouping Forecast Data by Day</h2>
+      <div class="code-block"><span class="kw">function</span> <span class="fn">groupByDay</span>(list) {
+  <span class="kw">const</span> days = {};
+  list.forEach(entry => {
+    <span class="kw">const</span> date = entry.dt_txt.<span class="fn">split</span>(<span class="str">' '</span>)[<span class="num">0</span>];   <span class="cm">// "2026-07-08"</span>
+    <span class="kw">if</span> (!days[date]) {
+      days[date] = {
+        date,
+        temps: [],
+        icons: [],
+        descriptions: []
+      };
+    }
+    days[date].temps.<span class="fn">push</span>(entry.main.temp);
+    days[date].icons.<span class="fn">push</span>(entry.weather[0].icon);
+    days[date].descriptions.<span class="fn">push</span>(entry.weather[0].description);
+  });
+
+  <span class="kw">return</span> Object.values(days).<span class="fn">map</span>(day => ({
+    date: day.date,
+    high: Math.<span class="fn">max</span>(...day.temps),
+    low:  Math.<span class="fn">min</span>(...day.temps),
+    icon: day.icons[Math.<span class="fn">floor</span>(day.icons.length / <span class="num">2</span>)],   <span class="cm">// mid-day icon</span>
+    desc: day.descriptions[Math.<span class="fn">floor</span>(day.descriptions.length / <span class="num">2</span>)],
+  }));
+}
+
+<span class="cm">// Usage</span>
+<span class="kw">const</span> dailyForecast = <span class="fn">groupByDay</span>(data.list);   <span class="cm">// 5 objects</span>
+<span class="fn">renderForecast</span>(dailyForecast.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">5</span>));     <span class="cm">// next 5 days</span></div>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: RENDERING THE FORECAST -->
+  <section class="slide content-slide" data-slide="12">
+    <div class="slide-inner">
+      <h2>Rendering the Forecast Cards</h2>
+      <div class="two-col">
+        <div>
+          <div class="code-block"><span class="cm">/* CSS for forecast row */</span>
+.forecast-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+.forecast-day {
+  flex: <span class="hl">1</span>;
+  min-width: <span class="hl">100px</span>;
+  text-align: center;
+  padding: 16px 8px;
+  background: <span class="hl">#f8fafc</span>;
+  border-radius: <span class="hl">12px</span>;
+}
+.forecast-day .day-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.forecast-day .day-icon {
+  font-size: 32px;
+  margin: 6px 0;
+}
+.forecast-day .day-temps {
+  font-size: 13px;
+  color: <span class="hl">#64748b</span>;
+}
+.forecast-day .high { font-weight: 600; }
+.forecast-day .low { color: <span class="hl">#94a3b8</span>; }</div>
+        </div>
+        <div>
+          <div class="code-block"><span class="kw">function</span> <span class="fn">renderForecast</span>(days) {
+  <span class="kw">const</span> container = document.querySelector(<span class="str">'.forecast-row'</span>);
+  container.innerHTML = <span class="str">''</span>;
+  days.forEach((day, i) => {
+    <span class="kw">const</span> dayName = i === <span class="num">0</span> ? <span class="str">'Today'</span>
+      : <span class="kw">new</span> Date(day.date).<span class="fn">toLocaleDateString</span>(<span class="str">'en'</span>, { weekday: <span class="str">'short'</span> });
+    <span class="kw">const</span> div = document.<span class="fn">createElement</span>(<span class="str">'div'</span>);
+    div.className = <span class="str">'forecast-day'</span>;
+    div.innerHTML = <span class="str">`
+      &lt;div class="day-name"&gt;${dayName}&lt;/div&gt;
+      &lt;div class="day-icon"&gt;${getWeatherIcon(/* from desc */)}&lt;/div&gt;
+      &lt;div class="day-temps"&gt;
+        &lt;span class="high"&gt;${Math.round(day.high)}°&lt;/span&gt;
+        &lt;span&gt; / &lt;/span&gt;
+        &lt;span class="low"&gt;${Math.round(day.low)}°&lt;/span&gt;
+      &lt;/div&gt;
+    `</span>;
+    container.<span class="fn">appendChild</span>(div);
+  });
+}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 14: SECTION BREAK — DEPLOYMENT -->
+  <section class="slide section-break" data-slide="13">
+    <div class="slide-inner">
+      <div class="phase-tag">Part 4 — Ship It</div>
+      <h2>🚀 Deploying on GitHub Pages</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 15: GITHUB PAGES -->
+  <section class="slide content-slide" data-slide="14">
+    <div class="slide-inner">
+      <h2>GitHub Pages in 3 Steps</h2>
+      <p>Your static dashboard (HTML + CSS + JS) is perfect for GitHub Pages — free hosting with a public URL.</p>
+      <div class="code-block"><span class="cm"># 1. Make sure your repo has an index.html at the root</span>
+<span class="cm">#    (or in a docs/ folder)</span>
+$ ls
+index.html   style.css   app.js   README.md
+
+<span class="cm"># 2. Push your code</span>
+$ git add .
+$ git commit -m <span class="str">"Weather Dashboard v2 — styling, errors, forecast"</span>
+$ git push origin main
+
+<span class="cm"># 3. Enable GitHub Pages via Settings</span>
+<span class="cm">#    Settings → Pages → Source: Deploy from branch</span>
+<span class="cm">#    Branch: main, folder: / (root)</span>
+<span class="cm">#    → SAVE. Wait ~2 minutes.</span>
+<span class="cm">#    Your site is live at:</span>
+<span class="cm">#    https://{username}.github.io/{repo-name}/</span></div>
+      <div class="tip-box">
+        <strong>💡 Alternative:</strong> GitHub Actions auto-deploys on push. Or use <code>npm install -g gh-pages</code> + <code>gh-pages -d .</code> for a CLI workflow.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 16: EXERCISES -->
+  <section class="slide exercise-slide" data-slide="15">
+    <div class="slide-inner">
+      <h2>✏️ Practice Exercises</h2>
+      <div class="exercise-box">
+        <h3>1. Geolocation Support</h3>
+        <p>Add a "Use My Location" button that uses the <strong>Geolocation API</strong> (<code>navigator.geolocation.getCurrentPosition</code>) to fetch weather at the user's current coordinates.</p>
+        <div class="hint"><strong>💡 Hint:</strong> OpenWeatherMap supports <code>?lat={lat}&amp;lon={lon}</code> as an alternative to <code>?q={city}</code>.</div>
+      </div>
+      <div class="exercise-box">
+        <h3>2. Unit Toggle (°C / °F)</h3>
+        <p>Add a toggle button that switches between metric and imperial units. Re-fetch data with <code>units=metric</code> or <code>units=imperial</code>.</p>
+        <div class="hint"><strong>💡 Hint:</strong> Store the current unit in a variable. On toggle, call <code>fetchWeather(city)</code> again with the new unit.</div>
+      </div>
+      <div class="exercise-box">
+        <h3>3. Local Storage for Last City</h3>
+        <p>Save the user's last searched city to <code>localStorage</code>. On page load, auto-fetch weather for that city so the dashboard is never empty.</p>
+        <div class="hint"><strong>💡 Hint:</strong> <code>localStorage.setItem('lastCity', city)</code> on each search; <code>localStorage.getItem('lastCity')</code> on <code>DOMContentLoaded</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 17: SUMMARY -->
+  <section class="slide recap-slide" data-slide="16">
+    <div class="slide-inner">
+      <h2>📌 Key Takeaways</h2>
+      <div class="takeaways">
+        <div class="takeaway">
+          <div class="num">01</div>
+          <p><strong>Styling matters.</strong> A card-based layout with hover effects, weather icons, and consistent spacing turns raw data into a professional dashboard.</p>
+        </div>
+        <div class="takeaway">
+          <div class="num">02</div>
+          <p><strong>Handle failures early.</strong> Invalid city (404), bad API key (401), and network errors all get separate, user-friendly messages — never a blank screen.</p>
+        </div>
+        <div class="takeaway">
+          <div class="num">03</div>
+          <p><strong>Group forecast data by day.</strong> The API returns 3-hour blocks; compute daily min/max and pick a representative icon for each day.</p>
+        </div>
+        <div class="takeaway">
+          <div class="num">04</div>
+          <p><strong>Deploy is one setting away.</strong> GitHub Pages hosts your static dashboard at a public URL. Enable it in Settings → Pages, push, and you're live.</p>
+        </div>
+      </div>
+      <p style="margin-top:20px;font-size:15px;color:var(--text-muted);">
+        🎉 <strong>Project 3 complete!</strong> Next up: Project 4
+      </p>
+    </div>
+  </section>
+
+  <!-- SLIDE 18: NEXT STEPS -->
+  <section class="slide content-slide" data-slide="17">
+    <div class="slide-inner" style="text-align:center;align-items:center;">
+      <h2>🔮 What's Next</h2>
+      <div class="highlight-box" style="text-align:left;max-width:600px;width:100;">
+        <p style="margin-bottom:12px;"><strong>✅ Project 1</strong> — CLI Todo List (Week 3)</p>
+        <p style="margin-bottom:12px;"><strong>✅ Project 2</strong> — Bookmark Saver (Week 6)</p>
+        <p style="margin-bottom:12px;"><strong>✅ Project 3</strong> — Weather Dashboard (Week 8) <span style="color:var(--green);">← You are here</span></p>
+        <p style="margin-bottom:8px;"><strong>⏳ Project 4</strong> — Coming soon after Phase III</p>
+        <p><strong>⏳ Project 5</strong> — Full-Stack App (Week 12)</p>
+      </div>
+      <p style="margin-top:20px;font-size:15px;color:var(--text-muted);">
+        Deployed on <strong>GitHub Pages</strong> — share your URL with recruiters today!
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const counter = document.getElementById('slideCounter');
+  const progressFill = document.getElementById('progressFill');
+  let current = 0;
+
+  function updateSlide(index) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === index));
+    counter.textContent = (index + 1) + ' / ' + total;
+    progressFill.style.width = ((index + 1) / total * 100) + '%';
+    window.location.hash = '#' + (index + 1);
+  }
+
+  function goNext() {
+    if (current < total - 1) { current++; updateSlide(current); }
+  }
+
+  function goPrev() {
+    if (current > 0) { current--; updateSlide(current); }
+  }
+
+  window.addEventListener('keydown', function(e) {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); goNext();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); goPrev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 50) {
+      if (diff < 0) goNext();
+      else goPrev();
+    }
+  }, { passive: true });
+
+  // Hash navigation
+  window.addEventListener('hashchange', function() {
+    const match = window.location.hash.match(/^#(\d+)$/);
+    if (match) {
+      const idx = parseInt(match[1], 10) - 1;
+      if (idx >= 0 && idx < total && idx !== current) {
+        current = idx;
+        updateSlide(current);
+      }
+    }
+  });
+
+  // Initial state
+  if (window.location.hash) {
+    const match = window.location.hash.match(/^#(\d+)$/);
+    if (match) {
+      const idx = parseInt(match[1], 10) - 1;
+      if (idx >= 0 && idx < total) { current = idx; }
+    }
+  }
+  updateSlide(current);
+})();
+</script>
+</body>
+</html>
