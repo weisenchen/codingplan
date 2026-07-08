@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 49 — Big O Notation &amp; Complexity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --slide-bg: #161b22;
+  --surface: #1c2333;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-glow: rgba(88,166,255,0.15);
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --cyan: #39d2c0;
+  --font: 'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono: 'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+  --radius: 12px;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
+.slides { width: 100%; height: 100%; position: relative; }
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 48px 64px; opacity: 0; pointer-events: none;
+  transition: opacity .45s ease;
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+.slide-inner {
+  width: 100%; max-width: 960px; height: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+}
+/* Progress bar */
+.progress-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 100;
+  background: var(--border);
+}
+.progress-bar__fill {
+  height: 100%; background: var(--accent);
+  transition: width .4s ease;
+}
+/* Slide counter */
+.slide-counter {
+  position: fixed; bottom: 20px; right: 24px;
+  font-family: var(--mono); font-size: 13px; color: var(--text-muted);
+  z-index: 100; letter-spacing: .5px;
+}
+/* Last updated */
+.footer {
+  position: fixed; bottom: 20px; left: 24px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+  z-index: 100; opacity: .6;
+}
+/* Title slide */
+.title-slide .slide-inner { text-align: center; align-items: center; }
+.title-slide .day-badge {
+  display: inline-block;
+  background: var(--accent-glow); color: var(--accent);
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+  padding: 6px 18px; border-radius: 20px; border: 1px solid rgba(88,166,255,.3);
+  margin-bottom: 24px; letter-spacing: .5px;
+}
+.title-slide h1 {
+  font-size: clamp(36px,5vw,56px); font-weight: 800; line-height: 1.15;
+  background: linear-gradient(135deg,var(--accent),var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; max-width: 800px;
+}
+.title-slide .subtitle {
+  font-size: clamp(18px,2vw,24px); color: var(--text-muted);
+  margin-top: 16px; font-weight: 400;
+}
+.title-slide .meta {
+  margin-top: 28px; font-family: var(--mono); font-size: 13px; color: var(--text-muted);
+  display: flex; gap: 20px; align-items: center; justify-content: center;
+}
+.title-slide .meta span { display: flex; align-items: center; gap: 6px; }
+.title-slide .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); display: inline-block; }
+/* Section break */
+.section-break { background: linear-gradient(135deg,#0d1117 0%,#161b22 100%); }
+.section-break .slide-inner { text-align: center; align-items: center; }
+.section-break h2 {
+  font-size: clamp(28px,4vw,44px); font-weight: 700; letter-spacing: -.5px;
+  color: var(--accent);
+}
+.section-break .phase-tag {
+  font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;
+}
+/* Content slides */
+.content-slide h2 {
+  font-size: clamp(22px,2.8vw,32px); font-weight: 700; margin-bottom: 20px;
+  line-height: 1.2; letter-spacing: -.3px;
+}
+.content-slide p, .content-slide li {
+  font-size: clamp(15px,1.6vw,18px); line-height: 1.65; color: var(--text-muted);
+}
+.content-slide p + p { margin-top: 12px; }
+.content-slide ul, .content-slide ol { padding-left: 24px; display: flex; flex-direction: column; gap: 8px; }
+.content-slide li::marker { color: var(--accent); }
+.content-slide li strong { color: var(--text); }
+.content-slide .code-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; margin: 16px 0;
+  font-family: var(--mono); font-size: clamp(12px,1.2vw,14px); line-height: 1.55;
+  overflow-x: auto; white-space: pre;
+}
+.content-slide .code-block .hl { color: var(--accent); }
+.content-slide .code-block .kw { color: var(--purple); }
+.content-slide .code-block .str { color: var(--green); }
+.content-slide .code-block .cm { color: var(--text-muted); }
+.content-slide .code-block .num { color: var(--orange); }
+.content-slide .code-block .fn { color: var(--cyan); }
+.content-slide .highlight-box {
+  background: var(--accent-glow); border: 1px solid rgba(88,166,255,.25);
+  border-radius: var(--radius); padding: 14px 18px; margin: 12px 0;
+  font-size: clamp(14px,1.4vw,16px); line-height: 1.5;
+}
+.content-slide .highlight-box strong { color: var(--accent); }
+.content-slide .tip-box {
+  background: rgba(63,185,80,.08); border: 1px solid rgba(63,185,80,.25);
+  border-radius: var(--radius); padding: 12px 16px; margin: 12px 0;
+  font-size: clamp(13px,1.3vw,15px);
+}
+.content-slide .tip-box strong { color: var(--green); }
+.content-slide .warn-box {
+  background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.25);
+  border-radius: var(--radius); padding: 12px 16px; margin: 12px 0;
+  font-size: clamp(13px,1.3vw,15px);
+}
+.content-slide .warn-box strong { color: var(--orange); }
+.content-slide .two-col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px;
+}
+.content-slide .two-col > div { min-width: 0; }
+.content-slide .two-col h3 {
+  font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--accent);
+}
+/* Code slide */
+.code-slide h2 { margin-bottom: 12px; }
+.code-slide .code-block { font-size: clamp(11px,1.1vw,13px); margin: 8px 0; }
+.code-slide p { font-size: clamp(14px,1.4vw,16px); line-height: 1.6; color: var(--text-muted); margin-bottom: 8px; }
+/* Comparison / complexity cards */
+.complexity-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;
+}
+.complexity-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; text-align: center;
+}
+.complexity-card .big-o {
+  font-family: var(--mono); font-size: clamp(24px,2.8vw,32px); font-weight: 700;
+  margin-bottom: 6px;
+}
+.complexity-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+.complexity-card .example { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+.complexity-card.o1 .big-o { color: var(--green); }
+.complexity-card.on .big-o { color: var(--accent); }
+.complexity-card.on2 .big-o { color: var(--orange); }
+.complexity-card.ologn .big-o { color: var(--cyan); }
+/* Chart / visual */
+.chart-svg {
+  margin: 16px 0; display: flex; justify-content: center;
+}
+.chart-svg svg { max-width: 100%; height: auto; }
+/* Exercise slide */
+.exercise-slide .exercise-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px; margin: 16px 0;
+}
+.exercise-slide .exercise-box h3 {
+  font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--accent);
+  display: flex; align-items: center; gap: 8px;
+}
+.exercise-slide .exercise-box .hint {
+  border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px;
+  font-size: 14px; color: var(--text-muted);
+}
+.exercise-slide .exercise-box .hint strong { color: var(--orange); }
+/* Recap slide */
+.recap-slide { text-align: center; }
+.recap-slide h2 { margin-bottom: 28px; }
+.recap-slide .takeaways { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.recap-slide .takeaway {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 28px; max-width: 640px; width: 100%;
+  text-align: left; display: flex; align-items: flex-start; gap: 12px;
+}
+.recap-slide .takeaway .num {
+  font-family: var(--mono); font-weight: 700; font-size: 18px;
+  color: var(--accent); flex-shrink: 0; width: 28px;
+}
+.recap-slide .takeaway p { font-size: 16px; line-height: 1.5; color: var(--text-muted); }
+.recap-slide .takeaway p strong { color: var(--text); }
+/* Checkbox list */
+.check-list { list-style: none; padding: 0 !important; }
+.check-list li {
+  display: flex; align-items: center; gap: 10px; padding: 6px 0;
+}
+.check-list li::before {
+  content: '☐'; font-size: 18px; color: var(--accent);
+  flex-shrink: 0; width: 22px;
+}
+.check-list li.done::before { content: '☑'; color: var(--green); }
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  .content-slide .two-col { grid-template-columns: 1fr; gap: 12px; }
+  .complexity-grid { grid-template-columns: 1fr; }
+  .recap-slide .takeaway { padding: 12px 16px; }
+}
+/* Print */
+@media print {
+  .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 100vh; }
+  .progress-bar, .slide-counter, .footer { display: none; }
+  body { overflow: visible; }
+  .slide-inner { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="slides" id="slides">
+  <div class="progress-bar"><div class="progress-bar__fill" id="progressFill"></div></div>
+  <div class="slide-counter" id="slideCounter">1 / 18</div>
+  <div class="footer">Last updated: July 8, 2026</div>
+
+  <!-- SLIDE 1: TITLE -->
+  <section class="slide title-slide active" data-slide="0">
+    <div class="slide-inner">
+      <div class="day-badge">Day 49 · Week 9</div>
+      <h1>Big O Notation<br>&amp; Complexity</h1>
+      <p class="subtitle">Measuring Algorithm Efficiency · O(1), O(n), O(n²), O(log n)</p>
+      <div class="meta">
+        <span>⏱ 60 min</span>
+        <span class="dot"></span>
+        <span>Phase III — DSA</span>
+        <span class="dot"></span>
+        <span>🎯 Foundations</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: OVERVIEW -->
+  <section class="slide content-slide" data-slide="1">
+    <div class="slide-inner">
+      <h2>📋 What You'll Learn Today</h2>
+      <p>Big O notation is the language engineers use to describe how fast an algorithm runs as input grows. Every technical interview — from intern to senior — expects you to reason about it fluently.</p>
+      <ul>
+        <li><strong>What Big O is</strong> — the formal definition and why it matters</li>
+        <li><strong>The 4 essential complexities</strong> — O(1), O(n), O(n²), O(log n)</li>
+        <li><strong>Counting operations</strong> — how to analyze loops and nested loops</li>
+        <li><strong>Identifying complexity</strong> — pattern recognition for real code</li>
+      </ul>
+      <div class="highlight-box" style="margin-top:16px;">
+        <strong>🎯 Goal:</strong> By the end of this session you'll be able to determine the Big O of any simple function and explain your reasoning in an interview setting.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: PREREQUISITES -->
+  <section class="slide content-slide" data-slide="2">
+    <div class="slide-inner">
+      <h2>📌 Prerequisites</h2>
+      <ul class="check-list">
+        <li class="done"><strong>Python basics</strong> — writing functions, loops, and lists</li>
+        <li class="done"><strong>Basic math</strong> — you know what logarithms are (brief refresher included)</li>
+        <li class="done"><strong>A Python environment</strong> — runnable code to experiment with</li>
+      </ul>
+      <div class="tip-box" style="margin-top:16px;">
+        <strong>⚡ No prior DSA knowledge needed.</strong> This is your entry point into algorithm analysis. We'll build intuition first, then formalize it.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: SECTION BREAK — WHAT IS BIG O -->
+  <section class="slide section-break" data-slide="3">
+    <div class="slide-inner">
+      <div class="phase-tag">Foundation</div>
+      <h2>What Is Big O?</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: THE CORE IDEA -->
+  <section class="slide content-slide" data-slide="4">
+    <div class="slide-inner">
+      <h2>The Core Idea</h2>
+      <p>Big O answers one question: <strong>how does the runtime grow as the input gets larger?</strong></p>
+      <p>We don't care about exact milliseconds or CPU cycles. Those change with hardware. We care about the <strong>rate of growth</strong> — the shape of the curve when you plot input size vs. runtime.</p>
+      <div class="chart-svg">
+        <svg width="600" height="280" viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid -->
+          <line x1="60" y1="20" x2="60" y2="240" stroke="#30363d" stroke-width="1"/>
+          <line x1="60" y1="240" x2="580" y2="240" stroke="#30363d" stroke-width="1"/>
+          <!-- Axis labels -->
+          <text x="30" y="130" fill="#8b949e" font-size="11" font-family="JetBrains Mono,monospace" text-anchor="middle" transform="rotate(-90,30,130)">Runtime</text>
+          <text x="320" y="265" fill="#8b949e" font-size="11" font-family="JetBrains Mono,monospace" text-anchor="middle">Input Size (n)</text>
+          <!-- O(1) constant -->
+          <line x1="60" y1="80" x2="580" y2="80" stroke="#3fb950" stroke-width="2.5" stroke-dasharray="6,3"/>
+          <text x="590" y="84" fill="#3fb950" font-size="12" font-family="JetBrains Mono,monospace">O(1)</text>
+          <!-- O(log n) -->
+          <path d="M60,230 Q120,200 200,170 Q280,145 360,125 Q440,110 520,100 Q580,93 590,92" stroke="#39d2c0" stroke-width="2.5" fill="none"/>
+          <text x="590" y="92" fill="#39d2c0" font-size="12" font-family="JetBrains Mono,monospace">O(log n)</text>
+          <!-- O(n) linear -->
+          <line x1="60" y1="240" x2="580" y2="65" stroke="#58a6ff" stroke-width="2.5"/>
+          <text x="590" y="62" fill="#58a6ff" font-size="12" font-family="JetBrains Mono,monospace">O(n)</text>
+          <!-- O(n²) -->
+          <path d="M60,240 Q160,235 260,210 Q360,150 460,60 Q510,20 580,-10" stroke="#d29922" stroke-width="2.5" fill="none"/>
+          <text x="590" y="-10" fill="#d29922" font-size="12" font-family="JetBrains Mono,monospace">O(n²)</text>
+        </svg>
+      </div>
+      <p style="text-align:center;color:var(--text-muted);font-size:13px;">Flat lines (O(1)) are ideal. Steep curves (O(n²)) are expensive.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: THE RULES -->
+  <section class="slide content-slide" data-slide="5">
+    <div class="slide-inner">
+      <h2>The Rules of Big O</h2>
+      <p>Big O describes the <strong>worst-case scenario</strong> and focuses on the <strong>dominant term</strong>:</p>
+      <div class="two-col">
+        <div>
+          <h3>1. Drop Constants</h3>
+          <p><code>O(2n)</code> → <code>O(n)</code><br><code>O(n/2)</code> → <code>O(n)</code></p>
+          <p style="font-size:14px;margin-top:8px;color:var(--text-muted);">Constant factors don't change the growth rate.</p>
+        </div>
+        <div>
+          <h3>2. Keep the Biggest Term</h3>
+          <p><code>O(n² + n)</code> → <code>O(n²)</code><br><code>O(n + log n)</code> → <code>O(n)</code></p>
+          <p style="font-size:14px;margin-top:8px;color:var(--text-muted);">For large n, the smaller terms don't matter.</p>
+        </div>
+      </div>
+      <div class="warn-box" style="margin-top:12px;">
+        <strong>⚠️ Interview tip:</strong> Always state the simplified form. Saying "O(2n)" marks you as a beginner.
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: SECTION BREAK — THE FOUR ESSENTIAL COMPLEXITIES -->
+  <section class="slide section-break" data-slide="6">
+    <div class="slide-inner">
+      <div class="phase-tag">The Big Four</div>
+      <h2>O(1) · O(n) · O(n²) · O(log n)</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: O(1) CONSTANT TIME -->
+  <section class="slide content-slide" data-slide="7">
+    <div class="slide-inner">
+      <h2>O(1) — Constant Time</h2>
+      <p>The fastest category. Runtime <strong>does not depend</strong> on input size. Whether the array has 10 items or 10 million — same speed.</p>
+      <div class="two-col">
+        <div>
+          <h3>Examples</h3>
+          <div class="code-block"><span class="kw">def</span> <span class="fn">get_first</span>(arr):
+    <span class="kw">return</span> arr[<span class="num">0</span>]
+
+<span class="kw">def</span> <span class="fn">lookup</span>(dict, key):
+    <span class="kw">return</span> dict[key]
+
+<span class="kw">def</span> <span class="fn">is_even</span>(n):
+    <span class="kw">return</span> n % <span class="num">2</span> == <span class="num">0</span></div>
+        </div>
+        <div>
+          <h3>Key Insight</h3>
+          <div class="complexity-card o1">
+            <div class="big-o">O(1)</div>
+            <div class="label">Constant Time</div>
+            <div class="example">array[0], dict[key], arithmetic</div>
+          </div>
+          <p style="font-size:14px;margin-top:8px;color:var(--text-muted);">One operation, always. No loops, no recursion — just a direct computation or lookup.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: O(n) LINEAR TIME -->
+  <section class="slide content-slide" data-slide="8">
+    <div class="slide-inner">
+      <h2>O(n) — Linear Time</h2>
+      <p>Runtime grows <strong>proportionally</strong> with input size. Double the input → double the time. A single loop that visits every element.</p>
+      <div class="two-col">
+        <div>
+          <h3>Examples</h3>
+          <div class="code-block"><span class="kw">def</span> <span class="fn">find_max</span>(arr):
+    max_val = arr[<span class="num">0</span>]
+    <span class="kw">for</span> n <span class="kw">in</span> arr:
+        <span class="kw">if</span> n > max_val:
+            max_val = n
+    <span class="kw">return</span> max_val
+
+<span class="kw">def</span> <span class="fn">sum_list</span>(arr):
+    total = <span class="num">0</span>
+    <span class="kw">for</span> n <span class="kw">in</span> arr:
+        total += n
+    <span class="kw">return</span> total</div>
+        </div>
+        <div>
+          <h3>Pattern</h3>
+          <div class="complexity-card on">
+            <div class="big-o">O(n)</div>
+            <div class="label">Linear Time</div>
+            <div class="example">Single loop over n elements</div>
+          </div>
+          <p style="font-size:14px;margin-top:8px;color:var(--text-muted);">One <strong>non-nested</strong> loop that iterates over the input = O(n).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: O(n²) QUADRATIC TIME -->
+  <section class="slide content-slide" data-slide="9">
+    <div class="slide-inner">
+      <h2>O(n²) — Quadratic Time</h2>
+      <p>Runtime grows <strong>with the square</strong> of input size. This happens when you have nested loops — for every element, you loop over every element again.</p>
+      <div class="two-col">
+        <div>
+          <h3>Examples</h3>
+          <div class="code-block"><span class="kw">def</span> <span class="fn">has_duplicates</span>(arr):
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="hl">range(len(arr))</span>:
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="hl">range(len(arr))</span>:
+            <span class="kw">if</span> i != j <span class="kw">and</span> \
+               arr[i] == arr[j]:
+                <span class="kw">return</span> <span class="hl">True</span>
+    <span class="kw">return</span> <span class="hl">False</span>
+
+<span class="cm"># Also O(n²):</span>
+<span class="kw">def</span> <span class="fn">print_pairs</span>(arr):
+    <span class="kw">for</span> x <span class="kw">in</span> arr:
+        <span class="kw">for</span> y <span class="kw">in</span> arr:
+            print(x, y)</div>
+        </div>
+        <div>
+          <h3>Pattern</h3>
+          <div class="complexity-card on2">
+            <div class="big-o">O(n²)</div>
+            <div class="label">Quadratic Time</div>
+            <div class="example">Nested loops over n elements</div>
+          </div>
+          <p style="font-size:14px;margin-top:8px;color:var(--text-muted);"><strong>Warning:</strong> For n=10,000, O(n²) does 100 million operations. Avoid for large inputs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: O(log n) LOGARITHMIC TIME -->
+  <section class="slide content-slide" data-slide="10">
+    <div class="slide-inner">
+      <h2>O(log n) — Logarithmic Time</h2>
+      <p>Runtime grows slowly. Each step cuts the problem size in half. Even for huge inputs, the number of steps stays tiny.</p>
+      <div class="two-col">
+        <div>
+          <h3>Binary Search</h3>
+          <div class="code-block"><span class="kw">def</span> <span class="fn">binary_search</span>(arr, target):
+    left, right = <span class="num">0</span>, len(arr) - <span class="num">1</span>
+    <span class="kw">while</span> left <= right:
+        mid = (left + right) // <span class="num">2</span>
+        <span class="kw">if</span> arr[mid] == target:
+            <span class="kw">return</span> mid
+        <span class="kw">elif</span> arr[mid] < target:
+            left = mid + <span class="num">1</span>
+        <span class="kw">else</span>:
+            right = mid - <span class="num">1</span>
+    <span class="kw">return</span> -<span class="num">1</span></div>
+        </div>
+        <div>
+          <h3>How Fast?</h3>
+          <div class="complexity-card olog">
+            <div class="big-o">O(log n)</div>
+            <div class="label">Logarithmic Time</div>
+            <div class="example">n=1M → ~20 steps</div>
+          </div>
+          <p style="font-size:14px;margin-top:8px;color:var(--text-muted);">Searching 1 million items takes only ~20 checks! <strong>Key requirement:</strong> input must be sorted.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: COMPLEXITY COMPARISON TABLE -->
+  <section class="slide content-slide" data-slide="11">
+    <div class="slide-inner">
+      <h2>Complexity at a Glance</h2>
+      <p style="margin-bottom:16px;">How the four complexities compare for real-world input sizes:</p>
+      <div class="complexity-grid">
+        <div class="complexity-card o1">
+          <div class="big-o">O(1)</div>
+          <div class="label">Constant</div>
+          <div class="example">n=10 → 1 op · n=1M → 1 op</div>
+        </div>
+        <div class="complexity-card olog">
+          <div class="big-o">O(log n)</div>
+          <div class="label">Logarithmic</div>
+          <div class="example">n=10 → ~3 ops · n=1M → ~20 ops</div>
+        </div>
+        <div class="complexity-card on">
+          <div class="big-o">O(n)</div>
+          <div class="label">Linear</div>
+          <div class="example">n=10 → 10 ops · n=1M → 1M ops</div>
+        </div>
+        <div class="complexity-card on2">
+          <div class="big-o">O(n²)</div>
+          <div class="label">Quadratic</div>
+          <div class="example">n=10 → 100 ops · n=1M → 1T ops</div>
+        </div>
+      </div>
+      <p style="font-size:14px;color:var(--text-muted);margin-top:12px;">O(n²) at 1 million inputs is <strong style="color:var(--orange);">1 trillion operations</strong>. That's the difference between 1 second and 31,000 years.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: SECTION BREAK — COUNTING OPERATIONS -->
+  <section class="slide section-break" data-slide="12">
+    <div class="slide-inner">
+      <div class="phase-tag">Hands-On</div>
+      <h2>Counting Operations in Loops</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 14: LOOP PATTERNS WALKTHROUGH -->
+  <section class="slide content-slide" data-slide="13">
+    <div class="slide-inner">
+      <h2>Loop Patterns — Walkthrough</h2>
+      <p>Let's trace through common loop patterns and identify their Big O:</p>
+      <div class="two-col">
+        <div>
+          <h3>Single loop</h3>
+          <div class="code-block"><span class="kw">for</span> i <span class="kw">in</span> range(n):
+    print(i)</div>
+          <p style="font-size:14px;color:var(--accent);font-weight:600;">→ O(n)</p>
+        </div>
+        <div>
+          <h3>Two separate loops</h3>
+          <div class="code-block"><span class="kw">for</span> i <span class="kw">in</span> range(n):
+    print(i)
+<span class="kw">for</span> j <span class="kw">in</span> range(n):
+    print(j)</div>
+          <p style="font-size:14px;color:var(--accent);font-weight:600;">→ O(2n) → O(n)</p>
+        </div>
+      </div>
+      <div class="two-col" style="margin-top:8px;">
+        <div>
+          <h3>Nested loops</h3>
+          <div class="code-block"><span class="kw">for</span> i <span class="kw">in</span> range(n):
+    <span class="kw">for</span> j <span class="kw">in</span> range(n):
+        print(i, j)</div>
+          <p style="font-size:14px;color:var(--orange);font-weight:600;">→ O(n²)</p>
+        </div>
+        <div>
+          <h3>Halving each step</h3>
+          <div class="code-block">n = len(arr)
+<span class="kw">while</span> n > <span class="num">0</span>:
+    print(n)
+    n //= <span class="num">2</span></div>
+          <p style="font-size:14px;color:var(--cyan);font-weight:600;">→ O(log n)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 15: EDGE CASES & TRAPS -->
+  <section class="slide content-slide" data-slide="14">
+    <div class="slide-inner">
+      <h2>Common Traps</h2>
+      <div class="two-col">
+        <div>
+          <h3>Nested with different bounds</h3>
+          <div class="code-block"><span class="kw">for</span> i <span class="kw">in</span> range(n):
+    <span class="kw">for</span> j <span class="kw">in</span> range(m):
+        print(i, j)</div>
+          <p style="font-size:14px;color:var(--accent);font-weight:600;">→ O(n × m)</p>
+          <p style="font-size:13px;color:var(--text-muted);">If n ≈ m, that's O(n²). If n is a constant (like 26 letters), O(m).</p>
+        </div>
+        <div>
+          <h3>Loop slicing the input</h3>
+          <div class="code-block"><span class="kw">for</span> i <span class="kw">in</span> range(n):
+    <span class="kw">for</span> j <span class="kw">in</span> range(i, n):
+        print(i, j)</div>
+          <p style="font-size:14px;color:var(--orange);font-weight:600;">→ O(n²/2) → O(n²)</p>
+          <p style="font-size:13px;color:var(--text-muted);">Half the iterations, but n²/2 still simplifies to O(n²).</p>
+        </div>
+      </div>
+      <div class="warn-box" style="margin-top:12px;">
+        <strong>⚠️ Off-by-one trap:</strong> <code>for j in range(min(1000, n))</code> — if n is small, this looks O(1). But the <strong>intent</strong> matters. Always ask: "What dominates for large n?"
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 16: SECTION BREAK — PRACTICE -->
+  <section class="slide section-break" data-slide="15">
+    <div class="slide-inner">
+      <div class="phase-tag">Your Turn</div>
+      <h2>Practice Exercises</h2>
+    </div>
+  </section>
+
+  <!-- SLIDE 17: EXERCISES -->
+  <section class="slide exercise-slide" data-slide="16">
+    <div class="slide-inner">
+      <h2>✏️ Determine the Big O</h2>
+      <p>For each function below, identify the time complexity. Try without a hint first!</p>
+
+      <div class="exercise-box">
+        <h3>🔹 Exercise 1</h3>
+        <div class="code-block"><span class="kw">def</span> <span class="fn">contains_value</span>(arr, val):
+    <span class="kw">for</span> x <span class="kw">in</span> arr:
+        <span class="kw">if</span> x == val:
+            <span class="kw">return</span> <span class="hl">True</span>
+    <span class="kw">return</span> <span class="hl">False</span></div>
+        <div class="hint"><strong>💡 Hint:</strong> How does the loop relate to the input size? Click → for the answer.</div>
+      </div>
+
+      <div class="exercise-box">
+        <h3>🔹 Exercise 2</h3>
+        <div class="code-block"><span class="kw">def</span> <span class="fn">matrix_sum</span>(matrix):
+    total = <span class="num">0</span>
+    <span class="kw">for</span> row <span class="kw">in</span> matrix:
+        <span class="kw">for</span> val <span class="kw">in</span> row:
+            total += val
+    <span class="kw">return</span> total</div>
+        <div class="hint"><strong>💡 Hint:</strong> If the matrix is n × n, how many total values are there?</div>
+      </div>
+
+      <div class="exercise-box">
+        <h3>🔹 Exercise 3</h3>
+        <div class="code-block"><span class="kw">def</span> <span class="fn">print_powers_of_two</span>(n):
+    i = <span class="num">1</span>
+    <span class="kw">while</span> i < n:
+        print(i)
+        i *= <span class="num">2</span></div>
+        <div class="hint"><strong>💡 Hint:</strong> How many times does the loop run for n=16? For n=1024?</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 18: SUMMARY / RECAP -->
+  <section class="slide recap-slide" data-slide="17">
+    <div class="slide-inner">
+      <h2>🎯 Key Takeaways</h2>
+      <div class="takeaways">
+        <div class="takeaway">
+          <span class="num">1</span>
+          <p><strong>Big O measures growth rate, not speed.</strong> It tells you how runtime scales as input grows — O(1) is flat, O(n) is proportional, O(n²) explodes, O(log n) barely climbs.</p>
+        </div>
+        <div class="takeaway">
+          <span class="num">2</span>
+          <p><strong>Simplify ruthlessly.</strong> Drop constants (<code>O(2n) → O(n)</code>) and keep only the largest term (<code>O(n² + n) → O(n²)</code>).</p>
+        </div>
+        <div class="takeaway">
+          <span class="num">3</span>
+          <p><strong>Patterns map to complexities.</strong> Single loop → O(n). Nested loops → O(n²). Halving each step → O(log n). Direct access → O(1). Learn the pattern and you can analyze any function on sight.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const counter = document.getElementById('slideCounter');
+  const progressFill = document.getElementById('progressFill');
+  let current = 0;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    counter.textContent = (idx + 1) + ' / ' + total;
+    progressFill.style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = idx;
+  }
+
+  function next() { if (current < total - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  });
+
+  // Hash navigation
+  window.addEventListener('hashchange', function() {
+    const idx = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < total) showSlide(idx);
+  });
+
+  // Initial slide from hash
+  const hashIdx = parseInt(window.location.hash.slice(1), 10);
+  if (!isNaN(hashIdx) && hashIdx >= 0 && hashIdx < total) {
+    showSlide(hashIdx);
+  } else {
+    showSlide(0);
+  }
+})();
+</script>
+</body>
+</html>
