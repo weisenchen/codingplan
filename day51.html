@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 51: Strings — Palindrome, Anagram, Frequency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-alt: #161b22;
+  --bg-card: #1c2333;
+  --surface: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #58a6ff;
+  --accent-glow: rgba(88, 166, 255, 0.15);
+  --accent-green: #3fb950;
+  --accent-orange: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #bc8cff;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --ratio: calc(720 / 1280);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: var(--font); color: var(--text); }
+body { display: flex; align-items: center; justify-content: center; }
+
+/* Stage — centered viewport */
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+/* Slide container — fixed 16:9 aspect ratio */
+.slides {
+  position: relative;
+  width: min(100vw, calc(100vh / var(--ratio)));
+  height: min(100vh, calc(100vw * var(--ratio)));
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 64px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Scrollbar styling */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Typography */
+h1 { font-size: clamp(28px, 3.8vw, 56px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+h2 { font-size: clamp(22px, 2.6vw, 38px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin-bottom: 16px; }
+h3 { font-size: clamp(16px, 1.6vw, 24px); font-weight: 600; margin-bottom: 12px; color: var(--accent); }
+p, li { font-size: clamp(14px, 1.4vw, 21px); line-height: 1.6; color: var(--text-dim); }
+p { margin-bottom: 12px; }
+
+/* Code */
+pre {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: var(--mono);
+  font-size: clamp(12px, 1.1vw, 17px);
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 8px 0 16px;
+  position: relative;
+}
+code { font-family: var(--mono); }
+pre code { font-size: inherit; }
+.highlight-line { background: var(--accent-glow); display: block; margin: 0 -20px; padding: 0 20px; border-left: 3px solid var(--accent); }
+
+/* Lists */
+ul, ol { padding-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 6px; }
+li strong { color: var(--text); }
+
+/* Tags / badges */
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: clamp(11px, 0.9vw, 14px);
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: 0.01em;
+}
+.tag-easy { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
+.tag-blue { background: var(--accent-glow); color: var(--accent); }
+.tag-purple { background: rgba(188, 140, 255, 0.15); color: var(--accent-purple); }
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide h1 { margin-bottom: 8px; }
+.title-slide .subtitle { font-size: clamp(16px, 1.6vw, 24px); color: var(--text-dim); margin-bottom: 24px; }
+.title-slide .meta { font-size: clamp(12px, 1.1vw, 16px); color: var(--text-muted); }
+.title-slide .meta span { display: inline-block; margin: 0 12px; }
+.title-slide .badge-row { margin-bottom: 28px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* Section divider */
+.section-divider {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: var(--bg-alt) !important;
+}
+.section-divider h2 { font-size: clamp(24px, 3vw, 44px); margin-bottom: 8px; }
+.section-divider .phase { color: var(--accent); font-family: var(--mono); font-size: clamp(12px, 1vw, 15px); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Two-column layout */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; min-height: 0; }
+.col { display: flex; flex-direction: column; }
+.col h3 { margin-top: 0; }
+.col pre { flex: 1; min-height: 0; margin: 8px 0 0; }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+.card p { margin-bottom: 4px; }
+
+/* Progress bar */
+.progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.35s ease;
+  z-index: 10;
+}
+.slide-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  z-index: 10;
+}
+
+/* Presenter notes */
+.speaker-notes {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 3px;
+  width: 320px;
+  background: var(--bg-alt);
+  border-left: 1px solid var(--border);
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 20;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.speaker-notes.show { display: block; }
+.speaker-notes h4 { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.speaker-notes p { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+
+/* Step numbers */
+.step { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+.step-num { 
+  flex-shrink: 0;
+  width: clamp(24px, 2vw, 32px);
+  height: clamp(24px, 2vw, 32px);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(12px, 1vw, 15px);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.step-content { flex: 1; padding-top: 3px; }
+.step-content p { margin-bottom: 4px; }
+
+/* Exercise box */
+.exercise-box {
+  background: rgba(210, 153, 34, 0.08);
+  border: 1px solid rgba(210, 153, 34, 0.3);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0 12px;
+}
+.exercise-box h3 { color: var(--accent-orange); }
+
+/* Solution reveal */
+.solution { display: none; margin-top: 8px; }
+.solution.show { display: block; }
+.solution-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font);
+  font-weight: 500;
+}
+.solution-toggle:hover { background: var(--bg-card); }
+
+/* Inline highlight */
+.hl { color: var(--accent); }
+.hl-green { color: var(--accent-green); }
+.hl-orange { color: var(--accent-orange); }
+
+/* Footer */
+.footer-note { margin-top: auto; font-size: 12px; color: var(--text-muted); text-align: center; padding-top: 16px; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  .cols { grid-template-columns: 1fr; gap: 12px; }
+  .speaker-notes { width: 100%; top: auto; bottom: 3px; height: 40%; }
+}
+@media print {
+  .stage { background: #fff; }
+  .slides { box-shadow: none; }
+  .slide { opacity: 1; position: static; display: block; page-break-after: always; }
+  .slide-counter, .progress-bar { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="slides" id="slides">
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="slide-counter" id="slideCounter"></div>
+    <!-- Speaker notes panel -->
+    <div class="speaker-notes" id="speakerNotes">
+      <h4>Speaker Notes</h4>
+      <div id="notesContent"></div>
+    </div>
+
+    <!-- SLIDE 0: Title -->
+    <section class="slide title-slide" data-slide="0">
+      <div class="badge-row">
+        <span class="tag tag-easy">Day 51</span>
+        <span class="tag tag-blue">Week 9</span>
+        <span class="tag tag-purple">Phase III — DSA</span>
+      </div>
+      <h1>Strings: Palindrome, Anagram,<br>Frequency</h1>
+      <p class="subtitle">Character counts &bull; string reversal &bull; palindrome check</p>
+      <p class="meta">
+        <span>📅 90-Day Co-op Prep</span>
+        <span>⏱ 60 min</span>
+      </p>
+      <p class="meta" style="margin-top:4px">
+        <span>LeetCode <span class="hl-green">#125</span> Valid Palindrome</span>
+        <span>·</span>
+        <span>LeetCode <span class="hl-green">#242</span> Valid Anagram</span>
+      </p>
+      <aside class="notes">Welcome to Day 51. Today we tackle three fundamental string patterns that appear constantly in coding interviews: character frequency counting, anagram detection, and palindrome validation. These are LeetCode Easy problems but they test your ability to manipulate strings efficiently. We'll start with frequency maps, then build up to anagrams, then handle the palindrome with its special-character twist. By the end you should be comfortable with Counter, two-pointer techniques, and character sanitization.</aside>
+    </section>
+
+    <!-- SLIDE 1: Prerequisites -->
+    <section class="slide" data-slide="1">
+      <h2>📋 Prerequisites</h2>
+      <p>Make sure you're comfortable with these before starting:</p>
+      <div style="display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center;max-width:720px;margin:0 auto;width:100%;">
+        <div class="card">
+          <p><strong>🔤 Basic string operations</strong> — indexing, slicing, <code>.lower()</code>, <code>.isalnum()</code></p>
+        </div>
+        <div class="card">
+          <p><strong>📦 Python dictionaries</strong> — <code>dict</code> CRUD, <code>collections.Counter</code></p>
+        </div>
+        <div class="card">
+          <p><strong>🌀 Loops & conditionals</strong> — <code>for</code>, <code>while</code>, <code>if/else</code></p>
+        </div>
+        <div class="card">
+          <p><strong>↔️ Two-pointer technique</strong> — pointers moving toward each other</p>
+        </div>
+      </div>
+      <aside class="notes">Poll the room: who's used Counter before? Who's written a two-pointer loop? Gauge the baseline before diving in.</aside>
+    </section>
+
+    <!-- SLIDE 2: Learning Objectives -->
+    <section class="slide" data-slide="2">
+      <h2>🎯 Learning Objectives</h2>
+      <p>By the end of this session you will be able to:</p>
+      <div style="display:flex;flex-direction:column;gap:12px;flex:1;justify-content:center;max-width:720px;margin:0 auto;width:100%;">
+        <div class="card" style="border-left: 3px solid var(--accent);">
+          <p><strong>1.</strong> Build a character frequency map from any string</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--accent-green);">
+          <p><strong>2.</strong> Determine if two strings are anagrams in O(n) time</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--accent-purple);">
+          <p><strong>3.</strong> Validate a palindrome while ignoring case & non-alphanumeric chars</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--accent-orange);">
+          <p><strong>4.</strong> Compare <code>Counter</code>-based vs two-pointer approaches</p>
+        </div>
+      </div>
+      <aside class="notes">Read through the objectives. Each one builds on the previous. By objective 4 we're comparing tradeoffs between hash-map approaches and in-place two-pointer approaches.</aside>
+    </section>
+
+    <!-- SLIDE 3: Concept — Character Frequency -->
+    <section class="slide" data-slide="3">
+      <h2>📊 Character Frequency Counting</h2>
+      <div class="cols">
+        <div class="col">
+          <h3>Why it matters</h3>
+          <p>Frequency maps are the bread and butter of string problems. Every time you need to answer "how many of each character?" — anagrams, duplicates, ransom notes, first unique char — reach for a frequency counter.</p>
+          <h3 style="margin-top:16px;">Two approaches</h3>
+          <div class="card">
+            <p><strong>Manual dict:</strong> <code>freq[c] = freq.get(c, 0) + 1</code></p>
+          </div>
+          <div class="card">
+            <p><strong><code>collections.Counter</code>:</strong> <code>Counter(s)</code> — one line, same O(n)</p>
+          </div>
+        </div>
+        <div class="col">
+          <h3>Code</h3>
+          <pre><code><span class="hl-green"># Manual frequency count</span>
+<span class="hl">def char_freq</span>(s: str) -> dict:
+    freq = {}
+    <span class="hl-green"># c.isalpha() to skip spaces/punctuation</span>
+    for c in s.lower():
+        freq[c] = freq.get(c, 0) + 1
+    return freq
+
+<span class="hl-green"># One-liner with Counter</span>
+<span class="hl">from collections import Counter</span>
+
+freq = Counter(s.lower())</code></pre>
+        </div>
+      </div>
+      <p style="font-size:clamp(12px, 1vw, 15px);color:var(--text-muted);margin-top:4px;">💡 <code>Counter</code> is great for interviews — it signals "I know the stdlib" and reduces bugs from manual increment logic.</p>
+      <aside class="notes">Walk through the dict.get pattern — this trips up beginners. Show how Counter handles missing keys automatically. Mention that in an interview, starting with Counter is fine, but be ready to implement the dict version if asked.</aside>
+    </section>
+
+    <!-- SLIDE 4: Concept — Anagram Detection -->
+    <section class="slide" data-slide="4">
+      <h2>🔄 Valid Anagram — LeetCode #242</h2>
+      <div class="cols">
+        <div class="col">
+          <h3>Problem</h3>
+          <p>Given two strings <code>s</code> and <code>t</code>, return <code>True</code> if <code>t</code> is an anagram of <code>s</code>, and <code>False</code> otherwise.</p>
+          <div class="card">
+            <p><strong>Example 1:</strong></p>
+            <p><code>s = </code><span class="hl">"anagram"</span>, <code>t = </code><span class="hl">"nagaram"</span> → <span class="hl-green">True</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Example 2:</strong></p>
+            <p><code>s = </code><span class="hl">"rat"</span>, <code>t = </code><span class="hl">"car"</span> → <span class="hl-red">False</span></p>
+          </div>
+          <h3 style="margin-top:12px;">Key insight</h3>
+          <p>Two strings are anagrams iff they have the <strong>same character counts</strong>. Order doesn't matter — only frequency.</p>
+        </div>
+        <div class="col">
+          <h3>Solution</h3>
+          <pre><code><span class="hl">from collections import Counter</span>
+
+<span class="hl">def is_anagram</span>(s: str, t: str) -> bool:
+    <span class="hl-green"># Early exit: different lengths =</span>
+    <span class="hl-green"># can't be anagrams</span>
+    if len(s) != len(t):
+        return False
+    <span class="hl-green"># Compare frequency maps</span>
+    return Counter(s) == Counter(t)
+
+<span class="hl-green"># Time: O(n) — one pass each</span>
+<span class="hl-green"># Space: O(k) — k = unique chars</span>
+<span class="hl-green">#          (at most 26 for lowercase)</span></code></pre>
+          <p style="font-size:clamp(11px, 0.9vw, 14px);color:var(--text-muted);">Alternative: use a single dict — increment for s, decrement for t, then check all zeros.</p>
+        </div>
+      </div>
+      <aside class="notes">Emphasize the early-length check — it's an easy optimization many miss. Show the single-dict variant manually: freq = {}; for c in s: freq[c]=freq.get(c,0)+1; for c in t: freq[c]=freq.get(c,0)-1; then check all values are 0. This is more efficient for interviews than comparing two Counters.</aside>
+    </section>
+
+    <!-- SLIDE 5: Walkthrough — Valid Anagram -->
+    <section class="slide" data-slide="5">
+      <h2>✍️ Walkthrough: #242 Step by Step</h2>
+      <p>Let's trace through <code>is_anagram("anagram", "nagaram")</code></p>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:800px;margin:0 auto;width:100%;">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content"><p><strong>Length check:</strong> <code>len("anagram") == len("nagaram")</code> → <span class="hl-green">True</span></p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content"><p><strong>Build Counter for <code>s</code>:</strong> <code>{'a': 3, 'n': 1, 'g': 1, 'r': 1, 'm': 1}</code></p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content"><p><strong>Build Counter for <code>t</code>:</strong> <code>{'n': 1, 'a': 3, 'g': 1, 'r': 1, 'm': 1}</code></p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content"><p><strong>Compare:</strong> Both Counters have same items → <span class="hl-green">True</span> 🎯</p></div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <span class="tag tag-easy">Easy</span>
+          <span class="tag tag-blue">O(n) time</span>
+          <span class="tag tag-purple">O(1) space (26 letters)</span>
+        </div>
+      </div>
+      <aside class="notes">Walk through each character being added to the counter. Point out that Counter equality checks both keys and values — {'a': 3} != {'a': 2}. For the sorted alternative (return sorted(s) == sorted(t)), mention it's O(n log n) and still passes but interviewers prefer O(n).</aside>
+    </section>
+
+    <!-- SLIDE 6: Concept — Palindrome -->
+    <section class="slide" data-slide="6">
+      <h2>🔄 Valid Palindrome — LeetCode #125</h2>
+      <div class="cols">
+        <div class="col">
+          <h3>Problem</h3>
+          <p>A phrase is a <strong>palindrome</strong> if, after converting all uppercase letters to lowercase and removing all non-alphanumeric characters, it reads the same forward and backward.</p>
+          <div class="card">
+            <p><strong>Example 1:</strong></p>
+            <p><code>"A man, a plan, a canal: Panama"</code> → <span class="hl-green">True</span></p>
+          </div>
+          <div class="card">
+            <p><strong>Example 2:</strong></p>
+            <p><code>"race a car"</code> → <span class="hl-red">False</span></p>
+          </div>
+        </div>
+        <div class="col">
+          <h3>Two-pointer approach</h3>
+          <pre><code><span class="hl">def is_palindrome</span>(s: str) -> bool:
+    left, right = 0, len(s) - 1
+    while left &lt; right:
+        <span class="hl-green"># Skip non-alphanumeric</span>
+        while (left &lt; right and
+               not s[left].isalnum()):
+            left += 1
+        while (left &lt; right and
+               not s[right].isalnum()):
+            right -= 1
+        <span class="hl-green"># Compare (case-insensitive)</span>
+        if s[left].lower() != s[right].lower():
+            return False
+        left += 1
+        right -= 1
+    return True
+
+<span class="hl-green"># Time: O(n) — each char visited once</span>
+<span class="hl-green"># Space: O(1) — in-place</span></code></pre>
+        </div>
+      </div>
+      <aside class="notes">The tricky part is skipping non-alphanumeric characters. Many candidates forget the inner while loops entirely. Emphasize isalnum() — it's the key method here. The .lower() on comparison handles case insensitivity. This is a pure two-pointer problem with a filtering twist.</aside>
+    </section>
+
+    <!-- SLIDE 7: Walkthrough — Valid Palindrome -->
+    <section class="slide" data-slide="7">
+      <h2>✍️ Walkthrough: #125 Step by Step</h2>
+      <p>Tracing <code>"A man, a plan, a canal: Panama"</code></p>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:800px;margin:0 auto;width:100%;">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content"><p><code>left = 0</code> (<code>'A'</code>), <code>right = 29</code> (<code>'a'</code>) — both alphanumeric</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content"><p><code>'A'.lower() == 'a'.lower()</code> → <span class="hl-green">match</span>, move: <code>left=1, right=28</code></p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content"><p><code>left=1</code> (<code>' '</code>) not alnum → skip to <code>left=2</code> (<code>'m'</code>)<br><code>right=28</code> (<code>'m'</code>) alnum → <span class="hl-green">match</span>, move: <code>left=3, right=27</code></p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content"><p>Continue skipping commas, spaces... each pair matches. Pointers meet in the middle → <span class="hl-green">True</span> ✅</p></div>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="card" style="border-left:3px solid var(--accent-orange);">
+            <p><strong>⚠️ Common pitfall:</strong> Forgetting the inner boundary check <code>left &lt; right</code> in skip loops can cause index out of bounds on strings with only non-alnum characters!</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">Walk through the pointer movements slowly. Use your hands — left hand on 'A', right hand on 'a'. Show how ' ' and ',' get skipped. The boundary check in the inner while loops is the most common bug — without it, "!!!" would crash.</aside>
+    </section>
+
+    <!-- SLIDE 8: Alternative — Cleaning + Reversal -->
+    <section class="slide" data-slide="8">
+      <h2>🔁 Palindrome: Clean-Then-Compare Approach</h2>
+      <div class="cols">
+        <div class="col">
+          <h3>When to use this</h3>
+          <p>If the interviewer says "space doesn't matter" or you want the simplest readable solution:</p>
+          <div class="card">
+            <p><strong>Pro:</strong> Dead simple to read and debug</p>
+          </div>
+          <div class="card">
+            <p><strong>Con:</strong> O(n) extra space for the cleaned string</p>
+          </div>
+          <div class="card">
+            <p><strong>Verdict:</strong> Fine for interviews if you mention the tradeoff</p>
+          </div>
+          <h3 style="margin-top:12px;">Comparison</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:clamp(11px,0.9vw,14px);">
+            <tr><td></td><td style="color:var(--accent);font-weight:600;">Two-pointer</td><td style="color:var(--accent-orange);font-weight:600;">Clean+Reverse</td></tr>
+            <tr><td>Time</td><td>O(n)</td><td>O(n)</td></tr>
+            <tr><td>Space</td><td>O(1)</td><td>O(n)</td></tr>
+            <tr><td>Readability</td><td>Medium</td><td>High</td></tr>
+          </table>
+        </div>
+        <div class="col">
+          <h3>Code</h3>
+          <pre><code><span class="hl">def is_palindrome_clean</span>(s: str) -> bool:
+    <span class="hl-green"># Build a cleaned string: lowercase</span>
+    <span class="hl-green"># alphanumeric only</span>
+    cleaned = [c.lower() for c in s
+               if c.isalnum()]
+    <span class="hl-green"># Compare with its reverse</span>
+    return cleaned == cleaned[::-1]
+
+<span class="hl-green"># Equivalent one-liner (less readable):</span>
+<span class="hl-green"># return (c:=[c.lower() for c in s</span>
+<span class="hl-green">#         if c.isalnum()]) == c[::-1]</span>
+
+<span class="hl-green"># Both work — pick what you can</span>
+<span class="hl-green"># explain clearly in an interview</span></code></pre>
+        </div>
+      </div>
+      <aside class="notes">This is worth showing because many candidates reach for the clean-then-reverse approach first. Validate it — it's correct — but then show the two-pointer optimization. Interviewers love when you say "We could do this with O(n) space, but let's optimize to O(1) with two pointers."</aside>
+    </section>
+
+    <!-- SLIDE 9: Exercise -->
+    <section class="slide" data-slide="9">
+      <h2>🏋️ Practice Exercises</h2>
+      <p>Try these on your own. Solutions are behind the toggle.</p>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center;max-width:800px;margin:0 auto;width:100%;">
+        <div class="exercise-box">
+          <h3>Exercise 1: First Unique Character</h3>
+          <p>Given a string <code>s</code>, find the <strong>first non-repeating character</strong> and return its index. If none exists, return <code>-1</code>.</p>
+          <p><strong>Example:</strong> <code>s = "loveleetcode"</code> → <span class="hl">2</span> (character 'v')</p>
+          <p style="font-size:clamp(11px,0.9vw,14px);color:var(--text-muted);">💡 Hint: Two passes — first pass builds frequency, second pass finds first char with count 1.</p>
+          <button class="solution-toggle" onclick="toggleSolution('sol1')">Show Solution</button>
+          <div class="solution" id="sol1">
+            <pre><code><span class="hl">from collections import Counter</span>
+
+<span class="hl">def first_uniq_char</span>(s: str) -> int:
+    freq = Counter(s)
+    for i, c in enumerate(s):
+        if freq[c] == 1:
+            return i
+    return -1
+
+<span class="hl-green"># Time: O(n), Space: O(1) — 26 letters</span></code></pre>
+          </div>
+        </div>
+        <div class="exercise-box">
+          <h3>Exercise 2: Palindrome Permutation</h3>
+          <p>Given a string <code>s</code>, return <code>True</code> if a permutation of the string could form a palindrome.</p>
+          <p><strong>Example:</strong> <code>"carerac"</code> → <span class="hl-green">True</span> (can form "racecar")</p>
+          <p style="font-size:clamp(11px,0.9vw,14px);color:var(--text-muted);">💡 Hint: A palindrome can have at most one character with odd frequency.</p>
+          <button class="solution-toggle" onclick="toggleSolution('sol2')">Show Solution</button>
+          <div class="solution" id="sol2">
+            <pre><code><span class="hl">from collections import Counter</span>
+
+<span class="hl">def can_permute_palindrome</span>(s: str) -> bool:
+    freq = Counter(s)
+    odd_count = sum(
+        count % 2
+        for count in freq.values()
+    )
+    return odd_count &lt;= 1
+
+<span class="hl-green"># Time: O(n), Space: O(1)</span></code></pre>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">Give learners 5-7 minutes to try each exercise. Encourage them to verbalize their approach before coding. For exercise 2, the insight is that palindromes need paired characters — only one character can be left unpaired (the middle character in odd-length strings).</aside>
+    </section>
+
+    <!-- SLIDE 10: Summary -->
+    <section class="slide" data-slide="10">
+      <h2>📌 Key Takeaways</h2>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center;max-width:720px;margin:0 auto;width:100%;">
+        <div class="card" style="border-left: 3px solid var(--accent);">
+          <p><strong>1. Frequency maps are your Swiss Army knife</strong> — master <code>Counter</code> and the manual <code>dict.get</code> pattern. They solve anagrams, duplicates, first unique char, and more.</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--accent-green);">
+          <p><strong>2. Anagrams = equal character counts</strong> — length check first, then compare frequencies. O(n) time beats O(n log n) sorting.</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--accent-purple);">
+          <p><strong>3. Two-pointer for palindrome</strong> — O(1) space, O(n) time. Remember <code>.isalnum()</code> and <code>.lower()</code>. Don't forget inner boundary checks.</p>
+        </div>
+        <div class="card" style="border-left: 3px solid var(--accent-orange);">
+          <p><strong>4. Know your tradeoffs</strong> — clean-then-reverse is simpler but costs O(n) space. Two-pointer is trickier but optimal. Pick based on what the interviewer asks.</p>
+        </div>
+      </div>
+      <aside class="notes">These four takeaways are the core. Ask the audience to write them down. Mention that frequency maps, two-pointer, and string sanitization are patterns that appear in Medium problems too — they're foundational.</aside>
+    </section>
+
+    <!-- SLIDE 11: Next Steps -->
+    <section class="slide section-divider" data-slide="11">
+      <h2>🚀 Next Up</h2>
+      <p class="phase">Tomorrow — Day 52</p>
+      <p style="font-size:clamp(18px,2vw,30px);color:var(--text);font-weight:600;">More Strings: substring, pattern matching</p>
+      <p style="color:var(--text-dim);margin-top:12px;">Today's patterns — frequency maps &amp; two-pointer — will carry forward.</p>
+      <footer class="footer-note">90-Day Co-op Prep — Day 51 · Phase III · Generated 2026-07-10</footer>
+      <aside class="notes">Preview tomorrow's topic: substring search and pattern matching. KMP, sliding window, indexOf. The two-pointer and frequency map techniques from today are building blocks for those problems.</aside>
+    </section>
+
+  </div><!-- /slides -->
+</div><!-- /stage -->
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  let notesVisible = false;
+
+  const progressBar = document.getElementById('progressBar');
+  const slideCounter = document.getElementById('slideCounter');
+  const notesPanel = document.getElementById('speakerNotes');
+  const notesContent = document.getElementById('notesContent');
+
+  function showSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= total) index = total - 1;
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === index);
+    });
+    current = index;
+    progressBar.style.width = ((index + 1) / total * 100) + '%';
+    slideCounter.textContent = (index + 1) + ' / ' + total;
+
+    // Update URL hash
+    if (window.location.hash !== '#' + (index + 1)) {
+      history.replaceState(null, '', '#' + (index + 1));
+    }
+
+    // Update speaker notes
+    const activeSlide = slides[index];
+    const noteAside = activeSlide.querySelector('.notes');
+    if (noteAside) {
+      notesContent.textContent = noteAside.textContent;
+    } else {
+      notesContent.textContent = 'No speaker notes for this slide.';
+    }
+  }
+
+  // Read hash on load
+  function getSlideFromHash() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#')) {
+      const num = parseInt(hash.slice(1), 10);
+      if (!isNaN(num) && num >= 1 && num <= total) {
+        return num - 1;
+      }
+    }
+    return 0;
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (notesVisible && e.key === 'n') {
+      toggleNotes();
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowRight':
+      case ' ':
+        e.preventDefault();
+        showSlide(current + 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        showSlide(current - 1);
+        break;
+      case 'f':
+        if (!document.fullscreenElement) {
+          document.querySelector('.stage').requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
+        break;
+      case 'n':
+        toggleNotes();
+        break;
+    }
+  });
+
+  // Hash change
+  window.addEventListener('hashchange', function() {
+    showSlide(getSlideFromHash());
+  });
+
+  // Notes toggle
+  function toggleNotes() {
+    notesVisible = !notesVisible;
+    notesPanel.classList.toggle('show', notesVisible);
+    const activeSlide = slides[current];
+    if (notesVisible) {
+      activeSlide.style.marginRight = '320px';
+    } else {
+      activeSlide.style.marginRight = '';
+    }
+  }
+
+  // Initialize
+  showSlide(getSlideFromHash());
+})();
+
+// Solution toggle (global function)
+function toggleSolution(id) {
+  var el = document.getElementById(id);
+  el.classList.toggle('show');
+}
+</script>
+</body>
+</html>
