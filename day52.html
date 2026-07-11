@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 52 — Hash Maps: Frequency Counters &amp; Two-Sum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2333;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-muted: #6e7681;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', -apple-system, sans-serif;
+  --slide-w: min(calc(100vh * 16 / 9), 100vw);
+  --slide-h: min(calc(100vw * 9 / 16), 100vh);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: var(--font-sans); }
+
+.deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0c10;
+}
+
+.slide {
+  position: absolute;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  max-width: 100vw;
+  max-height: 100vh;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(88,166,255,0.08);
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.slide-inner {
+  flex: 1;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* scrollbar */
+.slide-inner::-webkit-scrollbar { width: 4px; }
+.slide-inner::-webkit-scrollbar-track { background: transparent; }
+.slide-inner::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+/* Progress bar */
+.progress-bar {
+  height: 3px;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* Slide counter */
+.slide-counter {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* Speaker notes toggle */
+.notes-toggle {
+  position: absolute;
+  bottom: 16px;
+  left: 24px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.notes-toggle:hover { color: var(--accent); }
+
+.notes-panel {
+  position: absolute;
+  bottom: 48px;
+  left: 16px;
+  width: 320px;
+  max-height: 200px;
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  display: none;
+  z-index: 10;
+  overflow-y: auto;
+  font-family: var(--font-sans);
+}
+.notes-panel.visible { display: block; }
+
+/* ===== SLIDE TYPE STYLES ===== */
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide .day-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  background: rgba(88,166,255,0.1);
+  border: 1px solid rgba(88,166,255,0.2);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+}
+.title-slide .phase-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--orange);
+  background: rgba(210,153,34,0.1);
+  border: 1px solid rgba(210,153,34,0.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 32px;
+  letter-spacing: 0.5px;
+}
+.title-slide h1 {
+  font-family: var(--font-mono);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+.title-slide .subtitle {
+  font-size: 18px;
+  color: var(--text-dim);
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.title-slide .meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 24px;
+}
+
+/* Section slides */
+.section-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+}
+.section-slide h2 {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.section-slide p {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+/* Content slides */
+h2 { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.3px; }
+h3 { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 8px; font-family: var(--font-mono); }
+
+p { font-size: 15px; line-height: 1.6; color: var(--text-dim); margin-bottom: 12px; }
+p strong { color: var(--text); font-weight: 600; }
+
+ul { list-style: none; margin-bottom: 8px; }
+ul li { font-size: 15px; line-height: 1.6; color: var(--text-dim); padding-left: 20px; position: relative; margin-bottom: 4px; }
+ul li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+
+ol { list-style: none; counter-reset: step; margin-bottom: 8px; }
+ol li { font-size: 15px; line-height: 1.6; color: var(--text-dim); padding-left: 28px; position: relative; margin-bottom: 6px; }
+ol li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute; left: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(88,166,255,0.1);
+  width: 20px; height: 20px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Code blocks */
+.code-block {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 8px 0 16px 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.code-block .comment { color: var(--text-muted); font-style: italic; }
+.code-block .keyword { color: var(--accent); font-weight: 500; }
+.code-block .string { color: var(--green); }
+.code-block .number { color: var(--orange); }
+.code-block .func { color: #d2a8ff; }
+.code-block .type { color: #7ee787; }
+
+/* Highlighted line */
+.code-block .hl {
+  background: rgba(88,166,255,0.08);
+  display: block;
+  margin: 0 -16px;
+  padding: 0 16px;
+  border-left: 2px solid var(--accent);
+}
+
+/* Inline code */
+code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--accent);
+}
+
+/* Comparison two-column */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 8px 0 12px;
+}
+.compare-col {
+  background: var(--surface);
+  border: 1px solid var(--surface2);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.compare-col h4 {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.compare-col p {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+/* Exercise box */
+.exercise-box {
+  background: rgba(63,185,80,0.06);
+  border: 1px solid rgba(63,185,80,0.15);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 8px 0 12px;
+}
+.exercise-box .label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+/* Tip box */
+.tip-box {
+  background: rgba(210,153,34,0.06);
+  border: 1px solid rgba(210,153,34,0.15);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 8px 0 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.tip-box .icon { font-family: var(--font-mono); font-size: 14px; color: var(--orange); flex-shrink: 0; }
+.tip-box p { font-size: 13px; margin: 0; }
+
+/* Key takeaways */
+.takeaways { margin-top: 8px; }
+.takeaway-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.takeaway-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(88,166,255,0.1);
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.takeaway-text { font-size: 15px; line-height: 1.5; color: var(--text-dim); }
+.takeaway-text strong { color: var(--text); }
+
+/* Recap slide */
+.recap-slide { justify-content: center; align-items: center; text-align: center; }
+.recap-slide h2 { font-size: 28px; margin-bottom: 24px; }
+.recap-slide .big-num {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* Empty flex space */
+.spacer { flex: 1; }
+
+@media (max-width: 700px) {
+  .slide-inner { padding: 24px 20px; }
+  .title-slide h1 { font-size: 28px; }
+  .section-slide h2 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  .compare { grid-template-columns: 1fr; }
+  .notes-panel { width: calc(100vw - 32px); left: 16px; }
+}
+
+@media print {
+  .slide { opacity: 1 !important; position: relative; page-break-after: always; }
+  .deck { display: block; height: auto; }
+  .notes-toggle, .slide-counter { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ===== SLIDE 0: TITLE ===== -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-0"></div></div>
+  <div class="slide-inner" style="justify-content:center;align-items:center;text-align:center;">
+    <div class="day-badge">DAY 52</div>
+    <div class="phase-badge">Phase III — DSA</div>
+    <h1>Hash Maps:<br>Frequency Counters &amp; Two-Sum</h1>
+    <p class="subtitle">dict as hash map · Valid Anagram · First Non-Repeating Char</p>
+    <p class="meta">Week 9 · 60 min · LeetCode Easy #1, #387</p>
+  </div>
+  <div class="slide-counter" id="counter-0">1 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(0)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-0">
+    Welcome to Day 52. Today we dive into the hash map — Python's most versatile DSA tool for coding interviews. Hash maps give us O(1) lookups, which transform brute-force O(n²) solutions into elegant O(n) ones. We'll build intuition for frequency counters and the classic two-sum pattern.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 1: OVERVIEW ===== -->
+<section class="slide" data-slide="1">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-1"></div></div>
+  <div class="slide-inner">
+    <h2>Today's Plan</h2>
+    <ul>
+      <li><strong>Why hash maps?</strong> — the O(1) lookup superpower</li>
+      <li><strong>Frequency counter pattern</strong> — counting with <code>dict</code> / <code>defaultdict</code> / <code>Counter</code></li>
+      <li><strong>Valid Anagram</strong> — LeetCode #242 (frequency counter in action)</li>
+      <li><strong>Two-Sum pattern</strong> — the complement lookup trick</li>
+      <li><strong>First Non-Repeating Character</strong> — LeetCode #387</li>
+      <li><strong>Practice exercises</strong> — 3 problems to lock it in</li>
+    </ul>
+    <div class="tip-box">
+      <span class="icon">⏱</span>
+      <p>Prerequisites: basic list/dict operations in Python. No prior DSA theory needed — we build from scratch.</p>
+    </div>
+  </div>
+  <div class="slide-counter" id="counter-1">2 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(1)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-1">
+    Walk through the plan quickly. Emphasize that hash maps are the single most common tool in Easy/Medium coding interviews — after today, every brute-force O(n²) problem should trigger a "can I use a hash map?" reflex.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 2: WHY HASH MAPS ===== -->
+<section class="slide" data-slide="2">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-2"></div></div>
+  <div class="slide-inner">
+    <h2>The Hash Map Superpower</h2>
+    <p>A <strong>hash map</strong> (Python <code>dict</code>) maps <em>keys → values</em> with <strong>O(1)</strong> average-time lookups, inserts, and deletes.</p>
+    <p>The key insight: <strong>trade memory for speed</strong>. Instead of scanning a list (O(n)), remember what you've seen (O(1)).</p>
+
+    <div class="compare">
+      <div class="compare-col">
+        <h4>❌ Without hash map</h4>
+        <div class="code-block" style="font-size:12px;padding:10px;">
+<span class="comment"># Check if array has duplicates</span>
+<span class="keyword">def</span> <span class="func">has_duplicates</span>(nums):
+    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(len(nums)):      <span class="comment"># O(n²)</span>
+        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(i+1, len(nums)):
+            <span class="keyword">if</span> nums[i] == nums[j]:
+                <span class="keyword">return</span> <span class="type">True</span>
+    <span class="keyword">return</span> <span class="type">False</span>
+        </div>
+        <p style="font-size:12px;color:var(--red);">← scans the whole list for each element</p>
+      </div>
+      <div class="compare-col">
+        <h4>✅ With hash map</h4>
+        <div class="code-block" style="font-size:12px;padding:10px;">
+<span class="comment"># Check if array has duplicates</span>
+<span class="keyword">def</span> <span class="func">has_duplicates</span>(nums):
+    seen = {}                       <span class="comment"># O(1) lookups</span>
+    <span class="keyword">for</span> n <span class="keyword">in</span> nums:
+        <span class="keyword">if</span> n <span class="keyword">in</span> seen:                 <span class="comment"># O(1) ✔</span>
+            <span class="keyword">return</span> <span class="type">True</span>
+        seen[n] = <span class="type">True</span>
+    <span class="keyword">return</span> <span class="type">False</span>                 <span class="comment"># O(n) total</span>
+        </div>
+        <p style="font-size:12px;color:var(--green);">← each lookup is instant</p>
+      </div>
+    </div>
+    <p style="font-size:14px;"><strong>Rule of thumb:</strong> need to find something in a list repeatedly? Build a hash map first.</p>
+  </div>
+  <div class="slide-counter" id="counter-2">3 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(2)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-2">
+    This is the core mental model: hash maps let you "remember" elements you've already seen. The O(n²)→O(n) transformation is the single biggest win you can get in an interview. Show the side-by-side code comparison.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 3: FREQUENCY COUNTER PATTERN ===== -->
+<section class="slide" data-slide="3">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-3"></div></div>
+  <div class="slide-inner">
+    <h2>Frequency Counter Pattern</h2>
+    <p>The most common hash-map pattern: <strong>count occurrences</strong> of elements in a collection.</p>
+
+    <h3>Three ways to build one</h3>
+    <div class="code-block">
+<span class="comment"># 1. Plain dict</span>
+freq = {}
+<span class="keyword">for</span> c <span class="keyword">in</span> s:
+    freq[c] = freq.get(c, <span class="number">0</span>) + <span class="number">1</span>
+
+<span class="comment"># 2. collections.defaultdict</span>
+<span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict
+freq = defaultdict(<span class="built_in">int</span>)          <span class="comment"># missing keys default to 0</span>
+<span class="keyword">for</span> c <span class="keyword">in</span> s:
+    freq[c] += <span class="number">1</span>
+
+<span class="comment"># 3. collections.Counter (most concise)</span>
+<span class="keyword">from</span> collections <span class="keyword">import</span> Counter
+freq = Counter(s)                  <span class="comment"># one-liner!</span>
+    </div>
+    <p style="font-size:14px;"><strong>Interview tip:</strong> start with <code>Counter</code> for frequency problems — it's idiomatic, readable, and built-in. Fall back to <code>defaultdict(int)</code> for more complex logic.</p>
+  </div>
+  <div class="slide-counter" id="counter-3">4 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(3)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-3">
+    Walk through all three patterns. Counter is the Pythonic choice for "count everything" problems. defaultdict(int) is better when you need to conditionally update counts. Plain dict is fine but verbose — use get() if going this route.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 4: VALID ANAGRAM ===== -->
+<section class="slide" data-slide="4">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-4"></div></div>
+  <div class="slide-inner">
+    <h2>Valid Anagram <span style="font-size:14px;color:var(--text-muted);font-weight:400;">LeetCode #242 · Easy</span></h2>
+    <p><strong>Problem:</strong> Given two strings <code>s</code> and <code>t</code>, return <code>True</code> if <code>t</code> is an anagram of <code>s</code>.</p>
+
+    <div class="code-block">
+<span class="keyword">from</span> collections <span class="keyword">import</span> Counter
+
+<span class="keyword">def</span> <span class="func">is_anagram</span>(s: <span class="built_in">str</span>, t: <span class="built_in">str</span>) -> <span class="built_in">bool</span>:
+    <span class="hl"><span class="comment"># Shortcut: different lengths can't be anagrams</span></span>
+    <span class="hl"><span class="keyword">if</span> len(s) != len(t):</span>
+    <span class="hl">    <span class="keyword">return</span> <span class="type">False</span></span>
+
+    <span class="comment"># Count characters in both strings</span>
+    freq_s = Counter(s)
+    freq_t = Counter(t)
+
+    <span class="comment"># If same characters with same counts → anagram</span>
+    <span class="keyword">return</span> freq_s == freq_t       <span class="comment"># Counter supports == directly!</span>
+    </div>
+
+    <p><strong>Time:</strong> O(n) · <strong>Space:</strong> O(k) where k = distinct characters (≤ 26 for lowercase)</p>
+    <div class="tip-box">
+      <span class="icon">💡</span>
+      <p>Alternative: sort both strings and compare — O(n log n). The hash-map version is faster and more general (works for any character set).</p>
+    </div>
+  </div>
+  <div class="slide-counter" id="counter-4">5 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(4)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-4">
+    Valid Anagram is the canonical frequency-counter interview problem. Emphasize the early return (length check) — many candidates miss it. Counter equality checks are often forgotten but extremely useful: Python's Counter implements == to check both key sets AND values.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 5: TWO-SUM PATTERN ===== -->
+<section class="slide" data-slide="5">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-5"></div></div>
+  <div class="slide-inner">
+    <h2>The Two-Sum Pattern</h2>
+    <p><strong>Idea:</strong> For each element <code>x</code>, we need to find <code>target - x</code> somewhere in the array. A hash map stores <strong>numbers we've seen → their indices</strong>.</p>
+
+    <div class="code-block">
+<span class="keyword">def</span> <span class="func">two_sum</span>(nums: <span class="built_in">list</span>[<span class="built_in">int</span>], target: <span class="built_in">int</span>) -> <span class="built_in">list</span>[<span class="built_in">int</span>]:
+    seen = {}                     <span class="comment"># value → index</span>
+    <span class="keyword">for</span> i, n <span class="keyword">in</span> <span class="built_in">enumerate</span>(nums):
+        complement = target - n   <span class="comment"># what we need to find</span>
+        <span class="hl"><span class="keyword">if</span> complement <span class="keyword">in</span> seen:      <span class="comment"># O(1) lookup ✨</span></span>
+        <span class="hl">    <span class="keyword">return</span> [seen[complement], i]</span>
+        seen[n] = i               <span class="comment"># remember this value</span>
+    <span class="keyword">return</span> []                     <span class="comment"># no solution found</span>
+    </div>
+
+    <p><strong>Time:</strong> O(n) — single pass · <strong>Space:</strong> O(n) — store up to n entries</p>
+    <p class="tip-box" style="margin-top:8px;">
+      <span class="icon">🔑</span>
+      <span style="font-size:13px;">The complement pattern is <strong>LeetCode #1</strong> and the most-asked coding interview question on the planet. Nail this.</span>
+    </p>
+  </div>
+  <div class="slide-counter" id="counter-5">6 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(5)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-5">
+    Two-sum is the "hello world" of hash-map problems. The critical insight: we check the complement BEFORE storing the current number. Why? Because we can't use the same element twice. Also note: we return indices, not values. Interviewers sometimes ask "return values instead" or "return all pairs" — be ready to adapt.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 6: TWO-SUM VARIATIONS ===== -->
+<section class="slide" data-slide="6">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-6"></div></div>
+  <div class="slide-inner">
+    <h2>Two-Sum Variations</h2>
+    <p>The same complement-trick generalizes to many problems:</p>
+
+    <div class="compare">
+      <div class="compare-col">
+        <h4>Two-sum (sorted)</h4>
+        <div class="code-block" style="font-size:12px;padding:10px;">
+<span class="comment"># Two-pointer (no extra space)</span>
+left, right = <span class="number">0</span>, len(nums)-<span class="number">1</span>
+<span class="keyword">while</span> left &lt; right:
+    total = nums[left] + nums[right]
+    <span class="keyword">if</span> total == target:
+        <span class="keyword">return</span> [left, right]
+    <span class="keyword">elif</span> total &lt; target:
+        left += <span class="number">1</span>
+    <span class="keyword">else</span>:
+        right -= <span class="number">1</span>
+        </div>
+        <p style="font-size:12px;">O(n) time, O(1) space</p>
+      </div>
+      <div class="compare-col">
+        <h4>Three-sum</h4>
+        <div class="code-block" style="font-size:12px;padding:10px;">
+<span class="comment"># Fix one, two-sum the rest</span>
+nums.sort()
+<span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(len(nums)):
+    <span class="keyword">if</span> i &gt; <span class="number">0</span> <span class="keyword">and</span> nums[i]==nums[i-<span class="number">1</span>]:
+        <span class="keyword">continue</span>              <span class="comment"># skip dupes</span>
+    left, right = i+<span class="number">1</span>, len(nums)-<span class="number">1</span>
+    <span class="keyword">while</span> left &lt; right:
+        s = nums[i] + nums[left] + nums[right]
+        ...
+        </div>
+        <p style="font-size:12px;">O(n²) time, O(1) or O(n) space</p>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);">For now, master two-sum. Three-sum is a Week 10+ problem.</p>
+  </div>
+  <div class="slide-counter" id="counter-6">7 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(6)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-6">
+    This slide is a preview — show that two-sum thinking extends. Emphasize that hash maps aren't always the answer: when the array is sorted, two pointers beat hash maps on space. This kind of trade-off analysis impresses interviewers.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 7: FIRST NON-REPEATING CHAR ===== -->
+<section class="slide" data-slide="7">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-7"></div></div>
+  <div class="slide-inner">
+    <h2>First Non-Repeating Character <span style="font-size:14px;color:var(--text-muted);font-weight:400;">LeetCode #387 · Easy</span></h2>
+    <p><strong>Problem:</strong> Find the first character in a string that doesn't repeat. Return its index, or -1 if none.</p>
+
+    <div class="code-block">
+<span class="keyword">from</span> collections <span class="keyword">import</span> Counter
+
+<span class="keyword">def</span> <span class="func">first_uniq_char</span>(s: <span class="built_in">str</span>) -> <span class="built_in">int</span>:
+    <span class="comment"># Pass 1: count every character</span>
+    freq = Counter(s)
+
+    <span class="comment"># Pass 2: find first with count == 1</span>
+    <span class="keyword">for</span> i, ch <span class="keyword">in</span> <span class="built_in">enumerate</span>(s):
+        <span class="keyword">if</span> freq[ch] == <span class="number">1</span>:
+            <span class="keyword">return</span> i
+
+    <span class="keyword">return</span> -<span class="number">1</span>
+    </div>
+
+    <p><strong>Time:</strong> O(n) · <strong>Space:</strong> O(1) — at most 26 lowercase letters</p>
+    <div class="tip-box">
+      <span class="icon">💡</span>
+      <p>A <strong>two-pass algorithm</strong>: first build the frequency map, then scan again. This is a recurring DSA pattern — you can't know what's non-repeating until you've seen everything.</p>
+    </div>
+  </div>
+  <div class="slide-counter" id="counter-7">8 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(7)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-7">
+    LeetCode #387 is a great follow-up to Valid Anagram because it reuses the frequency counter pattern but adds a second pass. Emphasize the two-pass pattern: count everything, then filter. This is common in "find first/last unique" problems.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 8: SECTION BREAK - PRACTICE ===== -->
+<section class="slide section-slide" data-slide="8">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-8"></div></div>
+  <div class="slide-inner" style="justify-content:center;align-items:center;text-align:center;">
+    <h2>✏️ Practice Time</h2>
+    <p>Three problems — increasing difficulty. Try each for 10-15 min.<br>Solutions below (click to reveal).</p>
+  </div>
+  <div class="slide-counter" id="counter-8">9 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(8)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-8">
+    Give learners 30-40 minutes for these three problems. Encourage them to actually code rather than just reason through.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 9: EXERCISE 1 ===== -->
+<section class="slide" data-slide="9">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-9"></div></div>
+  <div class="slide-inner">
+    <h2>Exercise 1: Contains Duplicate</h2>
+    <p><strong>Problem:</strong> Given an integer array <code>nums</code>, return <code>True</code> if any value appears at least twice, otherwise <code>False</code>.</p>
+
+    <div class="code-block">
+<span class="comment"># Example:</span>
+<span class="comment"># nums = [1, 2, 3, 1] → True</span>
+<span class="comment"># nums = [1, 2, 3, 4] → False</span>
+
+<span class="keyword">def</span> <span class="func">contains_duplicate</span>(nums):
+    <span class="comment"># Your code here</span>
+    <span class="keyword">pass</span>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">💪 Hint</div>
+      <p style="font-size:13px;">Use a <code>set()</code> (or a dict) to track seen numbers. If you've seen it before → duplicate. If you get through the whole array with no repeats → no duplicate.</p>
+    </div>
+
+    <details style="cursor:pointer;margin-top:8px;">
+      <summary style="color:var(--accent);font-family:var(--font-mono);font-size:13px;">▶ Click for solution</summary>
+      <div class="code-block" style="margin-top:8px;">
+<span class="keyword">def</span> <span class="func">contains_duplicate</span>(nums):
+    seen = <span class="built_in">set</span>()
+    <span class="keyword">for</span> n <span class="keyword">in</span> nums:
+        <span class="keyword">if</span> n <span class="keyword">in</span> seen:
+            <span class="keyword">return</span> <span class="type">True</span>
+        seen.add(n)
+    <span class="keyword">return</span> <span class="type">False</span>
+      </div>
+    </details>
+  </div>
+  <div class="slide-counter" id="counter-9">10 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(9)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-9">
+    This exercise reinforces the "seen set" pattern from the earlier slide on duplicates. A set works when we only need existence, not counts.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 10: EXERCISE 2 ===== -->
+<section class="slide" data-slide="10">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-10"></div></div>
+  <div class="slide-inner">
+    <h2>Exercise 2: First Repeating Character</h2>
+    <p><strong>Problem:</strong> Given a string <code>s</code>, find the <strong>first</strong> character that appears more than once — return it. If none, return <code>None</code>.</p>
+
+    <div class="code-block">
+<span class="comment"># Example:</span>
+<span class="comment"># s = "abca" → 'a'</span>
+<span class="comment"># s = "abcd" → None</span>
+
+<span class="keyword">def</span> <span class="func">first_repeating</span>(s: <span class="built_in">str</span>) -> <span class="keyword">str</span> | <span class="type">None</span>:
+    <span class="comment"># Your code here</span>
+    <span class="keyword">pass</span>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">💪 Hint</div>
+      <p style="font-size:13px;">Track seen characters in a set. The <strong>first time</strong> you encounter one already in the set — that's your answer. Return <code>None</code> if you finish the loop.</p>
+    </div>
+
+    <details style="cursor:pointer;margin-top:8px;">
+      <summary style="color:var(--accent);font-family:var(--font-mono);font-size:13px;">▶ Click for solution</summary>
+      <div class="code-block" style="margin-top:8px;">
+<span class="keyword">def</span> <span class="func">first_repeating</span>(s):
+    seen = <span class="built_in">set</span>()
+    <span class="keyword">for</span> ch <span class="keyword">in</span> s:
+        <span class="keyword">if</span> ch <span class="keyword">in</span> seen:
+            <span class="keyword">return</span> ch
+        seen.add(ch)
+    <span class="keyword">return</span> <span class="type">None</span>
+      </div>
+    </details>
+  </div>
+  <div class="slide-counter" id="counter-10">11 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(10)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-10">
+    This is the inverse of LeetCode #387. Instead of "first non-repeating", it's "first repeating". Same pattern, different condition. Good to compare.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 11: EXERCISE 3 ===== -->
+<section class="slide" data-slide="11">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-11"></div></div>
+  <div class="slide-inner">
+    <h2>Exercise 3: Intersection of Two Arrays</h2>
+    <p><strong>Problem:</strong> Given two arrays, return an array of their <strong>intersection</strong> (elements that appear in both). Each element must be unique in the result.</p>
+
+    <div class="code-block">
+<span class="comment"># Example:</span>
+<span class="comment"># nums1 = [1, 2, 2, 1], nums2 = [2, 2] → [2]</span>
+<span class="comment"># nums1 = [4, 9, 5],   nums2 = [9, 4, 9, 8, 4] → [4, 9] (or [9, 4])</span>
+
+<span class="keyword">def</span> <span class="func">intersection</span>(nums1: <span class="built_in">list</span>[<span class="built_in">int</span>], nums2: <span class="built_in">list</span>[<span class="built_in">int</span>]) -> <span class="built_in">list</span>[<span class="built_in">int</span>]:
+    <span class="comment"># Your code here</span>
+    <span class="keyword">pass</span>
+    </div>
+
+    <div class="exercise-box">
+      <div class="label">💪 Hint</div>
+      <p style="font-size:13px;">Put one array in a <code>set</code>. Then check each element of the other array — if it's in the set, it's part of the intersection. Use a result set to avoid duplicates.</p>
+    </div>
+
+    <details style="cursor:pointer;margin-top:8px;">
+      <summary style="color:var(--accent);font-family:var(--font-mono);font-size:13px;">▶ Click for solution</summary>
+      <div class="code-block" style="margin-top:8px;">
+<span class="keyword">def</span> <span class="func">intersection</span>(nums1, nums2):
+    set1 = <span class="built_in">set</span>(nums1)
+    result = <span class="built_in">set</span>()
+    <span class="keyword">for</span> n <span class="keyword">in</span> nums2:
+        <span class="keyword">if</span> n <span class="keyword">in</span> set1:
+            result.add(n)
+    <span class="keyword">return</span> <span class="built_in">list</span>(result)
+
+<span class="comment"># One-liner:</span>
+<span class="comment"># return list(set(nums1) & set(nums2))</span>
+      </div>
+    </details>
+  </div>
+  <div class="slide-counter" id="counter-11">12 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(11)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-11">
+    This is LeetCode #349. It combines set and dict thinking. The one-liner with set intersection is totally acceptable in interviews — mention it as a "Pythonic alternative" after giving the explicit version.
+  </aside>
+</section>
+
+<!-- ===== SLIDE 12: RECAP ===== -->
+<section class="slide section-slide" data-slide="12">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-12"></div></div>
+  <div class="slide-inner" style="justify-content:center;">
+    <h2 style="text-align:center;font-size:28px;">📌 Three Takeaways</h2>
+    <div class="takeaways" style="max-width:520px;margin:24px auto 0;">
+      <div class="takeaway-item">
+        <div class="takeaway-num">1</div>
+        <div class="takeaway-text"><strong>Hash maps give O(1) lookups.</strong> Any time you need to repeatedly check membership, build a dict/set. It's the difference between O(n²) and O(n).</div>
+      </div>
+      <div class="takeaway-item">
+        <div class="takeaway-num">2</div>
+        <div class="takeaway-text"><strong>Frequency counters = counting things.</strong> Use <code>Counter</code> or <code>defaultdict(int)</code>. Valid Anagram and First Non-Repeating Char are the classic examples.</div>
+      </div>
+      <div class="takeaway-item">
+        <div class="takeaway-num">3</div>
+        <div class="takeaway-text"><strong>The complement pattern powers Two-Sum.</strong> For each <code>n</code>, check if <code>target - n</code> has been seen. This trick generalizes to many hash-map problems.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-counter" id="counter-12">13 / ?</div>
+  <aside class="notes-panel" id="notes-13" style="display:none;"></aside>
+</section>
+
+<!-- ===== SLIDE 13: NEXT STEPS ===== -->
+<section class="slide" data-slide="13">
+  <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill-13"></div></div>
+  <div class="slide-inner" style="justify-content:center;">
+    <h2 style="text-align:center;">Next Steps</h2>
+    <div style="max-width:500px;margin:16px auto 0;">
+      <ul>
+        <li><strong>LeetCode practice</strong> — solve <strong>#1 (Two-Sum)</strong>, <strong>#387 (First Unique Char)</strong>, and <strong>#242 (Valid Anagram)</strong> today.</li>
+        <li><strong>Bonus:</strong> <a href="https://leetcode.com/problems/contains-duplicate/" style="color:var(--accent);">#217 Contains Duplicate</a> and <a href="https://leetcode.com/problems/intersection-of-two-arrays/" style="color:var(--accent);">#349 Intersection</a></li>
+        <li><strong>Stretch:</strong> <a href="https://leetcode.com/problems/group-anagrams/" style="color:var(--accent);">#49 Group Anagrams</a> (Medium) — uses frequency counters as dictionary keys.</li>
+      </ul>
+      <div style="margin-top:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--surface2);border-radius:6px;text-align:center;">
+        <p style="font-size:13px;color:var(--text-dim);margin:0;">
+          <strong style="color:var(--text);">Project 3 (Weather Dashboard)</strong> — completed Week 8 ✓
+          <br>
+          <span style="color:var(--text-muted);font-size:12px;">Next: Project 4 &amp; Project 5 (Full-Stack) after Week 12</span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-counter" id="counter-13">14 / ?</div>
+  <div class="notes-toggle" onclick="toggleNotes(13)">[n] Notes</div>
+  <aside class="notes-panel" id="notes-13">
+    Acknowledge progress — Project 3 (Weather Dashboard) is behind us. Hash maps are the foundation for many Week 10+ problems including graph traversals and caching.
+  </aside>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  // Update progress counters
+  function updateCounters() {
+    slides.forEach((s, i) => {
+      const c = s.querySelector('.slide-counter');
+      if (c) c.textContent = (i + 1) + ' / ' + total;
+    });
+  }
+  updateCounters();
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(total - 1, idx));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    // Update progress bar fill
+    slides.forEach((s, i) => {
+      const fill = s.querySelector('.progress-bar-fill');
+      if (fill) fill.style.width = ((i <= idx) ? ((idx + 1) / total * 100) + '%' : '0%');
+    });
+    // Update URL hash
+    history.replaceState(null, '', '#' + (idx + 1));
+  }
+
+  // Speaker notes
+  window.toggleNotes = function(idx) {
+    const panel = document.getElementById('notes-' + idx);
+    if (panel) panel.classList.toggle('visible');
+  };
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      showSlide(current - 1);
+    } else if (e.key === 'f') {
+      e.preventDefault();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n') {
+      const panel = document.getElementById('notes-' + current);
+      if (panel) panel.classList.toggle('visible');
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      showSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      showSlide(total - 1);
+    }
+  });
+
+  // Hash navigation
+  const hashIdx = parseInt(window.location.hash.slice(1), 10);
+  if (!isNaN(hashIdx) && hashIdx >= 1 && hashIdx <= total) {
+    showSlide(hashIdx - 1);
+  } else {
+    showSlide(0);
+  }
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    const diff = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(diff) > 60) {
+      showSlide(diff < 0 ? current + 1 : current - 1);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
