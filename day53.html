@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 53: Linked Lists — Traversal, Insert, Delete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-alt: #161b22;
+  --bg-card: #1c2333;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --accent-green: #3fb950;
+  --accent-orange: #d29922;
+  --accent-red: #f85149;
+  --accent-pink: #bc8cff;
+  --border: #30363d;
+  --radius: 12px;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --slide-w: 1200px;
+  --slide-h: 675px;
+  --font-code: 18px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #010409;
+  color: var(--text);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Slide container */
+#deck {
+  position: relative;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  max-width: 100vw;
+  max-height: 100vh;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: 0 0 60px rgba(0,0,0,0.7);
+}
+
+/* Letterboxing on wider/narrower screens */
+@media (max-aspect-ratio: 16/9) {
+  #deck { width: calc(100vh * 16 / 9); height: 100vh; }
+}
+@media (min-aspect-ratio: 16/9) {
+  #deck { width: 100vw; height: calc(100vw * 9 / 16); }
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 56px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease, visibility 0.35s;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 2;
+}
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Progress bar */
+#progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 10;
+  transition: width 0.3s ease;
+}
+
+/* Slide counter */
+#slide-counter {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  z-index: 10;
+  letter-spacing: 0.5px;
+}
+
+/* Footer timestamp */
+#deck-footer {
+  position: absolute;
+  bottom: 12px;
+  left: 20px;
+  font-size: 11px;
+  color: var(--text-muted);
+  z-index: 10;
+  font-family: var(--font-mono);
+}
+
+/* ---- Slide content styles ---- */
+h1 {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+h2 {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  letter-spacing: -0.3px;
+}
+h3 {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.subtitle {
+  font-size: 20px;
+  color: var(--text-dim);
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+.meta {
+  font-size: 16px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 8px;
+}
+.tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+  margin-right: 8px;
+  margin-bottom: 6px;
+}
+.tag.green { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+.tag.orange { background: rgba(210,153,34,0.15); color: var(--accent-orange); }
+.tag.pink { background: rgba(188,140,255,0.15); color: var(--accent-pink); }
+
+p, li { font-size: 18px; line-height: 1.6; color: var(--text-dim); }
+p { margin-bottom: 12px; }
+li { margin-bottom: 6px; }
+
+ul { list-style: none; margin-bottom: 16px; }
+ul li::before {
+  content: "▸ ";
+  color: var(--accent);
+  font-weight: 600;
+}
+
+ol { margin-bottom: 16px; padding-left: 24px; }
+ol li {
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+ol li::marker { color: var(--accent); font-weight: 600; }
+
+code {
+  font-family: var(--font-mono);
+  font-size: var(--font-code);
+  background: var(--bg-alt);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--accent-orange);
+}
+pre {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-size: 15px;
+  line-height: 1.55;
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: var(--text);
+  font-size: 15px;
+}
+pre .hl { color: var(--accent-green); }
+pre .kw { color: var(--accent-pink); }
+pre .cm { color: var(--text-muted); font-style: italic; }
+pre .str { color: var(--accent-orange); }
+pre .fn { color: var(--accent); }
+pre .num { color: var(--accent-orange); }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 20px;
+  margin: 16px 0;
+  background: var(--bg-card);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* Layout helpers */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+}
+.col h3 { margin-top: 0; }
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex: 1;
+}
+.center h1 { margin-bottom: 8px; }
+.center .subtitle { margin-bottom: 4px; }
+
+.cta {
+  display: inline-block;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 17px;
+  margin-top: 8px;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.highlight-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+}
+.highlight-box.orange { border-left-color: var(--accent-orange); }
+.highlight-box.green { border-left-color: var(--accent-green); }
+.highlight-box.pink { border-left-color: var(--accent-pink); }
+.highlight-box p { margin-bottom: 0; font-size: 16px; }
+
+.small { font-size: 14px; color: var(--text-muted); }
+
+/* Print styles */
+@media print {
+  body { background: white; }
+  #deck { box-shadow: none; border-radius: 0; width: 100%; height: auto; max-height: none; }
+  .slide { position: relative; opacity: 1 !important; visibility: visible !important; page-break-after: always; height: auto; min-height: 5in; }
+  #progress-bar, #slide-counter, #deck-footer { display: none; }
+  pre { border: 1px solid #ccc; }
+  code { background: #f5f5f5; }
+  :root { --bg: white; --bg-alt: #f5f5f5; --text: #1a1a1a; --text-dim: #444; --border: #ddd; --bg-card: #f9f9f9; }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  h1 { font-size: 32px; }
+  h2 { font-size: 24px; }
+  p, li { font-size: 15px; }
+  pre { padding: 12px 14px; font-size: 12px; }
+  pre code { font-size: 12px; }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  #deck { width: 100vw; height: 100vh; border-radius: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- SLIDE 0: Title -->
+  <section class="slide active" data-slide="0">
+    <div class="center" style="justify-content:center;">
+      <div class="badge-row" style="justify-content:center;">
+        <span class="tag">Day 53</span>
+        <span class="tag green">Week 9</span>
+        <span class="tag orange">Phase III</span>
+      </div>
+      <h1 style="font-size:56px;">Linked Lists</h1>
+      <p class="subtitle" style="font-size:24px; margin-bottom:4px;">Traversal · Insertion · Deletion</p>
+      <p class="meta" style="margin-top:16px;">90-Day Co-op Prep Plan</p>
+      <p class="small" style="margin-top:24px;">⏱ 60 minutes · DSA Deep Dive</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 1: Prerequisites -->
+  <section class="slide" data-slide="1">
+    <h2>📋 Prerequisites</h2>
+    <p style="margin-bottom:20px;">Before starting today, you should already know:</p>
+    <div class="two-col">
+      <div class="col">
+        <div class="highlight-box green">
+          <p><strong>✅ Basic Python</strong> — classes, methods, <code>self</code>, <code>__init__</code>, basic OOP</p>
+        </div>
+        <div class="highlight-box green">
+          <p><strong>✅ Pointers &amp; References</strong> — Python variables as references to objects</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="highlight-box green">
+          <p><strong>✅ Arrays &amp; Indexing</strong> — contrast against linked lists (random access vs sequential)</p>
+        </div>
+        <div class="highlight-box green">
+          <p><strong>✅ Recursion basics</strong> — helpful for reverse but not required</p>
+        </div>
+      </div>
+    </div>
+    <blockquote style="margin-top:16px;">
+      Don't worry if you're rusty — today's walkthrough is self-contained. You just need Python 3.8+ installed.
+    </blockquote>
+  </section>
+
+  <!-- SLIDE 2: Learning Objectives -->
+  <section class="slide" data-slide="2">
+    <h2>🎯 Learning Objectives</h2>
+    <p>By the end of this session, you will be able to:</p>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:12px; max-width:800px; margin:0 auto;">
+      <div class="highlight-box">
+        <p><strong>1.</strong> Build a <strong>Singly Linked List</strong> class from scratch in Python</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>2.</strong> Implement <code>append</code>, <code>prepend</code>, <code>delete</code>, and <code>print</code> operations</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>3.</strong> Trace pointer updates step-by-step (no memory leaks, no lost nodes)</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>4.</strong> Solve <strong>LeetCode #206</strong> (Reverse Linked List) — iterative and recursive</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: What is a Linked List? -->
+  <section class="slide" data-slide="3">
+    <h2>🔗 What is a Linked List?</h2>
+    <div class="two-col">
+      <div class="col">
+        <p>A linked list is a <strong>linear data structure</strong> where each element (node) points to the next.</p>
+        <div class="highlight-box">
+          <p><strong>Node anatomy:</strong></p>
+          <pre><code><span class="kw">class</span> <span class="fn">Node</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="hl">self</span>, value):
+        <span class="hl">self</span>.value = value
+        <span class="hl">self</span>.next = <span class="kw">None</span></code></pre>
+        </div>
+        <p class="small">A node holds a <code>value</code> and a <code>next</code> pointer to the next node (or <code>None</code> if last).</p>
+      </div>
+      <div class="col">
+        <p><strong>Array vs Linked List:</strong></p>
+        <table style="width:100%; border-collapse:collapse; font-size:15px; margin-top:8px;">
+          <tr><td style="padding:6px 8px; border-bottom:1px solid var(--border); font-weight:500;">Property</td><td style="padding:6px 8px; border-bottom:1px solid var(--border); font-weight:500;">Array</td><td style="padding:6px 8px; border-bottom:1px solid var(--border); font-weight:500;">Linked List</td></tr>
+          <tr><td style="padding:4px 8px; border-bottom:1px solid var(--border);">Access</td><td style="padding:4px 8px; border-bottom:1px solid var(--border);">O(1) random</td><td style="padding:4px 8px; border-bottom:1px solid var(--border);">O(n) sequential</td></tr>
+          <tr><td style="padding:4px 8px; border-bottom:1px solid var(--border);">Insert (front)</td><td style="padding:4px 8px; border-bottom:1px solid var(--border);">O(n)</td><td style="padding:4px 8px; border-bottom:1px solid var(--border);">O(1)</td></tr>
+          <tr><td style="padding:4px 8px; border-bottom:1px solid var(--border);">Delete (front)</td><td style="padding:4px 8px; border-bottom:1px solid var(--border);">O(n)</td><td style="padding:4px 8px; border-bottom:1px solid var(--border);">O(1)</td></tr>
+          <tr><td style="padding:4px 8px;">Memory</td><td style="padding:4px 8px;">Contiguous block</td><td style="padding:4px 8px;">Scattered (overhead)</td></tr>
+        </table>
+        <p class="small" style="margin-top:8px;">Linked lists shine when you frequently insert/delete at the head.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: The Singly Linked List Class -->
+  <section class="slide" data-slide="4">
+    <h2>🏗 Building the LinkedList Class</h2>
+    <div class="two-col">
+      <div class="col">
+        <pre><code><span class="kw">class</span> <span class="fn">LinkedList</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="hl">self</span>):
+        <span class="hl">self</span>.head = <span class="kw">None</span>
+
+    <span class="cm"># --- Traversal ---</span>
+    <span class="kw">def</span> <span class="fn">print_list</span>(<span class="hl">self</span>):
+        curr = <span class="hl">self</span>.head
+        <span class="kw">while</span> curr:
+            <span class="fn">print</span>(curr.value, end=<span class="str">" → "</span>)
+            curr = curr.next
+        <span class="fn">print</span>(<span class="str">"None"</span>)
+
+    <span class="cm"># --- Append (tail insert) ---</span>
+    <span class="kw">def</span> <span class="fn">append</span>(<span class="hl">self</span>, value):
+        new_node = <span class="fn">Node</span>(value)
+        <span class="kw">if not</span> <span class="hl">self</span>.head:
+            <span class="hl">self</span>.head = new_node
+            <span class="kw">return</span>
+        curr = <span class="hl">self</span>.head
+        <span class="kw">while</span> curr.next:
+            curr = curr.next
+        curr.next = new_node</code></pre>
+      </div>
+      <div class="col">
+        <pre><code>    <span class="cm"># --- Prepend (head insert) ---</span>
+    <span class="kw">def</span> <span class="fn">prepend</span>(<span class="hl">self</span>, value):
+        new_node = <span class="fn">Node</span>(value)
+        new_node.next = <span class="hl">self</span>.head
+        <span class="hl">self</span>.head = new_node
+
+    <span class="cm"># --- Delete by value ---</span>
+    <span class="kw">def</span> <span class="fn">delete</span>(<span class="hl">self</span>, value):
+        <span class="kw">if not</span> <span class="hl">self</span>.head:
+            <span class="kw">return</span>
+        <span class="kw">if</span> <span class="hl">self</span>.head.value == value:
+            <span class="hl">self</span>.head = <span class="hl">self</span>.head.next
+            <span class="kw">return</span>
+        curr = <span class="hl">self</span>.head
+        <span class="kw">while</span> curr.next <span class="kw">and</span> curr.next.value != value:
+            curr = curr.next
+        <span class="kw">if</span> curr.next:
+            curr.next = curr.next.next
+
+    <span class="cm"># --- Usage ---</span>
+ll = <span class="fn">LinkedList</span>()
+ll.<span class="fn">append</span>(<span class="num">10</span>)
+ll.<span class="fn">append</span>(<span class="num">20</span>)
+ll.<span class="fn">prepend</span>(<span class="num">5</span>)
+ll.<span class="fn">print_list</span>()  <span class="cm"># 5 → 10 → 20 → None</span></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: Pointer tracing — Append -->
+  <section class="slide" data-slide="5">
+    <h2>🧠 Pointer Tracing: Append</h2>
+    <p>Walk through <code>ll.append(30)</code> on list <code>5 → 10 → 20 → None</code></p>
+    <div class="two-col">
+      <div class="col">
+        <pre><code><span class="cm"># Step 1: Create new node</span>
+new_node = <span class="fn">Node</span>(<span class="num">30</span>)
+<span class="cm"># new_node: [30 | None]</span>
+
+<span class="cm"># Step 2: Traverse to tail</span>
+curr = head               <span class="cm"># curr → [5 | ●]</span>
+<span class="kw">while</span> curr.next:         <span class="cm"># [5 | ●] → yes</span>
+    curr = curr.next      <span class="cm"># curr → [10 | ●]</span>
+                          <span class="cm"># [10 | ●] → yes</span>
+    curr = curr.next      <span class="cm"># curr → [20 | None]</span>
+                          <span class="cm"># [20 | None] → no, stop</span>
+
+<span class="cm"># Step 3: Wire the new node</span>
+curr.next = new_node
+<span class="cm"># [20 | ●] → [30 | None]</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="highlight-box green">
+          <p><strong>✅ Key insight:</strong></p>
+          <p>We stop when <code>curr.next is None</code>, not when <code>curr is None</code>. That preserves the previous node's reference so we can update its <code>.next</code> pointer.</p>
+        </div>
+        <div class="highlight-box orange" style="margin-top:12px;">
+          <p><strong>⚠️ Common mistake:</strong></p>
+          <p>Using <code>while curr:</code> instead of <code>while curr.next:</code>. This makes <code>curr</code> land on <code>None</code>, and you can't set <code>None.next</code> — that's an <code>AttributeError</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: Pointer Tracing — Delete -->
+  <section class="slide" data-slide="6">
+    <h2>🧠 Pointer Tracing: Delete</h2>
+    <p>Walk through <code>ll.delete(10)</code> on list <code>5 → 10 → 20 → None</code></p>
+    <div class="two-col">
+      <div class="col">
+        <pre><code><span class="cm"># Edge case: deleting the head</span>
+<span class="kw">if</span> <span class="hl">self</span>.head.value == value:
+    <span class="hl">self</span>.head = <span class="hl">self</span>.head.next
+    <span class="kw">return</span>
+
+<span class="cm"># General case: find predecessor</span>
+<span class="hl">self</span>.head: [<span class="num">5</span> | ●] → [<span class="num">10</span> | ●] → [<span class="num">20</span> | None]
+                            ↑ delete this
+
+curr = head
+<span class="kw">while</span> curr.next.value != value:
+    curr = curr.next
+<span class="cm"># curr stays at [5 | ●] (since 5.next.value == 10)</span>
+
+<span class="cm"># Bypass the target</span>
+curr.next = curr.next.next
+<span class="cm"># [5 | ●] → [20 | None]  (10 is now orphaned)</span></code></pre>
+      </div>
+      <div class="col">
+        <div class="highlight-box green">
+          <p><strong>✅ Key insight:</strong></p>
+          <p>To delete a node, you need a pointer to the <strong>node before it</strong>. That's why the loop checks <code>curr.next.value</code>, not <code>curr.value</code>.</p>
+        </div>
+        <div class="highlight-box" style="margin-top:12px;">
+          <p><strong>Edge cases always check:</strong></p>
+          <p>1. Empty list → <code>head is None</code><br>
+          2. Delete head → update <code>self.head</code><br>
+          3. Delete tail → loop runs to end, sets last <code>.next</code> to <code>None</code><br>
+          4. Value not found → no change</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: LeetCode #206 — Reverse Linked List (Iterative) -->
+  <section class="slide" data-slide="7">
+    <h2>🔄 LeetCode #206: Reverse Linked List (Iterative)</h2>
+    <p>Reverse a singly linked list <strong>in-place</strong> using 3 pointers.</p>
+    <div class="two-col">
+      <div class="col">
+        <pre><code><span class="kw">def</span> <span class="fn">reverse_iterative</span>(head):
+    prev = <span class="kw">None</span>
+    curr = head
+
+    <span class="kw">while</span> curr:
+        <span class="cm"># 1. Save next before we overwrite</span>
+        next_temp = curr.next
+
+        <span class="cm"># 2. Reverse the arrow</span>
+        curr.next = prev
+
+        <span class="cm"># 3. Slide pointers forward</span>
+        prev = curr
+        curr = next_temp
+
+    <span class="kw">return</span> prev  <span class="cm"># new head</span></code></pre>
+      </div>
+      <div class="col">
+        <p><strong>Tracing on [1 → 2 → 3 → None]:</strong></p>
+        <pre style="font-size:13px; line-height:1.4;"><span class="cm"># Before loop:</span>
+prev=None  curr=[1|●]→[2|●]→[3|None]
+<span class="cm"># Iter 1:</span>
+next_temp=[2|●]  curr.next=None
+prev=[1|None]     curr=[2|●]
+<span class="cm"># Iter 2:</span>
+next_temp=[3|None]  curr.next=[1|None]
+prev=[2|●]→[1|None]  curr=[3|None]
+<span class="cm"># Iter 3:</span>
+next_temp=None  curr.next=[2|●]→[1|None]
+prev=[3|●]→[2|●]→[1|None]  curr=None
+<span class="cm"># Return prev → [3 → 2 → 1 → None] ✅</span></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: Reverse Linked List (Recursive) -->
+  <section class="slide" data-slide="8">
+    <h2>🔄 LeetCode #206: Recursive Solution</h2>
+    <div class="two-col">
+      <div class="col">
+        <pre><code><span class="kw">def</span> <span class="fn">reverse_recursive</span>(head):
+    <span class="cm"># Base: empty list or single node</span>
+    <span class="kw">if not</span> head <span class="kw">or not</span> head.next:
+        <span class="kw">return</span> head
+
+    <span class="cm"># Reverse the rest of the list</span>
+    new_head = <span class="fn">reverse_recursive</span>(head.next)
+
+    <span class="cm"># Make the next node point back to head</span>
+    head.next.next = head
+    head.next = <span class="kw">None</span>
+
+    <span class="kw">return</span> new_head</code></pre>
+      </div>
+      <div class="col">
+        <div class="highlight-box pink">
+          <p><strong>🧠 How it works:</strong></p>
+          <p><code>reverse_recursive</code> travels to the tail first (base case). On the way back up the call stack, each node <strong>reverses one arrow</strong> — the node after it now points back to it.</p>
+        </div>
+        <div class="highlight-box green" style="margin-top:12px;">
+          <p><strong>Key line:</strong> <code>head.next.next = head</code></p>
+          <p>This says: "whoever I'm pointing to, make <em>them</em> point back at me." It's the core of the reversal.</p>
+        </div>
+        <p class="small" style="margin-top:8px;">⏱ Space: O(n) call stack vs O(1) iterative. Prefer iterative in interviews unless asked.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: Walkthrough — Build It Yourself -->
+  <section class="slide" data-slide="9">
+    <h2>💻 Walkthrough: Code-Along</h2>
+    <p>Open a Python file and follow along:</p>
+    <ol>
+      <li><strong>Create <code>linked_list.py</code></strong> — define the <code>Node</code> class with <code>value</code> and <code>next</code></li>
+      <li><strong>Define <code>LinkedList</code></strong> — <code>__init__</code> sets <code>self.head = None</code></li>
+      <li><strong>Implement <code>append()</code></strong> — handle empty list, then walk to tail</li>
+      <li><strong>Implement <code>prepend()</code></strong> — new node → head in O(1)</li>
+      <li><strong>Implement <code>print_list()</code></strong> — <code>5 → 10 → 20 → None</code></li>
+      <li><strong>Implement <code>delete()</code></strong> — handle head delete and general case</li>
+      <li><strong>Implement <code>reverse()</code></strong> — iterative 3-pointer pattern</li>
+    </ol>
+    <div class="highlight-box" style="margin-top:12px;">
+      <p><strong>Expected output:</strong> Run this and you should see:</p>
+      <pre style="margin:8px 0 0 0;"><code>5 → 10 → 20 → 30 → None
+Delete 10 → 5 → 20 → 30 → None
+Reverse → 30 → 20 → 5 → None</code></pre>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: Exercises -->
+  <section class="slide" data-slide="10">
+    <h2>🏋️ Practice Exercises</h2>
+    <p>Try these on your own. Solutions on next slide.</p>
+    <div class="two-col">
+      <div class="col">
+        <div class="highlight-box orange">
+          <p><strong>Exercise 1: Find Middle</strong></p>
+          <p>Write <code>find_middle(head)</code> that returns the middle node of a linked list in one pass.</p>
+          <p class="small"><em>Hint: Two pointers — slow and fast.</em></p>
+        </div>
+        <div class="highlight-box" style="margin-top:12px;">
+          <p><strong>Exercise 2: Has Cycle</strong></p>
+          <p>Write <code>has_cycle(head)</code> that detects if a linked list has a cycle. Return <code>True</code>/<code>False</code>.</p>
+          <p class="small"><em>Hint: Floyd's Tortoise and Hare.</em></p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="highlight-box green">
+          <p><strong>Exercise 3: Get Nth from End</strong></p>
+          <p>Write <code>get_nth_from_end(head, n)</code> that returns the value of the nth node from the end (1-indexed).</p>
+          <p class="small"><em>Hint: Two pointers, n apart.</em></p>
+        </div>
+        <div class="highlight-box pink" style="margin-top:12px;">
+          <p><strong>Exercise 4: LeetCode #21</strong></p>
+          <p>Merge two sorted linked lists into one sorted list. Solve both iterative and recursive.</p>
+          <p class="small"><em>Link: leetcode.com/problems/merge-two-sorted-lists</em></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: Exercise Solutions -->
+  <section class="slide" data-slide="11">
+    <h2>🔍 Exercise Solutions</h2>
+    <div class="two-col">
+      <div class="col">
+        <p><strong>1. Find Middle</strong></p>
+        <pre style="font-size:13px;"><code><span class="kw">def</span> <span class="fn">find_middle</span>(head):
+    slow = fast = head
+    <span class="kw">while</span> fast <span class="kw">and</span> fast.next:
+        slow = slow.next
+        fast = fast.next.next
+    <span class="kw">return</span> slow  <span class="cm"># middle (2nd if even)</span></code></pre>
+        <p><strong>3. Nth from End</strong></p>
+        <pre style="font-size:13px;"><code><span class="kw">def</span> <span class="fn">get_nth_from_end</span>(head, n):
+    fast = slow = head
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n):
+        <span class="kw">if not</span> fast: <span class="kw">return</span> <span class="kw">None</span>
+        fast = fast.next
+    <span class="kw">while</span> fast:
+        slow = slow.next
+        fast = fast.next
+    <span class="kw">return</span> slow.value</code></pre>
+      </div>
+      <div class="col">
+        <p><strong>2. Has Cycle</strong></p>
+        <pre style="font-size:13px;"><code><span class="kw">def</span> <span class="fn">has_cycle</span>(head):
+    slow = fast = head
+    <span class="kw">while</span> fast <span class="kw">and</span> fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        <span class="kw">if</span> slow <span class="kw">is</span> fast:
+            <span class="kw">return</span> <span class="kw">True</span>
+    <span class="kw">return</span> <span class="kw">False</span></code></pre>
+        <p><strong>4. Merge Two Sorted Lists</strong></p>
+        <pre style="font-size:13px;"><code><span class="kw">def</span> <span class="fn">merge_two_lists</span>(l1, l2):
+    dummy = <span class="fn">Node</span>(<span class="num">0</span>)
+    curr = dummy
+    <span class="kw">while</span> l1 <span class="kw">and</span> l2:
+        <span class="kw">if</span> l1.value &lt; l2.value:
+            curr.next = l1; l1 = l1.next
+        <span class="kw">else</span>:
+            curr.next = l2; l2 = l2.next
+        curr = curr.next
+    curr.next = l1 <span class="kw">or</span> l2
+    <span class="kw">return</span> dummy.next</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: Recap & Takeaways -->
+  <section class="slide" data-slide="12">
+    <h2>📌 Key Takeaways</h2>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:16px; max-width:800px; margin:0 auto;">
+      <div class="highlight-box green">
+        <p><strong>1. Nodes have two parts:</strong> <code>value</code> + <code>next</code> (pointer). <code>None</code> marks the end.</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>2. Append = walk to tail</strong> (<code>while curr.next:</code>), then wire. <strong>Prepend</strong> = point new node to head, update head.</p>
+      </div>
+      <div class="highlight-box orange">
+        <p><strong>3. Delete needs the predecessor.</strong> That's why we check <code>curr.next.value</code>, not <code>curr.value</code>.</p>
+      </div>
+      <div class="highlight-box pink">
+        <p><strong>4. Reverse = three pointers</strong> (<code>prev</code>, <code>curr</code>, <code>next_temp</code>). Iterative is O(n) time, O(1) space.</p>
+      </div>
+      <div class="highlight-box">
+        <p><strong>5. Two-pointer patterns</strong> (slow/fast) solve many linked list problems: middle, cycle, nth-from-end.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: Next Steps & Milestones -->
+  <section class="slide" data-slide="13">
+    <div class="center" style="justify-content:center;">
+      <h2 style="margin-bottom:20px;">🚀 What's Next</h2>
+      <div class="badge-row" style="justify-content:center; margin-bottom:24px;">
+        <span class="tag green">Week 10: Stacks &amp; Queues</span>
+        <span class="tag orange">LeetCode #141, #21, #206</span>
+      </div>
+      <p style="max-width:600px;">Practice the two-pointer pattern tonight — it will carry you through the next 5 weeks of DSA prep.</p>
+      <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px; align-items:center;">
+        <p class="small"><strong>Milestones:</strong></p>
+        <p class="small">📌 Project 3 (Weather Dashboard) ✅ Complete</p>
+        <p class="small">📌 Project 5 (Full-Stack App) — coming after Week 12</p>
+        <p class="small" style="color:var(--accent);">⏳ Co-op applications opening soon — keep grinding!</p>
+      </div>
+      <div style="margin-top:28px; border-top:1px solid var(--border); padding-top:16px; width:80%;">
+        <p class="small">
+          "The only way to learn linked lists is to draw them and code them — until the arrows become intuitive."
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Progress bar -->
+  <div id="progress-bar"></div>
+  <!-- Slide counter -->
+  <div id="slide-counter"></div>
+  <!-- Footer -->
+  <div id="deck-footer">Day 53 · Linked Lists · 2026-07-12</div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  const progressBar = document.getElementById('progress-bar');
+  const counter = document.getElementById('slide-counter');
+  let current = 0;
+
+  // Restore slide from hash
+  if (window.location.hash) {
+    const n = parseInt(window.location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < totalSlides) current = n;
+  }
+
+  function showSlide(n) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === n));
+    current = n;
+    const pct = ((n + 1) / totalSlides) * 100;
+    progressBar.style.width = pct + '%';
+    counter.textContent = (n + 1) + ' / ' + totalSlides;
+    window.location.hash = n;
+  }
+
+  function next() { if (current < totalSlides - 1) showSlide(current + 1); }
+  function prev() { if (current > 0) showSlide(current - 1); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next();
+      else prev();
+    }
+  });
+
+  showSlide(current);
+})();
+</script>
+</body>
+</html>
