@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 54 — Review + Problem Session | 90-Day Co-op Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg-alt: #151820;
+  --surface: #1c2130;
+  --border: #2a3045;
+  --text: #e8eaed;
+  --text-muted: #8892a8;
+  --accent: #7c9aff;
+  --accent-dim: #4a6fcf;
+  --green: #50c878;
+  --orange: #f0a030;
+  --red: #e05050;
+  --yellow: #e8c840;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-serif: 'DM Serif Display', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --ratio: 16/9;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #080a0e; font-family: var(--font-sans); color: var(--text); }
+.deck { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.slide {
+  position: absolute; top: 50%; left: 50%;
+  width: min(100vw, calc(100vh * var(--ratio)));
+  height: min(100vh, calc(100vw / var(--ratio)));
+  transform: translate(-50%, -50%);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 48px 56px;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+  overflow-y: auto;
+}
+.slide.active { opacity: 1; pointer-events: auto; position: relative; top: auto; left: auto; transform: none; width: 100%; height: 100%; }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.progress-bar { position: absolute; top: 0; left: 0; height: 3px; background: var(--accent-dim); transition: width 0.3s ease; border-radius: 12px 12px 0 0; }
+.slide-counter { position: absolute; bottom: 16px; right: 24px; font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); letter-spacing: 0.5px; }
+.slide-number { position: absolute; bottom: 16px; left: 24px; font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+h1 { font-family: var(--font-serif); font-size: 42px; font-weight: 400; line-height: 1.2; color: var(--text); margin-bottom: 12px; }
+h2 { font-family: var(--font-sans); font-size: 28px; font-weight: 600; color: var(--accent); margin-bottom: 16px; letter-spacing: -0.3px; }
+h3 { font-family: var(--font-sans); font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+.subtitle { font-family: var(--font-sans); font-size: 18px; color: var(--text-muted); margin-bottom: 8px; font-weight: 400; }
+.meta { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+.body-text { font-size: 16px; line-height: 1.65; color: var(--text-muted); max-width: 720px; margin-bottom: 12px; }
+pre { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; font-family: var(--font-mono); font-size: 14px; line-height: 1.6; overflow-x: auto; margin: 8px 0 16px; color: var(--text); }
+code { font-family: var(--font-mono); font-size: 14px; }
+pre .hl { color: var(--accent); }
+pre .kw { color: var(--orange); }
+pre .ty { color: var(--green); }
+pre .cm { color: #5a6a7a; font-style: italic; }
+pre .str { color: var(--yellow); }
+pre .num { color: var(--red); }
+pre .fn { color: var(--accent); }
+ul { list-style: none; padding: 0; margin: 8px 0 16px; }
+li { font-size: 16px; line-height: 1.65; color: var(--text-muted); padding-left: 20px; position: relative; margin-bottom: 6px; }
+li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
+.card-grid { display: grid; gap: 16px; margin: 12px 0; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.card h4 { font-family: var(--font-mono); font-size: 14px; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+.card p { font-size: 15px; color: var(--text-muted); line-height: 1.55; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 12px 0; }
+.two-col pre { margin: 0; }
+.tag { display: inline-block; background: var(--accent-dim); color: #fff; font-family: var(--font-mono); font-size: 12px; padding: 2px 10px; border-radius: 4px; margin-right: 6px; }
+.tag.easy { background: #1a6b3a; }
+.tag.med { background: #8a6a10; }
+.tag.hard { background: #8a2020; }
+.flashcard { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 8px 0; }
+.flashcard .q { font-family: var(--font-mono); font-size: 15px; color: var(--accent); margin-bottom: 8px; }
+.flashcard .a { font-size: 15px; color: var(--text-muted); line-height: 1.55; }
+.flashcard .a strong { color: var(--text); }
+.cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 12px 0; }
+.checklist { font-size: 15px; color: var(--text-muted); line-height: 1.8; }
+.checklist span { color: var(--green); margin-right: 8px; }
+.cta-box { background: var(--surface); border: 1px solid var(--accent-dim); border-radius: 10px; padding: 24px; text-align: center; margin: 16px 0; }
+.cta-box p { font-size: 17px; color: var(--text); font-weight: 500; }
+.cta-box .hint { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+.spacer { flex: 1; }
+footer { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); opacity: 0.4; }
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; border-radius: 0; border: none; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  .two-col { grid-template-columns: 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr; }
+  pre { font-size: 12px; padding: 12px; }
+}
+@media print {
+  body { overflow: visible; background: #fff !important; }
+  .deck { height: auto; display: block; }
+  .slide { position: relative; opacity: 1 !important; pointer-events: auto; transform: none; top: auto; left: auto; width: 100%; height: auto; min-height: 5in; page-break-after: always; border: 1px solid #ccc; border-radius: 0; background: #fff !important; color: #000 !important; }
+  .progress-bar, .slide-counter, .slide-number, footer { display: none; }
+  :root { --text: #000; --text-muted: #333; --bg: #fff; --bg-alt: #f5f5f5; --surface: #eee; --border: #ccc; --accent: #2563eb; --accent-dim: #2563eb; --green: #16a34a; --orange: #d97706; --red: #dc2626; --yellow: #ca8a04; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- SLIDE 0: Title -->
+  <section class="slide active" data-slide="0">
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+      <div style="margin-bottom:24px;">
+        <span class="tag" style="font-size:14px; padding:4px 16px;">Week 9 · Phase III · Review</span>
+      </div>
+      <h1 style="font-size:54px; margin-bottom:8px;">Review + Problem Session</h1>
+      <p class="subtitle" style="font-size:22px; color:var(--text-muted); margin-bottom:8px;">Day 54 of the 90-Day Co-op Prep Plan</p>
+      <p class="meta" style="margin-top:16px; font-size:15px;">Re-solve 5 LeetCode Problems · Flashcards · Time Complexities</p>
+      <div style="margin-top:32px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+        <span class="tag" style="background:var(--accent-dim);">⏱ 60 min</span>
+        <span class="tag" style="background:#2a3045;">📅 July 13, 2026</span>
+      </div>
+      <div style="margin-top:40px; font-family:var(--font-mono); font-size:13px; color:var(--text-muted);">
+        Press <kbd style="background:var(--surface); padding:2px 8px; border-radius:4px; border:1px solid var(--border);">→</kbd> or <kbd style="background:var(--surface); padding:2px 8px; border-radius:4px; border:1px solid var(--border);">Space</kbd> to start
+      </div>
+    </div>
+    <div class="slide-counter">1 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 1: Overview -->
+  <section class="slide" data-slide="1">
+    <h2>Today's Plan</h2>
+    <p class="body-text">A high-yield review session to cement your data structure fundamentals and algorithmic problem-solving under interview pressure.</p>
+    <div class="two-col" style="margin-top:8px;">
+      <div class="card">
+        <h4>⏱ 60-Minute Schedule</h4>
+        <div class="checklist">
+          <div><span>▸</span> Flashcard warm-up (10 min)</div>
+          <div><span>▸</span> Problem 1: Array / Two-Pointer (8 min)</div>
+          <div><span>▸</span> Problem 2: Hash Map / Sliding Window (8 min)</div>
+          <div><span>▸</span> Problem 3: Linked List (8 min)</div>
+          <div><span>▸</span> Problem 4: Tree / DFS (8 min)</div>
+          <div><span>▸</span> Problem 5: Dynamic Programming (8 min)</div>
+          <div><span>▸</span> Complexity review + self-check (10 min)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>🎯 Learning Objectives</h4>
+        <p>By the end of this session you will be able to:</p>
+        <ul>
+          <li>Re-solve 5 classic LeetCode problems from <strong>memory alone</strong></li>
+          <li>Recite the time &amp; space complexity of common data structure operations</li>
+          <li>Identify the optimal pattern for a problem description without hints</li>
+          <li>Self-diagnose which topics need more practice this week</li>
+        </ul>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted); margin-top:4px;"><strong>Rule:</strong> No notes, no looking up solutions. This is a closed-book mock interview. Write your solution, then check.</p>
+    <div class="slide-counter">2 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 2: Prerequisites -->
+  <section class="slide" data-slide="2">
+    <h2>Prerequisites Check</h2>
+    <p class="body-text">Before starting, confirm you have these tools and knowledge ready.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:12px 0;">
+      <div class="card">
+        <h4>🛠 Environment</h4>
+        <ul>
+          <li>LeetCode account or local editor</li>
+          <li>Python 3.8+ / Java / C++ ready</li>
+          <li>Pen + paper for whiteboard practice</li>
+          <li>Timer (phone or browser)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>📚 Should Already Know</h4>
+        <ul>
+          <li>Array traversal and two-pointer technique</li>
+          <li>Hash map / set operations (O(1) average)</li>
+          <li>Singly linked list reversal</li>
+          <li>Binary tree traversal (pre/in/post-order)</li>
+          <li>Basic DP: Fibonacci, climbing stairs, subarray sum</li>
+        </ul>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);">If any of these feel shaky, spend the first 5 minutes reviewing the <strong>flashcards</strong> on the next slide instead of jumping straight into problems.</p>
+    <div class="slide-counter">3 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 3: Flashcards - Time Complexities -->
+  <section class="slide" data-slide="3">
+    <h2>⏱ Flashcard Warm-Up: Time Complexities</h2>
+    <p class="body-text">Cover the answer column. Try to recall each complexity before uncovering it.</p>
+    <div class="two-col">
+      <div>
+        <div class="flashcard">
+          <div class="q">Q: Access an element by index in an array</div>
+          <div class="a"><strong>A:</strong> O(1) — direct memory offset</div>
+        </div>
+        <div class="flashcard">
+          <div class="q">Q: Search in a sorted array</div>
+          <div class="a"><strong>A:</strong> O(log n) — binary search</div>
+        </div>
+        <div class="flashcard">
+          <div class="q">Q: Insert at beginning of a linked list</div>
+          <div class="a"><strong>A:</strong> O(1) — update head pointer</div>
+        </div>
+        <div class="flashcard">
+          <div class="q">Q: Search in a hash map (average case)</div>
+          <div class="a"><strong>A:</strong> O(1) — hash then index</div>
+        </div>
+      </div>
+      <div>
+        <div class="flashcard">
+          <div class="q">Q: DFS on a binary tree with n nodes</div>
+          <div class="a"><strong>A:</strong> O(n) — visit each node once</div>
+        </div>
+        <div class="flashcard">
+          <div class="q">Q: Sort an array with Merge Sort</div>
+          <div class="a"><strong>A:</strong> O(n log n) — divide &amp; conquer</div>
+        </div>
+        <div class="flashcard">
+          <div class="q">Q: Pop from a stack</div>
+          <div class="a"><strong>A:</strong> O(1) — LIFO top pointer</div>
+        </div>
+        <div class="flashcard">
+          <div class="q">Q: DP with memoization (n states, O(1) transition)</div>
+          <div class="a"><strong>A:</strong> O(n) — each state computed once</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-counter">4 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 4: Problem 1 - Two Sum (Array / Hash Map) -->
+  <section class="slide" data-slide="4">
+    <h2>Problem 1: Two Sum <span class="tag easy">Easy</span></h2>
+    <p class="body-text"><strong>Prompt:</strong> Given an array of integers <code>nums</code> and an integer <code>target</code>, return indices of the two numbers that add up to <code>target</code>. You may assume exactly one solution exists.</p>
+    <p class="body-text" style="font-size:14px; color:var(--orange);">⏱ Time yourself: 8 minutes max. No looking at the solution below until you're done (or stuck).</p>
+    <div class="two-col">
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--accent); font-size:14px; margin-bottom:6px;">🟢 Brute Force</h4>
+        <pre><span class="kw">def</span> <span class="fn">two_sum_brute</span>(nums, target):
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="built">range</span>(len(nums)):
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="built">range</span>(i + 1, len(nums)):
+            <span class="kw">if</span> nums[i] + nums[j] == target:
+                <span class="kw">return</span> [i, j]
+<span class="cm"># O(n²) time, O(1) space</span></pre>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--green); font-size:14px; margin-bottom:6px;">⭐ Optimal (One-Pass Hash)</h4>
+        <pre><span class="kw">def</span> <span class="fn">two_sum</span>(nums, target):
+    seen = {}  <span class="cm"># val → index</span>
+    <span class="kw">for</span> i, n <span class="kw">in</span> <span class="built">enumerate</span>(nums):
+        complement = target - n
+        <span class="kw">if</span> complement <span class="kw">in</span> seen:
+            <span class="kw">return</span> [seen[complement], i]
+        seen[n] = i
+<span class="cm"># O(n) time, O(n) space</span></pre>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Pattern:</strong> "Need a pair" → hash map for O(1) lookups. Check complement before storing current.</p>
+    <div class="slide-counter">5 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 5: Problem 2 - Longest Substring Without Repeating Characters -->
+  <section class="slide" data-slide="5">
+    <h2>Problem 2: Longest Substring W/O Repeating <span class="tag med">Medium</span></h2>
+    <p class="body-text"><strong>Prompt:</strong> Given a string <code>s</code>, find the length of the longest substring without repeating characters.</p>
+    <p class="body-text" style="font-size:14px; color:var(--orange);">⏱ 8 minutes. Write it from memory, then check below.</p>
+    <div>
+      <h4 style="font-family:var(--font-mono); color:var(--green); font-size:14px; margin-bottom:6px;">⭐ Sliding Window + Char Set</h4>
+      <pre><span class="kw">def</span> <span class="fn">length_of_longest_substring</span>(s: <span class="built">str</span>) -> <span class="built">int</span>:
+    char_set = <span class="built">set</span>()
+    left = max_len = 0
+    <span class="kw">for</span> right <span class="kw">in</span> <span class="built">range</span>(len(s)):
+        <span class="kw">while</span> s[right] <span class="kw">in</span> char_set:
+            char_set.remove(s[left])
+            left += 1
+        char_set.add(s[right])
+        max_len = <span class="built">max</span>(max_len, right - left + 1)
+    <span class="kw">return</span> max_len
+<span class="cm"># O(n) time, O(min(n, |alphabet|)) space</span></pre>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Pattern:</strong> "Contiguous subarray with constraint" → sliding window. Expand right, shrink left when constraint violated.</p>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Edge case to test:</strong> <code>"bbbbb"</code> → 1 &nbsp;·&nbsp; <code>"pwwkew"</code> → 3</p>
+    <div class="slide-counter">6 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 6: Problem 3 - Reverse Linked List -->
+  <section class="slide" data-slide="6">
+    <h2>Problem 3: Reverse Linked List <span class="tag easy">Easy</span></h2>
+    <p class="body-text"><strong>Prompt:</strong> Given the head of a singly linked list, reverse it and return the new head.</p>
+    <p class="body-text" style="font-size:14px; color:var(--orange);">⏱ 8 minutes. First write iterative (must-know), then recursive (bonus).</p>
+    <div class="two-col">
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--green); font-size:14px; margin-bottom:6px;">⭐ Iterative (3 pointers)</h4>
+        <pre><span class="kw">def</span> <span class="fn">reverse_list</span>(head):
+    prev = <span class="kw">None</span>
+    curr = head
+    <span class="kw">while</span> curr:
+        nxt = curr.next    <span class="cm"># save</span>
+        curr.next = prev   <span class="cm"># reverse</span>
+        prev = curr        <span class="cm"># move prev</span>
+        curr = nxt         <span class="cm"># move curr</span>
+    <span class="kw">return</span> prev            <span class="cm"># new head</span>
+<span class="cm"># O(n) time, O(1) space</span></pre>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--accent-dim); font-size:14px; margin-bottom:6px;">Recursive</h4>
+        <pre><span class="kw">def</span> <span class="fn">reverse_list_rec</span>(head):
+    <span class="kw">if not</span> head <span class="kw">or not</span> head.next:
+        <span class="kw">return</span> head
+    new_head = reverse_list_rec(head.next)
+    head.next.next = head
+    head.next = <span class="kw">None</span>
+    <span class="kw">return</span> new_head
+<span class="cm"># O(n) time, O(n) call stack space</span></pre>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Mnemonics:</strong> "Prev, curr, nxt — save, reverse, advance." Draw the arrow-flipping on paper.</p>
+    <div class="slide-counter">7 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 7: Problem 4 - Maximum Depth of Binary Tree -->
+  <section class="slide" data-slide="7">
+    <h2>Problem 4: Max Depth of Binary Tree <span class="tag easy">Easy</span></h2>
+    <p class="body-text"><strong>Prompt:</strong> Given the root of a binary tree, return its maximum depth (number of nodes on the longest root-to-leaf path).</p>
+    <p class="body-text" style="font-size:14px; color:var(--orange);">⏱ 8 minutes. Write BFS and DFS versions.</p>
+    <div class="two-col">
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--green); font-size:14px; margin-bottom:6px;">⭐ DFS (Recursive)</h4>
+        <pre><span class="kw">def</span> <span class="fn">max_depth</span>(root):
+    <span class="kw">if not</span> root:
+        <span class="kw">return</span> 0
+    <span class="kw">return</span> 1 + <span class="built">max</span>(
+        max_depth(root.left),
+        max_depth(root.right)
+    )
+<span class="cm"># O(n) time, O(h) space (h = height)</span></pre>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--accent-dim); font-size:14px; margin-bottom:6px;">BFS (Level-order)</h4>
+        <pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">max_depth_bfs</span>(root):
+    <span class="kw">if not</span> root:
+        <span class="kw">return</span> 0
+    q = deque([root])
+    depth = 0
+    <span class="kw">while</span> q:
+        <span class="kw">for</span> _ <span class="kw">in</span> <span class="built">range</span>(len(q)):
+            node = q.popleft()
+            <span class="kw">if</span> node.left: q.append(node.left)
+            <span class="kw">if</span> node.right: q.append(node.right)
+        depth += 1
+    <span class="kw">return</span> depth
+<span class="cm"># O(n) time, O(w) space (w = max width)</span></pre>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Pattern:</strong> Tree height → recursive DFS is simplest. BFS useful when you also need level info.</p>
+    <div class="slide-counter">8 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 8: Problem 5 - Climbing Stairs (DP) -->
+  <section class="slide" data-slide="8">
+    <h2>Problem 5: Climbing Stairs <span class="tag easy">Easy</span></h2>
+    <p class="body-text"><strong>Prompt:</strong> You're climbing a staircase with <code>n</code> steps. Each time you can climb 1 or 2 steps. In how many distinct ways can you reach the top?</p>
+    <p class="body-text" style="font-size:14px; color:var(--orange);">⏱ 8 minutes. Write the DP bottom-up solution, then the O(1) space optimization.</p>
+    <div class="two-col">
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--accent-dim); font-size:14px; margin-bottom:6px;">Bottom-Up DP</h4>
+        <pre><span class="kw">def</span> <span class="fn">climb_stairs</span>(n: <span class="built">int</span>) -> <span class="built">int</span>:
+    <span class="kw">if</span> n <= 2:
+        <span class="kw">return</span> n
+    dp = [0] * (n + 1)
+    dp[1], dp[2] = 1, 2
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="built">range</span>(3, n + 1):
+        dp[i] = dp[i-1] + dp[i-2]
+    <span class="kw">return</span> dp[n]
+<span class="cm"># O(n) time, O(n) space</span></pre>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-mono); color:var(--green); font-size:14px; margin-bottom:6px;">⭐ Optimized (Fibonacci)</h4>
+        <pre><span class="kw">def</span> <span class="fn">climb_stairs_opt</span>(n: <span class="built">int</span>) -> <span class="built">int</span>:
+    <span class="kw">if</span> n <= 2:
+        <span class="kw">return</span> n
+    a, b = 1, 2
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="built">range</span>(3, n + 1):
+        a, b = b, a + b
+    <span class="kw">return</span> b
+<span class="cm"># O(n) time, O(1) space</span></pre>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Pattern:</strong> "Count ways with limited moves" → DP. Recurrence: <code>dp[i] = dp[i-1] + dp[i-2]</code> (Fibonacci).</p>
+    <div class="slide-counter">9 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 9: Data Structure Operations Cheatsheet -->
+  <section class="slide" data-slide="9">
+    <h2>Data Structure Operations: Quick Reference</h2>
+    <p class="body-text">Memorise these. They come up in every interview — often you'll be asked to justify your choice.</p>
+    <div style="overflow-x:auto; margin:12px 0;">
+      <table style="width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:13px; color:var(--text-muted);">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left; padding:10px 8px; color:var(--accent);">Data Structure</th>
+            <th style="text-align:center; padding:10px 8px; color:var(--accent);">Access</th>
+            <th style="text-align:center; padding:10px 8px; color:var(--accent);">Search</th>
+            <th style="text-align:center; padding:10px 8px; color:var(--accent);">Insert</th>
+            <th style="text-align:center; padding:10px 8px; color:var(--accent);">Delete</th>
+            <th style="text-align:right; padding:10px 8px; color:var(--accent);">Space</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Array</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(n)*</td><td style="text-align:center;">O(n)*</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Stack</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(1)</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Queue</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(1)</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Singly Linked List</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(1)</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Hash Map (avg)</td><td style="text-align:center;">—</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(1)</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">BST (balanced)</td><td style="text-align:center;">O(log n)</td><td style="text-align:center;">O(log n)</td><td style="text-align:center;">O(log n)</td><td style="text-align:center;">O(log n)</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Heap (min/max)</td><td style="text-align:center;">O(1)**</td><td style="text-align:center;">O(n)</td><td style="text-align:center;">O(log n)</td><td style="text-align:center;">O(log n)</td><td style="text-align:right;">O(n)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px;">Trie (prefix)</td><td style="text-align:center;">—</td><td style="text-align:center;">O(k)†</td><td style="text-align:center;">O(k)</td><td style="text-align:center;">O(k)</td><td style="text-align:right;">O(n·k)</td></tr>
+          <tr><td style="padding:8px;">Graph (adj list)</td><td style="text-align:center;">—</td><td style="text-align:center;">O(V+E)</td><td style="text-align:center;">O(1)</td><td style="text-align:center;">O(E)</td><td style="text-align:right;">O(V+E)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="body-text" style="font-size:12px; color:var(--text-muted);">* Array insert/delete is O(1) at end, O(n) elsewhere. ** Heap access is O(1) only for min/max (top). † k = key length.</p>
+    <div class="slide-counter">10 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 10: Algorithm Pattern Recognition -->
+  <section class="slide" data-slide="10">
+    <h2>Pattern Recognition: Which Algorithm?</h2>
+    <p class="body-text">Cover the right column. Read the problem clue and guess the pattern before revealing it.</p>
+    <div class="cols-3" style="margin:12px 0;">
+      <div class="flashcard">
+        <div class="q">"Find a contiguous subarray with sum ≥ k"</div>
+        <div class="a"><strong>→ Sliding Window / Two Pointer</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Count ways to reach position n"</div>
+        <div class="a"><strong>→ Dynamic Programming</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Find if a cycle exists"</div>
+        <div class="a"><strong>→ Fast &amp; Slow Pointer / DFS</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Find the k-th largest element"</div>
+        <div class="a"><strong>→ Heap / QuickSelect</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Shortest path in weighted graph"</div>
+        <div class="a"><strong>→ Dijkstra (Greedy)</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Two strings are anagrams"</div>
+        <div class="a"><strong>→ Hash Map (char count)</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Merge overlapping intervals"</div>
+        <div class="a"><strong>→ Sort + Linear Scan</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Generate all subsets"</div>
+        <div class="a"><strong>→ Backtracking / Recursion</strong></div>
+      </div>
+      <div class="flashcard">
+        <div class="q">"Find max subarray sum"</div>
+        <div class="a"><strong>→ Kadane's Algorithm</strong></div>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Suggestion:</strong> Add 3-5 more pattern clues from problems you've seen before. Shoot for ~20 total patterns memorized.</p>
+    <div class="slide-counter">11 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 11: Self-Assessment Exercise -->
+  <section class="slide" data-slide="11">
+    <h2>📝 Self-Assessment: Rate Your Confidence</h2>
+    <p class="body-text">After completing the 5 problems, score yourself honestly on each topic.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:12px 0;">
+      <div class="card">
+        <h4>Two Sum (Hash Map)</h4>
+        <p style="font-size:14px; color:var(--text-muted);">Could you write it perfectly in 5 minutes without looking?</p>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <span style="background:#1a6b3a; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✅ Yes</span>
+          <span style="background:#8a6a10; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">⚠ Ok</span>
+          <span style="background:#8a2020; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✗ No</span>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Sliding Window</h4>
+        <p style="font-size:14px; color:var(--text-muted);">Do you know when to use while-loop vs if for shrinking?</p>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <span style="background:#1a6b3a; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✅ Yes</span>
+          <span style="background:#8a6a10; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">⚠ Ok</span>
+          <span style="background:#8a2020; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✗ No</span>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Linked List Reversal</h4>
+        <p style="font-size:14px; color:var(--text-muted);">Can you draw the pointer changes step by step?</p>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <span style="background:#1a6b3a; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✅ Yes</span>
+          <span style="background:#8a6a10; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">⚠ Ok</span>
+          <span style="background:#8a2020; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✗ No</span>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Tree DFS / BFS</h4>
+        <p style="font-size:14px; color:var(--text-muted);">Can you swap between recursive and iterative versions?</p>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <span style="background:#1a6b3a; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✅ Yes</span>
+          <span style="background:#8a6a10; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">⚠ Ok</span>
+          <span style="background:#8a2020; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✗ No</span>
+        </div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <h4>DP — Climbing Stairs</h4>
+        <p style="font-size:14px; color:var(--text-muted);">Do you understand the recurrence, memoization, and O(1) space optimization?</p>
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <span style="background:#1a6b3a; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✅ Yes</span>
+          <span style="background:#8a6a10; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">⚠ Ok</span>
+          <span style="background:#8a2020; padding:2px 10px; border-radius:4px; font-size:12px; color:#fff;">✗ No</span>
+        </div>
+      </div>
+    </div>
+    <p class="body-text" style="font-size:14px; color:var(--text-muted);"><strong>Action:</strong> For any "⚠" or "✗", add that topic to your focused review this week. Revisit the full solution on LeetCode.</p>
+    <div class="slide-counter">12 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 12: Challenge Exercise -->
+  <section class="slide" data-slide="12">
+    <h2>🏋 Bonus Challenge: 3-in-1 Combo</h2>
+    <p class="body-text">Only attempt this if the 5 core problems felt comfortable. Combine multiple patterns in one problem.</p>
+    <div class="card" style="margin:12px 0;">
+      <h4 style="color:var(--yellow);">🔥 Challenge: Find All Anagrams in a String</h4>
+      <p style="color:var(--text-muted); font-size:15px; margin-top:4px;">Given two strings <code>s</code> and <code>p</code>, return an array of all start indices of <code>p</code>'s anagrams in <code>s</code>. You may return the answer in any order.</p>
+      <div style="margin-top:12px;">
+        <p style="font-size:14px; color:var(--text-muted);"><strong>Hints:</strong></p>
+        <ul>
+          <li>Sliding window of fixed size = len(p)</li>
+          <li>Use a frequency counter (hash map or array of 26 ints)</li>
+          <li>Compare character counts — if equal, it's an anagram</li>
+          <li>S = <code>"cbaebabacd"</code>, P = <code>"abc"</code> → Output: [0, 6]</li>
+        </ul>
+      </div>
+    </div>
+    <div class="two-col">
+      <div>
+        <pre><span class="kw">def</span> <span class="fn">find_anagrams</span>(s: <span class="built">str</span>, p: <span class="built">str</span>) -> <span class="built">list</span>:
+    <span class="cm"># TODO: your implementation</span>
+    <span class="kw">pass</span></pre>
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <p class="body-text" style="font-size:13px;">Try for 10 mins on your own. The solution combines <strong>sliding window + hash map</strong> — two of today's patterns working together.</p>
+      </div>
+    </div>
+    <div class="slide-counter">13 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+  <!-- SLIDE 13: Summary & Key Takeaways -->
+  <section class="slide" data-slide="13">
+    <h2>🎯 Summary: Key Takeaways</h2>
+    <p class="body-text">Write these down. They're the three things to remember from today.</p>
+    <div style="display:grid; gap:16px; margin:20px 0;">
+      <div class="card" style="border-left: 3px solid var(--green);">
+        <h4>1. Hash Map is Your Swiss Army Knife</h4>
+        <p>Two Sum, contains duplicate, anagram check, two-sum-variants — the O(1) lookup makes hash maps the most versatile tool for "remember what you've seen" problems.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <h4>2. Sliding Window Solves Subarray Problems</h4>
+        <p>Learn the pattern: expand right, shrink left while constraint violated, update answer. Same structure works for longest substring, min window subarray, and anagrams.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--orange);">
+        <h4>3. Know Your Complexity Tables Cold</h4>
+        <p>Interviewers expect you to justify every data structure choice with Big O. If you can't recite the access/search/insert/delete for arrays, linked lists, hash maps, and trees, make flashcards today.</p>
+      </div>
+    </div>
+    <div class="cta-box">
+      <p>📌 Next: Day 55 — Tree problems (BST, LCA, level-order)</p>
+      <p class="hint">Review Week 9's milestone projects if you haven't: Project 1 (CLI Todo), Project 2 (Bookmark Saver), Project 3 (Weather Dashboard)</p>
+    </div>
+    <div class="slide-counter">14 / 14</div>
+    <div class="slide-number" style="color:var(--accent-dim);">DAY 54</div>
+    <footer>90-Day Co-op Prep · Waterloo Edition</footer>
+  </section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const progressBar = document.getElementById('progressBar');
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    const counter = document.querySelector('.slide-counter');
+    if (counter) {
+      slides.forEach(s => {
+        const c = s.querySelector('.slide-counter');
+        if (c) c.textContent = (idx + 1) + ' / ' + total;
+      });
+    }
+    if (progressBar) {
+      progressBar.style.width = ((idx + 1) / total * 100) + '%';
+    }
+    location.hash = '#' + idx;
+  }
+
+  function next() { if (current < total - 1) { current++; showSlide(current); } }
+  function prev() { if (current > 0) { current--; showSlide(current); } }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } else if (e.key === 'Home') {
+      current = 0; showSlide(0);
+    } else if (e.key === 'End') {
+      current = total - 1; showSlide(total - 1);
+    }
+  });
+
+  // Hash navigation
+  window.addEventListener('hashchange', function() {
+    const idx = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(idx) && idx >= 0 && idx < total) {
+      current = idx; showSlide(idx);
+    }
+  });
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+  document.addEventListener('touchend', function(e) {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next(); else prev();
+    }
+  }, {passive: true});
+
+  // Init from hash or 0
+  const hashIdx = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(hashIdx) && hashIdx >= 0 && hashIdx < total) {
+    current = hashIdx;
+  }
+  showSlide(current);
+})();
+</script>
+</body>
+</html>
