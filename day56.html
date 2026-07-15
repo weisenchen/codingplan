@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 56: Binary Trees — Traversal (In/Pre/Post)</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --slide-bg: #161b22;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #d29922;
+  --code-bg: #1c2128;
+  --border: #30363d;
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  font-family: var(--font);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+.deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: min(96vw, calc(100vh * 16/9));
+  height: min(90vh, calc(100vw * 9/16));
+  background: var(--slide-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+  z-index: 100;
+}
+.slide-counter {
+  position: fixed;
+  bottom: 20px;
+  right: 24px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  z-index: 100;
+}
+h1 {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+h2 {
+  font-size: clamp(24px, 3.5vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+h3 {
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--accent2);
+}
+.subtitle {
+  font-size: clamp(16px, 1.8vw, 22px);
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.body-text {
+  font-size: clamp(15px, 1.6vw, 19px);
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-family: var(--mono);
+  font-size: clamp(12px, 1.3vw, 15px);
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 10px 0;
+  color: #c9d1d9;
+}
+code { font-family: var(--mono); }
+.highlight { background: rgba(88,166,255,0.15); border-left: 3px solid var(--accent); }
+.kw { color: #ff7b72; }
+.ty { color: #79c0ff; }
+.fn { color: #d2a8ff; }
+.str { color: #a5d6ff; }
+.cm { color: #8b949e; font-style: italic; }
+.num { color: #79c0ff; }
+ul, ol {
+  margin: 8px 0 8px 24px;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.65;
+}
+li { margin-bottom: 4px; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 13px; font-weight: 500; margin-right: 6px; }
+.tag-blue { background: rgba(88,166,255,0.2); color: var(--accent); }
+.tag-green { background: rgba(63,185,80,0.2); color: var(--accent2); }
+.tag-yellow { background: rgba(210,153,34,0.2); color: var(--accent3); }
+.columns { display: flex; gap: 20px; flex: 1; }
+.columns > * { flex: 1; }
+.checkpoint {
+  background: rgba(210,153,34,0.1);
+  border: 1px solid rgba(210,153,34,0.3);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 10px 0;
+}
+.exercise-box {
+  background: rgba(63,185,80,0.08);
+  border: 1px solid rgba(63,185,80,0.25);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 10px 0;
+}
+.notes { display: none; }
+.last-updated {
+  position: fixed;
+  bottom: 20px;
+  left: 24px;
+  font-size: 11px;
+  color: var(--text-muted);
+  z-index: 100;
+}
+.btn {
+  display: inline-block;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.btn:hover { filter: brightness(1.15); }
+.milestone-box {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.milestone {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(139,148,158,0.15);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.milestone.active {
+  background: rgba(88,166,255,0.2);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; border-radius: 10px; }
+  .columns { flex-direction: column; }
+  pre { font-size: 13px; padding: 12px 14px; }
+}
+@media print {
+  .slide { position: relative; opacity: 1; pointer-events: auto; break-inside: avoid; page: auto; width: 100%; height: auto; min-height: 50vh; }
+  body { overflow: visible; } .progress-bar, .slide-counter, .last-updated { display: none; }
+  .slide.active { opacity: 1; }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-counter" id="slideCounter"></div>
+<div class="last-updated">Last updated: 2026-07-15</div>
+<div class="deck" id="deck">
+
+<!-- SLIDE 0 - TITLE -->
+<section class="slide active" data-slide="0">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+    <span class="tag tag-green" style="font-size:15px;margin-bottom:16px;">90-Day Co-op Prep &bull; Week 10 &bull; Phase IV &bull; DSA</span>
+    <h1>Binary Trees</h1>
+    <h2 style="color:var(--text);margin-bottom:8px;">Inorder / Preorder / Postorder Traversal</h2>
+    <p class="body-text" style="color:var(--text-muted);margin-top:12px;">Day 56 &bull; 2026-07-15</p>
+    <p class="body-text" style="color:var(--text-muted);">Waterloo Co-op Preparation Program</p>
+    <div style="margin-top:24px;">
+      <span class="milestone active">P3: Weather Dashboard ✓</span>
+      <span class="milestone">P5: Full-Stack (Week 12)</span>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 1 - OVERVIEW -->
+<section class="slide" data-slide="1">
+  <h2>📋 Today's Plan</h2>
+  <p class="body-text" style="color:var(--text-muted);margin-bottom:16px;">Binary trees are the foundation of most tree-based data structures in interviews.</p>
+  <div class="columns">
+    <div>
+      <h3>⏱ 60 Minutes</h3>
+      <ul>
+        <li>5 min — Tree concepts &amp; node class</li>
+        <li>15 min — Inorder traversal</li>
+        <li>10 min — Preorder traversal</li>
+        <li>10 min — Postorder traversal</li>
+        <li>10 min — Max depth</li>
+        <li>10 min — Practice exercises</li>
+      </ul>
+    </div>
+    <div>
+      <h3>🎯 Learning Objectives</h3>
+      <ul>
+        <li>Define a binary tree node in Python</li>
+        <li>Implement recursive in/pre/post-order traversal</li>
+        <li>Calculate max depth of a binary tree</li>
+        <li>Solve LeetCode Easy #94, #104</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:16px;">
+    <span class="tag tag-blue">LeetCode #94</span>
+    <span class="tag tag-blue">LeetCode #104</span>
+    <span class="tag tag-yellow">Recursion</span>
+  </div>
+</section>
+
+<!-- SLIDE 2 - TREE CONCEPTS -->
+<section class="slide" data-slide="2">
+  <h2>🌳 What Is a Binary Tree?</h2>
+  <p class="body-text">A <strong>binary tree</strong> is a tree where each node has <strong>at most two children</strong>: left and right. The top node is called the <strong>root</strong>.</p>
+  <div class="columns">
+    <div>
+      <pre><span class="kw">class</span> <span class="ty">TreeNode</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, val=<span class="num">0</span>, left=<span class="kw">None</span>, right=<span class="kw">None</span>):
+        <span class="kw">self</span>.val = val
+        <span class="kw">self</span>.left = left
+        <span class="kw">self</span>.right = right</pre>
+      <p class="body-text" style="font-size:14px;color:var(--text-muted);">Each node stores a value and pointers to left/right children.</p>
+    </div>
+    <div>
+      <pre style="font-size:13px;">
+        <span class="num">1</span>
+       <span style="color:var(--accent2);">/</span>  <span style="color:var(--accent2);">\</span>
+      <span class="num">2</span>    <span class="num">3</span>
+     <span style="color:var(--accent2);">/</span> <span style="color:var(--accent2);">\</span>   <span style="color:var(--accent2);">\</span>
+    <span class="num">4</span>   <span class="num">5</span>    <span class="num">6</span>
+
+ <span class="cm"># TreeNode(1,</span>
+ <span class="cm">#   TreeNode(2, TreeNode(4), TreeNode(5)),</span>
+ <span class="cm">#   TreeNode(3, None, TreeNode(6))</span>
+ <span class="cm"># )</span></pre>
+    </div>
+  </div>
+  <div class="checkpoint">
+    <strong>🔑 Key terms:</strong> Root (top), Leaf (no children), Depth (edges from root), Height (edges to deepest leaf)
+  </div>
+</section>
+
+<!-- SLIDE 3 - INORDER -->
+<section class="slide" data-slide="3">
+  <h2>📐 Inorder Traversal (Left → Root → Right)</h2>
+  <p class="body-text">Visit the <strong>left subtree</strong> first, then the <strong>node itself</strong>, then the <strong>right subtree</strong>. On a BST, this gives <strong>sorted order</strong>.</p>
+  <div class="columns">
+    <div>
+      <pre><span class="kw">def</span> <span class="fn">inorder</span>(root):
+    <span class="kw">if</span> root <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span>
+    <span class="cm"># 1. Go left</span>
+    inorder(root.left)
+    <span class="cm"># 2. Visit node</span>
+    print(root.val, end=<span class="str">" "</span>)
+    <span class="cm"># 3. Go right</span>
+    inorder(root.right)</pre>
+    </div>
+    <div>
+      <pre style="font-size:14px;">
+ <span class="cm"># For tree:</span>
+ <span class="cm">#   1 -> L:2 -> L:4</span>
+ <span class="cm">#        -> R:5</span>
+ <span class="cm">#       R:3 -> R:6</span>
+
+ <span class="fn">inorder</span>(root)
+ <span class="cm"># Output: 4 2 5 1 3 6</span>
+ <span class="cm"># Path: 4→2→5→1→3→6</span>
+
+ <span class="cm"># LeetCode #94</span>
+ <span class="kw">def</span> <span class="fn">inorderTraversal</span>(root):
+    res = []
+    <span class="kw">def</span> <span class="fn">dfs</span>(node):
+        <span class="kw">if</span> <span class="kw">not</span> node:
+            <span class="kw">return</span>
+        dfs(node.left)
+        res.append(node.val)
+        dfs(node.right)
+    dfs(root)
+    <span class="kw">return</span> res</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4 - PREORDER -->
+<section class="slide" data-slide="4">
+  <h2>📐 Preorder Traversal (Root → Left → Right)</h2>
+  <p class="body-text">Visit the <strong>current node first</strong>, then the left subtree, then the right subtree. Useful for <strong>copying</strong> or <strong>serializing</strong> a tree.</p>
+  <div class="columns">
+    <div>
+      <pre><span class="kw">def</span> <span class="fn">preorder</span>(root):
+    <span class="kw">if</span> root <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span>
+    <span class="cm"># 1. Visit node first</span>
+    print(root.val, end=<span class="str">" "</span>)
+    <span class="cm"># 2. Then go left</span>
+    preorder(root.left)
+    <span class="cm"># 3. Then go right</span>
+    preorder(root.right)</pre>
+    </div>
+    <div>
+      <pre style="font-size:14px;">
+ <span class="cm"># Same tree:</span>
+ <span class="cm">#   1 -> L:2 -> L:4</span>
+ <span class="cm">#        -> R:5</span>
+ <span class="cm">#       R:3 -> R:6</span>
+
+ <span class="fn">preorder</span>(root)
+ <span class="cm"># Output: 1 2 4 5 3 6</span>
+ <span class="cm"># Path: 1→2→4→5→3→6</span>
+
+ <span class="cm"># Use case: tree serialization</span>
+ <span class="kw">def</span> <span class="fn">serialize</span>(root):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> <span class="str">"#"</span>
+    left = serialize(root.left)
+    right = serialize(root.right)
+    <span class="kw">return</span> <span class="str">f"</span>{root.val}<span class="str">,</span>{left}<span class="str">,</span>{right}<span class="str">"</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5 - POSTORDER -->
+<section class="slide" data-slide="5">
+  <h2>📐 Postorder Traversal (Left → Right → Root)</h2>
+  <p class="body-text">Visit <strong>left, then right, then root</strong>. Used for <strong>deleting</strong> trees or computing values that depend on children first (like tree height).</p>
+  <div class="columns">
+    <div>
+      <pre><span class="kw">def</span> <span class="fn">postorder</span>(root):
+    <span class="kw">if</span> root <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span>
+    <span class="cm"># 1. Go left</span>
+    postorder(root.left)
+    <span class="cm"># 2. Go right</span>
+    postorder(root.right)
+    <span class="cm"># 3. Visit node last</span>
+    print(root.val, end=<span class="str">" "</span>)</pre>
+    </div>
+    <div>
+      <pre style="font-size:14px;">
+ <span class="cm"># Same tree:</span>
+ <span class="cm">#   1 -> L:2 -> L:4</span>
+ <span class="cm">#        -> R:5</span>
+ <span class="cm">#       R:3 -> R:6</span>
+
+ <span class="fn">postorder</span>(root)
+ <span class="cm"># Output: 4 5 2 6 3 1</span>
+ <span class="cm"># Path: 4→5→2→6→3→1</span>
+
+ <span class="cm"># Use case: tree deletion</span>
+ <span class="cm"># (delete children before parent)</span>
+ <span class="kw">def</span> <span class="fn">delete_tree</span>(root):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span>
+    delete_tree(root.left)
+    delete_tree(root.right)
+    root.left = root.right = <span class="kw">None</span>
+    <span class="cm"># now safe to free root</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6 - THREE ORDERS COMPARISON -->
+<section class="slide" data-slide="6">
+  <h2>🔍 Traversal Comparison</h2>
+  <p class="body-text" style="color:var(--text-muted);margin-bottom:12px;">Same tree, three different output orders. Memorize by <strong>when</strong> you visit the root.</p>
+  <div class="columns" style="gap:12px;">
+    <div style="background:rgba(88,166,255,0.08);border-radius:10px;padding:16px;">
+      <h3 style="font-size:16px;margin-bottom:8px;">Inorder</h3>
+      <p class="body-text" style="font-size:14px;"><strong>4 5 2 3 1</strong></p>
+      <p class="body-text" style="font-size:13px;color:var(--text-muted);">Left → Root → Right</p>
+      <p class="body-text" style="font-size:13px;color:var(--accent);">BST → sorted order</p>
+    </div>
+    <div style="background:rgba(63,185,80,0.08);border-radius:10px;padding:16px;">
+      <h3 style="font-size:16px;margin-bottom:8px;">Preorder</h3>
+      <p class="body-text" style="font-size:14px;"><strong>3 4 5 1 2</strong></p>
+      <p class="body-text" style="font-size:13px;color:var(--text-muted);">Root → Left → Right</p>
+      <p class="body-text" style="font-size:13px;color:var(--accent2);">Serialization</p>
+    </div>
+    <div style="background:rgba(210,153,34,0.08);border-radius:10px;padding:16px;">
+      <h3 style="font-size:16px;margin-bottom:8px;">Postorder</h3>
+      <p class="body-text" style="font-size:14px;"><strong>4 5 2 1 3</strong></p>
+      <p class="body-text" style="font-size:13px;color:var(--text-muted);">Left → Right → Root</p>
+      <p class="body-text" style="font-size:13px;color:var(--accent3);">Tree deletion</p>
+    </div>
+  </div>
+  <div class="checkpoint" style="margin-top:12px;">
+    <strong>💡 Mnemonic:</strong> The name tells you when the <strong>root</strong> is visited. "Pre" = before children, "In" = between children, "Post" = after children.
+  </div>
+</section>
+
+<!-- SLIDE 7 - MAX DEPTH (LEETCODE #104) -->
+<section class="slide" data-slide="7">
+  <h2>📏 Maximum Depth of Binary Tree</h2>
+  <p class="body-text">The <strong>max depth</strong> (or height) is the number of nodes along the longest path from root to a leaf. LeetCode <strong>#104</strong> (Easy).</p>
+  <div class="columns">
+    <div>
+      <pre><span class="cm"># Recursive: postorder logic</span>
+<span class="cm"># (compute children first, then root)</span>
+<span class="kw">def</span> <span class="fn">maxDepth</span>(root) <span class="kw">-></span> <span class="ty">int</span>:
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> <span class="num">0</span>
+    left = maxDepth(root.left)
+    right = maxDepth(root.right)
+    <span class="kw">return</span> <span class="num">1</span> + max(left, right)
+
+<span class="cm"># Time: O(n) — visit every node once</span>
+<span class="cm"># Space: O(h) — call stack = tree height</span></pre>
+    </div>
+    <div>
+      <pre style="font-size:14px;">
+ <span class="cm"># Walkthrough for:</span>
+ <span class="cm">#     3</span>
+ <span class="cm">#    / \</span>
+ <span class="cm">#   9  20</span>
+ <span class="cm">#      / \</span>
+ <span class="cm">#    15   7</span>
+
+ <span class="fn">maxDepth</span>(3)
+   left = <span class="fn">maxDepth</span>(9) = <span class="num">1</span>
+   right = <span class="fn">maxDepth</span>(20)
+     left = <span class="fn">maxDepth</span>(15) = <span class="num">1</span>
+     right = <span class="fn">maxDepth</span>(7) = <span class="num">1</span>
+     right = <span class="num">1</span> + max(<span class="num">1</span>,<span class="num">1</span>) = <span class="num">2</span>
+   <span class="kw">return</span> <span class="num">1</span> + max(<span class="num">1</span>,<span class="num">2</span>) = <span class="num">3</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 8 - EXERCISES -->
+<section class="slide" data-slide="8">
+  <h2>💪 Practice Exercises</h2>
+  <p class="body-text" style="color:var(--text-muted);margin-bottom:16px;">Try each exercise <strong>without</strong> looking at the solution first.</p>
+  <div class="exercise-box">
+    <h3>Exercise 1: Inorder Traversal Array</h3>
+    <p class="body-text" style="font-size:15px;">Given the root of a binary tree, return the inorder traversal as a list. (LeetCode #94)</p>
+    <pre style="font-size:13px;"><span class="kw">def</span> <span class="fn">inorderTraversal</span>(root: <span class="ty">Optional</span>[<span class="ty">TreeNode</span>]) <span class="kw">-></span> <span class="ty">List</span>[<span class="ty">int</span>]:
+    <span class="cm"># Your code here</span>
+    <span class="kw">pass</span></pre>
+  </div>
+  <div class="exercise-box">
+    <h3>Exercise 2: Max Depth</h3>
+    <p class="body-text" style="font-size:15px;">Given root of a binary tree, return its maximum depth. (LeetCode #104)</p>
+    <pre style="font-size:13px;"><span class="kw">def</span> <span class="fn">maxDepth</span>(root: <span class="ty">Optional</span>[<span class="ty">TreeNode</span>]) <span class="kw">-></span> <span class="ty">int</span>:
+    <span class="cm"># Your code here</span>
+    <span class="kw">pass</span></pre>
+  </div>
+  <div class="exercise-box">
+    <h3>Exercise 3: Build Tree from Array</h3>
+    <p class="body-text" style="font-size:15px;">Given a list of values in level order (with <code>None</code> for empty nodes), build a binary tree.</p>
+    <pre style="font-size:13px;"><span class="kw">def</span> <span class="fn">build_tree</span>(values: <span class="ty">List</span>[<span class="ty">Optional</span>[<span class="ty">int</span>]]) <span class="kw">-></span> <span class="ty">Optional</span>[<span class="ty">TreeNode</span>]:
+    <span class="cm"># Tip: use a queue</span>
+    <span class="kw">pass</span></pre>
+  </div>
+</section>
+
+<!-- SLIDE 9 - SOLUTIONS -->
+<section class="slide" data-slide="9">
+  <h2>🔓 Exercise Solutions</h2>
+  <div class="columns">
+    <div>
+      <h3>Ex 1: Inorder</h3>
+      <pre style="font-size:12px;"><span class="kw">def</span> <span class="fn">inorderTraversal</span>(root):
+    res = []
+    <span class="kw">def</span> <span class="fn">dfs</span>(n):
+        <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span>
+        dfs(n.left)
+        res.append(n.val)
+        dfs(n.right)
+    dfs(root)
+    <span class="kw">return</span> res</pre>
+    </div>
+    <div>
+      <h3>Ex 2: Max Depth</h3>
+      <pre style="font-size:12px;"><span class="kw">def</span> <span class="fn">maxDepth</span>(root):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">return</span> <span class="num">1</span> + max(
+        maxDepth(root.left),
+        maxDepth(root.right)
+    )</pre>
+    </div>
+  </div>
+  <div class="exercise-box" style="margin-top:4px;">
+    <h3>Ex 3: Build Tree (BFS)</h3>
+    <pre style="font-size:12px;"><span class="kw">def</span> <span class="fn">build_tree</span>(values):
+    <span class="kw">if</span> <span class="kw">not</span> values <span class="kw">or</span> values[<span class="num">0</span>] <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span> <span class="kw">None</span>
+    root = TreeNode(values[<span class="num">0</span>])
+    q = collections.deque([root])
+    i = <span class="num">1</span>
+    <span class="kw">while</span> q <span class="kw">and</span> i &lt; len(values):
+        node = q.popleft()
+        <span class="kw">if</span> i &lt; len(values) <span class="kw">and</span> values[i] <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span>:
+            node.left = TreeNode(values[i])
+            q.append(node.left)
+        i += <span class="num">1</span>
+        <span class="kw">if</span> i &lt; len(values) <span class="kw">and</span> values[i] <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span>:
+            node.right = TreeNode(values[i])
+            q.append(node.right)
+        i += <span class="num">1</span>
+    <span class="kw">return</span> root</pre>
+  </div>
+</section>
+
+<!-- SLIDE 10 - CHECKPOINT -->
+<section class="slide" data-slide="10">
+  <h2>✅ Check Your Understanding</h2>
+  <div class="checkpoint" style="margin-bottom:12px;">
+    <p class="body-text"><strong>Question:</strong> For a binary search tree (BST), which traversal gives you the elements in <strong>sorted ascending order</strong>?</p>
+    <ol type="A" style="font-size:17px;">
+      <li>Preorder traversal</li>
+      <li><strong>Inorder traversal</strong> ✅</li>
+      <li>Postorder traversal</li>
+      <li>Level-order traversal</li>
+    </ol>
+  </div>
+  <div class="checkpoint">
+    <p class="body-text"><strong>Question:</strong> To compute the height of a tree, you need the heights of both children first. Which traversal pattern does this follow?</p>
+    <ol type="A" style="font-size:17px;">
+      <li>Preorder (root before children)</li>
+      <li>Inorder (root between children)</li>
+      <li><strong>Postorder (root after children)</strong> ✅</li>
+      <li>None of the above</li>
+    </ol>
+  </div>
+</section>
+
+<!-- SLIDE 11 - SUMMARY -->
+<section class="slide" data-slide="11">
+  <h2>🎯 Key Takeaways</h2>
+  <div class="columns" style="align-items:stretch;">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="background:rgba(88,166,255,0.1);border-radius:10px;padding:14px 18px;flex:1;">
+        <h3 style="font-size:16px;margin-bottom:4px;">1. Node Structure</h3>
+        <p class="body-text" style="font-size:14px;">Binary tree node = <code>val + left + right</code>. <code>None</code> = empty subtree.</p>
+      </div>
+      <div style="background:rgba(63,185,80,0.1);border-radius:10px;padding:14px 18px;flex:1;">
+        <h3 style="font-size:16px;margin-bottom:4px;">2. Three Traversals</h3>
+        <p class="body-text" style="font-size:14px;">Inorder: L→Root→R. Preorder: Root→L→R. Postorder: L→R→Root.</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="background:rgba(210,153,34,0.1);border-radius:10px;padding:14px 18px;flex:1;">
+        <h3 style="font-size:16px;margin-bottom:4px;">3. Recursion Pattern</h3>
+        <p class="body-text" style="font-size:14px;">Base case: <code>if not root: return</code>. Recurse on children. Process node at the right time.</p>
+      </div>
+      <div style="background:rgba(139,148,158,0.1);border-radius:10px;padding:14px 18px;flex:1;">
+        <h3 style="font-size:16px;margin-bottom:4px;">4. Next Steps</h3>
+        <p class="body-text" style="font-size:14px;">Level-order (BFS), iterative traversal, tree construction from traversals.</p>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:16px;padding:12px 18px;background:rgba(88,166,255,0.08);border-radius:10px;border:1px solid rgba(88,166,255,0.2);">
+    <p class="body-text" style="font-size:15px;text-align:center;">📝 <strong>LeetCode Problems for Today:</strong> <span class="tag tag-blue">#94</span> <span class="tag tag-blue">#104</span> — solve both before tomorrow's session!</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const progress = document.getElementById('progressBar');
+  const counter = document.getElementById('slideCounter');
+  let current = 0;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    const pct = ((idx + 1) / total) * 100;
+    progress.style.width = pct + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    window.location.hash = '#' + (idx + 1);
+  }
+
+  function next() { if (current < total - 1) { current++; showSlide(current); } }
+  function prev() { if (current > 0) { current--; showSlide(current); } }
+
+  // Hash on load
+  if (window.location.hash) {
+    const n = parseInt(window.location.hash.slice(1), 10);
+    if (n >= 1 && n <= total) { current = n - 1; }
+  }
+  showSlide(current);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      e.preventDefault();
+      document.querySelectorAll('.notes').forEach(n => {
+        n.style.display = n.style.display === 'block' ? 'none' : 'block';
+      });
+    }
+  });
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+  });
+})();
+</script>
+</body>
+</html>
