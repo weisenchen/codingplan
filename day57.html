@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 57 — Binary Search Trees: Find, Insert</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d12;
+  --surface: #16161e;
+  --surface-2: #1e1e2a;
+  --border: #2a2a3c;
+  --accent: #7ecf8a;
+  --accent-dim: #4a9f56;
+  --yellow: #e6c87a;
+  --red: #e06c75;
+  --blue: #7ab0e6;
+  --purple: #b88ae6;
+  --text: #c8c8d0;
+  --text-dim: #7a7a8a;
+  --text-bright: #f0f0f4;
+  --code-bg: #12121c;
+  --code-line: #1c1c2a;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-display: 'Cardo', 'Georgia', serif;
+  --font-body: 'Cardo', 'Georgia', serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 18px; }
+body {
+  background: #0d0d12;
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Slide container */
+#deck {
+  position: relative;
+  width: min(96vw, calc(96vh * 16/9));
+  aspect-ratio: 16 / 9;
+  background: var(--bg);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
+}
+/* Each slide */
+.slide {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  padding: 3.2% 5%;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.slide::-webkit-scrollbar { width: 4px; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Slide counter + progress */
+#slide-info {
+  position: absolute;
+  bottom: 2.5%;
+  right: 3%;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  z-index: 20;
+  letter-spacing: 0.04em;
+}
+#progress-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  z-index: 15;
+}
+
+/* Typography */
+h1 {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.15;
+  margin-bottom: 0.4rem;
+}
+h2 {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.6rem;
+}
+h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.4rem;
+}
+h4 {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--yellow);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.3rem;
+}
+p, li {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+ul, ol { padding-left: 1.2rem; margin-bottom: 0.5rem; }
+li { margin-bottom: 0.2rem; }
+strong { color: var(--text-bright); font-weight: 700; }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--surface-2);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  color: var(--yellow);
+}
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.55;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.7rem 0.9rem;
+  overflow-x: auto;
+  margin: 0.4rem 0;
+  color: var(--text);
+}
+pre .hl { background: rgba(126,207,138,0.15); display: inline-block; width: 100%; }
+pre .kw { color: var(--purple); }
+pre .fn { color: var(--blue); }
+pre .ty { color: var(--yellow); }
+pre .cm { color: var(--text-dim); font-style: italic; }
+pre .str { color: var(--accent); }
+pre .num { color: var(--red); }
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide h1 { margin-bottom: 0.3rem; }
+.title-slide .subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin-bottom: 0.1rem;
+}
+.title-slide .meta {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 0.6rem;
+}
+
+/* Section break */
+.section-break {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1920 0%, #0d0d12 100%);
+}
+.section-break h2 {
+  font-size: 1.6rem;
+  color: var(--accent);
+  margin-bottom: 0.2rem;
+}
+.section-break p {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* Two-column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  flex: 1;
+  min-height: 0;
+}
+.two-col .col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Exercise box */
+.ex-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow);
+  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.4rem 0;
+}
+.ex-box.hint { border-left-color: var(--blue); }
+.ex-box.solution { border-left-color: var(--accent); }
+.ex-box h4 { margin-bottom: 0.2rem; }
+.ex-box p, .ex-box li { font-size: 0.78rem; }
+
+/* Checkboxes */
+.checklist { list-style: none; padding-left: 0; }
+.checklist li::before { content: "▢ "; color: var(--accent-dim); }
+.checklist li.done::before { content: "▣ "; color: var(--accent); }
+
+/* Recap boxes */
+.recap-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.recap-num {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recap-text {
+  font-size: 0.85rem;
+  padding-top: 0.1rem;
+}
+
+/* Time estimate badge */
+.time-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  border-radius: 3px;
+  padding: 0.15em 0.5em;
+  margin-bottom: 0.4rem;
+}
+
+/* Table */
+table {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.4rem 0;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+}
+th { background: var(--surface); color: var(--accent); font-weight: 600; }
+td { color: var(--text); }
+
+/* BST diagram SVG */
+.bst-diagram { text-align: center; margin: 0.3rem 0; }
+.bst-diagram svg { max-width: 100%; height: auto; }
+
+/* Numpad hint */
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  #deck { width: 100vw; height: 100vh; border-radius: 0; }
+  html { font-size: 15px; }
+  .slide { padding: 3% 4%; }
+  .two-col { grid-template-columns: 1fr; gap: 0.6rem; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 0.9rem; }
+  pre { font-size: 0.6rem; }
+}
+
+/* Print */
+@media print {
+  body { overflow: visible; }
+  #deck { width: 100%; aspect-ratio: auto; box-shadow: none; border-radius: 0; }
+  .slide { position: relative; opacity: 1 !important; pointer-events: auto !important; page-break-after: always; height: auto; min-height: 7in; }
+  #slide-info, #progress-bar { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <h1>Binary Search Trees</h1>
+  <p class="subtitle">Find, Insert &amp; Delete</p>
+  <p class="meta">Day 57 · Week 10 · Phase IV: DSA &mdash; 90-Day Co-op Prep</p>
+  <p class="meta" style="font-size:0.6rem;margin-top:0.3rem;">LeetCode Easy #700 · #701</p>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>Plan for Today</h2>
+  <p style="margin-bottom:0.5rem;">60-minute session &mdash; BST fundamentals and the two classic Easy problems.</p>
+  <table>
+    <tr><th>Section</th><th>Time</th><th>What</th></tr>
+    <tr><td>BST Property &amp; Structure</td><td>8 min</td><td>Definition, invariant, why balanced</td></tr>
+    <tr><td>Search in BST</td><td>10 min</td><td>Algorithm, trace, LeetCode #700</td></tr>
+    <tr><td>Insert into BST</td><td>12 min</td><td>Algorithm, trace, LeetCode #701</td></tr>
+    <tr><td>Delete from BST (brief)</td><td>8 min</td><td>Three cases, successor strategy</td></tr>
+    <tr><td>Hands-on Exercises</td><td>12 min</td><td>Paper-and-code practice</td></tr>
+    <tr><td>Review &amp; Recap</td><td>10 min</td><td>Key takeaways, next steps</td></tr>
+  </table>
+</section>
+
+<!-- SLIDE 2: Prerequisites -->
+<section class="slide" data-slide="2">
+  <h2>Prerequisites</h2>
+  <p>Before starting, make sure you're comfortable with:</p>
+  <ul>
+    <li>Basic <strong>tree terminology</strong>: root, node, parent, child, leaf, subtree</li>
+    <li><strong>Recursion</strong> — especially recursive calls that return values up a tree</li>
+    <li><strong>Binary tree</strong>: each node has at most two children (left &amp; right)</li>
+    <li><strong>Time complexity</strong> big-O notation: O(log n) vs O(n)</li>
+  </ul>
+  <p class="time-badge" style="margin-top:0.5rem;">If these are fuzzy, review Trees 101 first</p>
+</section>
+
+<!-- SLIDE 3: BST Property -->
+<section class="slide" data-slide="3">
+  <h2>BST Property</h2>
+  <p>A <strong>Binary Search Tree</strong> is a binary tree where every node satisfies:</p>
+  <div class="two-col" style="margin-top:0.3rem;">
+    <div class="col">
+      <div class="ex-box">
+        <h4>Invariant</h4>
+        <p>For <em>any</em> node with value <code>val</code>:</p>
+        <ul>
+          <li>All nodes in the <strong>left subtree</strong> have values <strong>less than</strong> <code>val</code></li>
+          <li>All nodes in the <strong>right subtree</strong> have values <strong>greater than</strong> <code>val</code></li>
+        </ul>
+      </div>
+      <p style="font-size:0.75rem;margin-top:0.2rem;">No duplicate values (in the classic definition). This invariant enables <strong>binary search</strong> on a tree &mdash; at each step we eliminate half the tree.</p>
+    </div>
+    <div class="col bst-diagram">
+      <svg viewBox="0 0 250 200" style="max-width:100%;">
+        <style>
+          .bst-node { fill: #1e1e2a; stroke: #7ecf8a; stroke-width:1.5; }
+          .bst-edge { stroke: #3a3a4c; stroke-width:1.5; fill:none; }
+          .bst-label { fill:#f0f0f4; font:bold 9px 'JetBrains Mono',monospace; text-anchor:middle; dominant-baseline:central; }
+          .bst-note { fill:#7a7a8a; font:italic 7px 'Cardo',serif; text-anchor:middle; }
+        </style>
+        <!-- edges -->
+        <line x1="125" y1="30" x2="75" y2="80" class="bst-edge"/>
+        <line x1="125" y1="30" x2="175" y2="80" class="bst-edge"/>
+        <line x1="75" y1="80" x2="40" y2="130" class="bst-edge"/>
+        <line x1="75" y1="80" x2="110" y2="130" class="bst-edge"/>
+        <line x1="175" y1="80" x2="140" y2="130" class="bst-edge"/>
+        <line x1="175" y1="80" x2="210" y2="130" class="bst-edge"/>
+        <!-- nodes -->
+        <circle cx="125" cy="30" r="16" class="bst-node"/><text x="125" y="30" class="bst-label">8</text>
+        <circle cx="75" cy="80" r="14" class="bst-node"/><text x="75" y="80" class="bst-label">3</text>
+        <circle cx="175" cy="80" r="14" class="bst-node"/><text x="175" y="80" class="bst-label">12</text>
+        <circle cx="40" cy="130" r="12" class="bst-node"/><text x="40" y="130" class="bst-label">1</text>
+        <circle cx="110" cy="130" r="12" class="bst-node"/><text x="110" y="130" class="bst-label">6</text>
+        <circle cx="140" cy="130" r="12" class="bst-node"/><text x="140" y="130" class="bst-label">10</text>
+        <circle cx="210" cy="130" r="12" class="bst-node"/><text x="210" y="130" class="bst-label">15</text>
+        <!-- annotation -->
+        <text x="15" y="175" class="bst-note">left subtree &lt; 8</text>
+        <text x="185" y="175" class="bst-note">right subtree &gt; 8</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: Why BST Matters -->
+<section class="slide" data-slide="4">
+  <h2>Why Use a BST?</h2>
+  <div class="two-col">
+    <div class="col">
+      <h4>Comparison vs. Arrays &amp; Linked Lists</h4>
+      <table>
+        <tr><th>Operation</th><th>Array</th><th>Linked List</th><th>BST</th></tr>
+        <tr><td>Search</td><td>O(log n)*</td><td>O(n)</td><td><strong>O(log n)</strong></td></tr>
+        <tr><td>Insert</td><td>O(n)</td><td>O(1)**</td><td><strong>O(log n)</strong></td></tr>
+        <tr><td>Delete</td><td>O(n)</td><td>O(1)**</td><td><strong>O(log n)</strong></td></tr>
+      </table>
+      <p style="font-size:0.6rem;margin-top:0.2rem;">* Sorted array, binary search<br>** Given pointer to predecessor</p>
+    </div>
+    <div class="col">
+      <h4>Real-World Uses</h4>
+      <ul>
+        <li>Database indexes (B-trees are BST-derived)</li>
+        <li>In-memory sorted maps (<code>std::map</code>, <code>TreeMap</code>)</li>
+        <li>Autocomplete &amp; prefix matching</li>
+        <li>Range queries (find all values between X and Y)</li>
+      </ul>
+      <div class="ex-box" style="margin-top:0.3rem;">
+        <h4>⚠ Caveat</h4>
+        <p>BST guarantees <strong>O(log n)</strong> <em>only when balanced</em>. A degenerate tree (e.g., inserting sorted data) is O(n). That's why self-balancing trees (AVL, Red-Black) exist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: Search Algorithm -->
+<section class="slide" data-slide="5">
+  <h2>Search in a BST</h2>
+  <p>Given a <code>root</code> and a <code>target</code> value, return the subtree rooted at the matching node, or <code>None</code>.</p>
+  <div class="two-col" style="margin-top:0.2rem;">
+    <div class="col">
+      <h4>Algorithm</h4>
+      <pre><span class="cm"># Recursive — mirrors the invariant</span>
+<span class="kw">def</span> <span class="fn">searchBST</span>(root, target):
+    <span class="kw">if</span> <span class="kw">not</span> root <span class="kw">or</span> root.val == target:
+        <span class="kw">return</span> root
+
+    <span class="kw">if</span> target &lt; root.val:
+        <span class="kw">return</span> <span class="fn">searchBST</span>(root.left, target)
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="fn">searchBST</span>(root.right, target)</pre>
+      <p style="font-size:0.65rem;">Each recursive call goes left or right — never both. Runtime: <strong>O(h)</strong> where h = tree height.</p>
+    </div>
+    <div class="col">
+      <h4>Trace: search for 6</h4>
+      <div class="bst-diagram">
+        <svg viewBox="0 0 200 130" style="max-width:100%;">
+          <style>
+            .bnode { fill:#1e1e2a; stroke:#3a3a4c; stroke-width:1.5; }
+            .bvis { fill:#1e1e2a; stroke:#7ecf8a; stroke-width:2; }
+            .bfnd { fill:#4a9f56; stroke:#7ecf8a; stroke-width:2; }
+            .blbl { fill:#f0f0f4; font:bold 8px 'JetBrains Mono',monospace; text-anchor:middle; dominant-baseline:central; }
+            .bedg { stroke:#3a3a4c; stroke-width:1.5; fill:none; }
+          </style>
+          <line x1="100" y1="20" x2="60" y2="60" class="bedg"/>
+          <line x1="100" y1="20" x2="140" y2="60" class="bedg"/>
+          <line x1="60" y1="60" x2="30" y2="100" class="bedg"/>
+          <line x1="60" y1="60" x2="90" y2="100" class="bedg"/>
+          <!-- Step 1: check root 8 -->
+          <circle cx="100" cy="20" r="13" class="bvis"/><text x="100" y="20" class="blbl">8</text>
+          <!-- Step 2: go left to 3 -->
+          <circle cx="60" cy="60" r="12" class="bvis"/><text x="60" y="60" class="blbl">3</text>
+          <!-- Step 3: go right to 6 -->
+          <circle cx="90" cy="100" r="11" class="bfnd"/><text x="90" y="100" class="blbl">6</text>
+          <!-- untouched -->
+          <circle cx="140" cy="60" r="12" class="bnode"/><text x="140" y="60" class="blbl">12</text>
+          <circle cx="30" cy="100" r="11" class="bnode"/><text x="30" y="100" class="blbl">1</text>
+        </svg>
+      </div>
+      <p style="font-size:0.65rem;text-align:center;color:var(--text-dim);">8 → left (6&lt;8) → 3 → right (6&gt;3) → <strong>found 6</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: Insert Algorithm -->
+<section class="slide" data-slide="6">
+  <h2>Insert into a BST</h2>
+  <p>Insert a new value while preserving the BST invariant. The new node is always inserted as a <strong>leaf</strong>.</p>
+  <div class="two-col" style="margin-top:0.2rem;">
+    <div class="col">
+      <h4>Algorithm</h4>
+      <pre><span class="kw">def</span> <span class="fn">insertIntoBST</span>(root, val):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> TreeNode(val)
+
+    <span class="kw">if</span> val &lt; root.val:
+        root.left = <span class="fn">insertIntoBST</span>(
+            root.left, val)
+    <span class="kw">else</span>:
+        root.right = <span class="fn">insertIntoBST</span>(
+            root.right, val)
+
+    <span class="kw">return</span> root</pre>
+      <p style="font-size:0.65rem;">Key insight: we recurse down the correct branch, then <strong>rewire the parent</strong> to the (possibly new) child. The root changes only when the tree was empty.</p>
+    </div>
+    <div class="col">
+      <h4>Trace: insert 7</h4>
+      <div class="bst-diagram">
+        <svg viewBox="0 0 200 140" style="max-width:100%;">
+          <style>
+            .inode { fill:#1e1e2a; stroke:#3a3a4c; stroke-width:1.5; }
+            .ivis { fill:#1e1e2a; stroke:#e6c87a; stroke-width:2; }
+            .inew { fill:#4a9f56; stroke:#7ecf8a; stroke-width:2; stroke-dasharray:3,2; }
+            .ilbl { fill:#f0f0f4; font:bold 8px 'JetBrains Mono',monospace; text-anchor:middle; dominant-baseline:central; }
+            .iedg { stroke:#3a3a4c; stroke-width:1.5; fill:none; }
+            .inew-edge { stroke:#7ecf8a; stroke-width:1.5; stroke-dasharray:3,2; fill:none; }
+          </style>
+          <line x1="100" y1="20" x2="60" y2="60" class="iedg"/>
+          <line x1="100" y1="20" x2="140" y2="60" class="iedg"/>
+          <line x1="60" y1="60" x2="30" y2="100" class="iedg"/>
+          <line x1="60" y1="60" x2="90" y2="100" class="iedg"/>
+          <line x1="90" y1="100" x2="120" y2="135" class="inew-edge"/>
+          <!-- 8 root -->
+          <circle cx="100" cy="20" r="13" class="ivis"/><text x="100" y="20" class="ilbl">8</text>
+          <!-- 3 -->
+          <circle cx="60" cy="60" r="12" class="ivis"/><text x="60" y="60" class="ilbl">3</text>
+          <!-- 1 -->
+          <circle cx="30" cy="100" r="11" class="inode"/><text x="30" y="100" class="ilbl">1</text>
+          <!-- 6 -->
+          <circle cx="90" cy="100" r="11" class="ivis"/><text x="90" y="100" class="ilbl">6</text>
+          <!-- NEW 7 -->
+          <circle cx="120" cy="135" r="10" class="inew"/><text x="120" y="135" class="ilbl">7</text>
+          <!-- right untouched -->
+          <circle cx="140" cy="60" r="12" class="inode"/><text x="140" y="60" class="ilbl">12</text>
+        </svg>
+      </div>
+      <p style="font-size:0.65rem;text-align:center;color:var(--text-dim);">8 → left → 3 → right → 6 → <strong>right child = 7</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 7: Delete (Three Cases) -->
+<section class="slide" data-slide="7">
+  <h2>Delete from a BST</h2>
+  <p>Deletion is the trickiest BST operation. There are <strong>three cases</strong> based on how many children the target node has.</p>
+  <table>
+    <tr><th>Case</th><th>Children</th><th>Strategy</th><th>Example</th></tr>
+    <tr><td>1</td><td>0 (leaf)</td><td>Just remove — parent's pointer becomes <code>None</code></td><td>Delete 1</td></tr>
+    <tr><td>2</td><td>1 child</td><td>Replace node with its only child (the child "moves up")</td><td>Delete 12 (has left=10)</td></tr>
+    <tr><td>3</td><td>2 children</td><td>Find <strong>inorder successor</strong> (smallest in right subtree), copy its value, then recursively delete the successor</td><td>Delete 8</td></tr>
+  </table>
+  <pre style="margin-top:0.3rem;"><span class="cm"># Case 3: two children — find inorder successor</span>
+<span class="kw">def</span> <span class="fn">getMin</span>(node):
+    <span class="kw">while</span> node.left:
+        node = node.left
+    <span class="kw">return</span> node
+
+<span class="cm"># Copy successor value, delete successor</span>
+<span class="cm"># (which will be Case 1 or 2 — leaf or 1 child)</span>
+succ = <span class="fn">getMin</span>(root.right)
+root.val = succ.val
+root.right = <span class="fn">deleteNode</span>(root.right, succ.val)</pre>
+</section>
+
+<!-- SLIDE 8: LeetCode #700 -->
+<section class="slide" data-slide="8">
+  <h2>LeetCode #700 — Search in a BST</h2>
+  <div class="ex-box" style="margin-bottom:0.3rem;">
+    <h4>Problem</h4>
+    <p>Given the root of a BST and an integer <code>val</code>, return the subtree rooted at the node with that value, or <code>None</code> if it doesn't exist.</p>
+  </div>
+  <div class="two-col">
+    <div class="col">
+      <h4>Iterative Solution</h4>
+      <pre><span class="kw">class</span> <span class="ty">Solution</span>:
+    <span class="kw">def</span> <span class="fn">searchBST</span>(self, root, val):
+        cur = root
+        <span class="kw">while</span> cur <span class="kw">and</span> cur.val != val:
+            <span class="kw">if</span> val &lt; cur.val:
+                cur = cur.left
+            <span class="kw">else</span>:
+                cur = cur.right
+        <span class="kw">return</span> cur</pre>
+      <p style="font-size:0.65rem;">O(h) time, O(1) space. <br>No call stack overhead.</p>
+    </div>
+    <div class="col">
+      <h4>Recursive Approach</h4>
+      <pre><span class="kw">class</span> <span class="ty">Solution</span>:
+    <span class="kw">def</span> <span class="fn">searchBST</span>(self, root, val):
+        <span class="kw">if</span> <span class="kw">not</span> root <span class="kw">or</span> root.val == val:
+            <span class="kw">return</span> root
+        <span class="kw">if</span> val &lt; root.val:
+            <span class="kw">return</span> self.searchBST(
+                root.left, val)
+        <span class="kw">return</span> self.searchBST(
+            root.right, val)</pre>
+      <p style="font-size:0.65rem;">O(h) time, O(h) space for recursion stack. Cleaner but uses memory.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 9: LeetCode #701 -->
+<section class="slide" data-slide="9">
+  <h2>LeetCode #701 — Insert into a BST</h2>
+  <div class="ex-box" style="margin-bottom:0.3rem;">
+    <h4>Problem</h4>
+    <p>Given the root of a BST and a <code>val</code> to insert, return the root. You may assume val doesn't already exist.</p>
+  </div>
+  <div class="two-col">
+    <div class="col">
+      <h4>Recursive</h4>
+      <pre><span class="kw">class</span> <span class="ty">Solution</span>:
+    <span class="kw">def</span> <span class="fn">insertIntoBST</span>(self, root, val):
+        <span class="kw">if</span> <span class="kw">not</span> root:
+            <span class="kw">return</span> TreeNode(val)
+        <span class="kw">if</span> val &lt; root.val:
+            root.left = self.insertIntoBST(
+                root.left, val)
+        <span class="kw">else</span>:
+            root.right = self.insertIntoBST(
+                root.right, val)
+        <span class="kw">return</span> root</pre>
+    </div>
+    <div class="col">
+      <h4>Iterative</h4>
+      <pre><span class="kw">class</span> <span class="ty">Solution</span>:
+    <span class="kw">def</span> <span class="fn">insertIntoBST</span>(self, root, val):
+        <span class="kw">if</span> <span class="kw">not</span> root:
+            <span class="kw">return</span> TreeNode(val)
+        cur = root
+        <span class="kw">while</span> <span class="kw">True</span>:
+            <span class="kw">if</span> val &lt; cur.val:
+                <span class="kw">if</span> <span class="kw">not</span> cur.left:
+                    cur.left = TreeNode(val)
+                    <span class="kw">break</span>
+                cur = cur.left
+            <span class="kw">else</span>:
+                <span class="kw">if</span> <span class="kw">not</span> cur.right:
+                    cur.right = TreeNode(val)
+                    <span class="kw">break</span>
+                cur = cur.right
+        <span class="kw">return</span> root</pre>
+    </div>
+  </div>
+  <p style="font-size:0.65rem;">Both O(h) time. Iterative is O(1) space; recursive is O(h) call stack. The recursive code is more idiomatic — you'll see it in most solutions.</p>
+</section>
+
+<!-- SLIDE 10: Exercises -->
+<section class="slide" data-slide="10">
+  <h2>Practice Exercises</h2>
+  <p>Try these on LeetCode or in your local editor. Spend ~12 minutes total.</p>
+
+  <div class="ex-box">
+    <h4>1. LeetCode #700 — Search in a BST</h4>
+    <p>Implement <code>searchBST(root, val)</code>. Try <strong>both</strong> iterative and recursive versions. Which is easier to debug?</p>
+  </div>
+
+  <div class="ex-box">
+    <h4>2. LeetCode #701 — Insert into a BST</h4>
+    <p>Implement <code>insertIntoBST(root, val)</code>. The recursive version is ~6 lines — can you write it from memory?</p>
+  </div>
+
+  <div class="ex-box hint">
+    <h4>💡 Hint: Validation</h4>
+    <p>After inserting a value, verify correctness by running <strong>inorder traversal</strong> on the resulting tree. An inorder traversal of a BST should always produce a <strong>sorted ascending</strong> sequence.</p>
+  </div>
+
+  <div class="ex-box">
+    <h4>3. Bonus: Kth Smallest Element</h4>
+    <p>Given a BST, find the k<sup>th</sup> smallest element. Hint: what traversal visits nodes in sorted order? (LeetCode Medium #230)</p>
+  </div>
+</section>
+
+<!-- SLIDE 11: Exercise Solutions -->
+<section class="slide" data-slide="11">
+  <h2>Solutions (Reveal After Trying)</h2>
+
+  <div class="ex-box solution">
+    <h4>#700 — Search (Recursive)</h4>
+    <pre><span class="kw">def</span> <span class="fn">searchBST</span>(root, val):
+    <span class="kw">if</span> <span class="kw">not</span> root <span class="kw">or</span> root.val == val:
+        <span class="kw">return</span> root
+    <span class="kw">if</span> val &lt; root.val:
+        <span class="kw">return</span> <span class="fn">searchBST</span>(root.left, val)
+    <span class="kw">return</span> <span class="fn">searchBST</span>(root.right, val)</pre>
+  </div>
+
+  <div class="ex-box solution">
+    <h4>#701 — Insert (Recursive)</h4>
+    <pre><span class="kw">def</span> <span class="fn">insertIntoBST</span>(root, val):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> TreeNode(val)
+    <span class="kw">if</span> val &lt; root.val:
+        root.left = <span class="fn">insertIntoBST</span>(root.left, val)
+    <span class="kw">else</span>:
+        root.right = <span class="fn">insertIntoBST</span>(root.right, val)
+    <span class="kw">return</span> root</pre>
+  </div>
+
+  <div class="ex-box solution">
+    <h4>Bonus: Kth Smallest (inorder DFS)</h4>
+    <pre><span class="kw">def</span> <span class="fn">kthSmallest</span>(root, k):
+    stack = []
+    cur = root
+    <span class="kw">while</span> stack <span class="kw">or</span> cur:
+        <span class="kw">while</span> cur:
+            stack.append(cur)
+            cur = cur.left
+        cur = stack.pop()
+        k -= 1
+        <span class="kw">if</span> k == 0:
+            <span class="kw">return</span> cur.val
+        cur = cur.right</pre>
+  </div>
+</section>
+
+<!-- SLIDE 12: Inorder Traversal -->
+<section class="slide" data-slide="12">
+  <h2>BST Verification: Inorder Traversal</h2>
+  <p>Inorder traversal of a BST visits nodes in <strong>sorted ascending order</strong>. This is your go-to verification tool.</p>
+
+  <div class="two-col">
+    <div class="col">
+      <h4>Traversal</h4>
+      <pre><span class="cm"># Recursive inorder</span>
+<span class="kw">def</span> <span class="fn">inorder</span>(root):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> []
+    <span class="kw">return</span> (<span class="fn">inorder</span>(root.left)
+          + [root.val]
+          + <span class="fn">inorder</span>(root.right))</pre>
+    </div>
+    <div class="col">
+      <h4>Validation</h4>
+      <pre><span class="cm"># Check sorted property</span>
+vals = <span class="fn">inorder</span>(tree)
+is_bst = <span class="fn">all</span>(
+  vals[i] &lt; vals[i+1]
+  <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(
+    <span class="fn">len</span>(vals) - 1)
+)</pre>
+      <p style="font-size:0.65rem;margin-top:0.2rem;">Used in LeetCode <strong>#98 Validate BST</strong>. A must-know interview pattern.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 13: Common Pitfalls -->
+<section class="slide" data-slide="13">
+  <h2>Common Pitfalls</h2>
+  <div class="two-col">
+    <div class="col">
+      <div class="ex-box" style="border-left-color:var(--red);">
+        <h4>❌ Off-by-one comparisons</h4>
+        <p>BST invariant is <code>left &lt; node &lt; right</code>. Using <code>&lt;=</code> instead of <code>&lt;</code> breaks the tree for duplicates.</p>
+      </div>
+      <div class="ex-box" style="border-left-color:var(--red);">
+        <h4>❌ Forgetting to rewire</h4>
+        <p>In recursive insert: <code>root.left = insertIntoBST(root.left, val)</code>. Without the assignment, the tree never changes.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ex-box" style="border-left-color:var(--red);">
+        <h4>❌ Returning early in insert</h4>
+        <p>Don't <code>return root</code> inside the while loop of iterative insert — you'll lose the new node.</p>
+      </div>
+      <div class="ex-box" style="border-left-color:var(--red);">
+        <h4>❌ Assuming balanced</h4>
+        <p>Inserting 1,2,3,4,5 yields a skewed tree (like a linked list). Always think about worst-case O(n).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 14: Recap -->
+<section class="slide" data-slide="14">
+  <h2>Key Takeaways</h2>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:85%;margin:0 auto;">
+    <div class="recap-item">
+      <div class="recap-num">1</div>
+      <div class="recap-text"><strong>BST invariant</strong> is everything — left &lt; node &lt; right. Every algorithm flows from it.</div>
+    </div>
+    <div class="recap-item">
+      <div class="recap-num">2</div>
+      <div class="recap-text"><strong>Search</strong> and <strong>insert</strong> are O(h) time, just following one path from root to leaf. Iterative saves space; recursive reads cleaner.</div>
+    </div>
+    <div class="recap-item">
+      <div class="recap-num">3</div>
+      <div class="recap-text"><strong>Delete</strong> has three cases. The two-child case uses the <strong>inorder successor</strong> — practice this, it's a common interview blind spot.</div>
+    </div>
+    <div class="recap-item">
+      <div class="recap-num">4</div>
+      <div class="recap-text"><strong>Inorder traversal</strong> = sorted output. Your best tool for debugging and validation.</div>
+    </div>
+    <div class="recap-item">
+      <div class="recap-num">5</div>
+      <div class="recap-text">BST is the foundation for <strong>AVL trees</strong>, <strong>Red-Black trees</strong>, and <strong>B-trees</strong> — all coming later in Phase IV.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 15: Next Steps -->
+<section class="slide" data-slide="15">
+  <h2>Next Steps</h2>
+  <div class="ex-box" style="border-left-color:var(--purple);">
+    <h4>🚀 Tomorrow: BST Deletion &amp; Validation</h4>
+    <p>LeetCode #450 (Delete Node), #98 (Validate BST). More Medium problems building on today's foundation.</p>
+  </div>
+  <p style="margin-top:0.5rem;"><strong>Before next session:</strong></p>
+  <ul>
+    <li>Solve #700 and #701 from memory — you should be able to write both in under 2 minutes</li>
+    <li>Practice inorder traversal on paper for 3 different BST shapes</li>
+    <li>Try writing <strong>insertIterative</strong> without looking at the solution</li>
+    <li>Review project milestones: <em>Project 4 (API Backend)</em> coming after Week 10</li>
+  </ul>
+  <div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+    <span class="kbd">→</span> <span style="font-size:0.65rem;color:var(--text-dim);">Next slide</span>
+    <span class="kbd">←</span> <span style="font-size:0.65rem;color:var(--text-dim);">Previous slide</span>
+    <span class="kbd">f</span> <span style="font-size:0.65rem;color:var(--text-dim);">Fullscreen</span>
+    <span class="kbd">n</span> <span style="font-size:0.65rem;color:var(--text-dim);">Speaker notes</span>
+  </div>
+</section>
+
+<!-- SLIDE INFO & PROGRESS -->
+<div id="slide-info">1 / 16</div>
+<div id="progress-bar" style="width:6.25%;"></div>
+
+</div><!-- /#deck -->
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const info = document.getElementById('slide-info');
+  const bar = document.getElementById('progress-bar');
+  let current = 0;
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(total - 1, idx));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    info.textContent = (idx + 1) + ' / ' + total;
+    bar.style.width = ((idx + 1) / total * 100) + '%';
+    window.location.hash = '#' + idx;
+  }
+
+  function next()  { showSlide(current + 1); }
+  function prev()  { showSlide(current - 1); }
+
+  // Hash navigation
+  function onHash() {
+    const m = window.location.hash.match(/^#(\d+)$/);
+    if (m) showSlide(parseInt(m[1], 10));
+  }
+  window.addEventListener('hashchange', onHash);
+  onHash();
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+    else if (e.key === 'End') { e.preventDefault(); showSlide(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  // Touch swipe
+  let startX = 0;
+  document.addEventListener('touchstart', function(e) { startX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - startX;
+    if (Math.abs(dx) > 60) { dx < 0 ? next() : prev(); }
+  });
+
+  // Show first slide (overrides hash if invalid)
+  showSlide(current);
+})();
+</script>
+
+</body>
+</html>
