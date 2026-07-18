@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 59: Stacks &amp; Queues — 90-Day Co-op Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --slide-bg: #161b22;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-orange: #d29922;
+  --accent-red: #f85149;
+  --border: #30363d;
+  --code-bg: #1c2128;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --progress-bar: #58a6ff;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  font-family: var(--font-sans);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 16:9 slide container */
+#deck {
+  position: relative;
+  width: min(100vw, calc(100vh * 16/9));
+  height: min(100vh, calc(100vw * 9/16));
+  overflow: hidden;
+  background: var(--slide-bg);
+  border-radius: 4px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 64px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Progress bar top */
+#progress-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--progress-bar);
+  transition: width 0.35s ease;
+  z-index: 10;
+}
+
+/* Slide counter */
+#slide-counter {
+  position: absolute;
+  bottom: 16px;
+  right: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  z-index: 10;
+}
+
+/* Typography */
+h1 {
+  font-family: var(--font-mono);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+h2 {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+h3 {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent-green);
+}
+p, li {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+p { margin-bottom: 12px; }
+strong { color: var(--text); font-weight: 600; }
+code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 15px;
+  color: var(--accent-orange);
+}
+
+/* Pre blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+/* Lists */
+ul { margin: 8px 0 12px 20px; }
+li { margin-bottom: 6px; list-style: disc; }
+
+/* Title slide */
+.title-slide { text-align: center; }
+.title-slide h1 {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.title-slide .subtitle {
+  font-size: 22px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+}
+.title-slide .meta {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--text-dim);
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+.title-slide .meta span {
+  background: var(--code-bg);
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+/* Code slides - highlight line */
+pre .highlight {
+  background: rgba(88, 166, 255, 0.12);
+  display: block;
+  margin: 0 -20px;
+  padding: 0 20px;
+  border-left: 3px solid var(--accent);
+}
+
+/* Two-column layout */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 8px 0;
+}
+.cols-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 8px 0;
+}
+.card {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.card h3 { margin-bottom: 8px; font-size: 17px; }
+.card p, .card li { font-size: 15px; }
+.card ul { margin-left: 14px; }
+.card li { font-size: 15px; }
+
+/* Hint / solution reveal */
+.hint-box {
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px solid var(--accent-orange);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 10px 0;
+}
+.hint-box p { font-size: 15px; color: var(--accent-orange); margin: 0; }
+
+/* Checkpoint list */
+.checklist li { list-style: none; }
+.checklist li::before {
+  content: "☐ ";
+  font-size: 18px;
+  margin-right: 6px;
+  color: var(--accent);
+}
+
+/* Big emoji/icon for concept slides */
+.icon-big {
+  font-size: 48px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Objective cards */
+.obj-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.obj-num {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.obj-text {
+  font-size: 18px;
+  padding-top: 5px;
+}
+
+/* Recap slide */
+.recap-item {
+  border-left: 3px solid var(--accent-green);
+  padding-left: 16px;
+  margin-bottom: 16px;
+}
+.recap-item h3 { margin-bottom: 4px; }
+.recap-item p { margin: 0; font-size: 16px; }
+
+/* Step cards for walkthrough */
+.step {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 10px;
+  align-items: flex-start;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.step p {
+  font-size: 16px;
+  margin: 0;
+  padding-top: 2px;
+}
+
+/* Section break */
+.section-break {
+  text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+}
+.section-break h2 {
+  font-size: 38px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.section-break p {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 28px 24px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  p, li { font-size: 15px; }
+  .cols { grid-template-columns: 1fr; gap: 12px; }
+  .cols-3 { grid-template-columns: 1fr; gap: 12px; }
+  .title-slide h1 { font-size: 30px; }
+  pre { font-size: 13px; padding: 12px 14px; }
+  pre code { font-size: 12px; }
+  .obj-text { font-size: 15px; }
+}
+@media print {
+  body { background: #fff; }
+  #deck { box-shadow: none; border-radius: 0; width: 100%; height: auto; }
+  .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; }
+  #progress-bar, #slide-counter { display: none; }
+  :root { --bg: #fff; --slide-bg: #fff; --text: #000; --text-dim: #333; --border: #ccc; --code-bg: #f5f5f5; }
+}
+</style>
+</head>
+<body>
+<div id="deck">
+  <div id="progress-bar"></div>
+  <div id="slide-counter">1 / 12</div>
+
+  <!-- SLIDE 0: Title -->
+  <section class="slide title-slide active" data-slide="0">
+    <h1>Day 59: Stacks &amp; Queues</h1>
+    <p class="subtitle">LIFO &amp; FIFO — The Building Blocks of Sequential Data</p>
+    <div class="meta">
+      <span>Week 10 · Phase IV</span>
+      <span>DSA · 60 min</span>
+      <span>90-Day Co-op Prep</span>
+    </div>
+    <div style="margin-top: 32px; font-family: var(--font-mono); font-size: 14px; color: var(--text-dim);">
+      → Press <strong style="color: var(--accent);">Space</strong> or <strong style="color: var(--accent);">→</strong> to advance
+    </div>
+  </section>
+
+  <!-- SLIDE 1: Prerequisites -->
+  <section class="slide" data-slide="1">
+    <h2>Before You Begin</h2>
+    <p>You should already know:</p>
+    <ul>
+      <li><strong>Python basics</strong> — functions, classes, lists</li>
+      <li><strong>Big O notation</strong> — understanding O(1), O(n)</li>
+      <li><strong>Lists/arrays</strong> — indexing, appending, popping</li>
+      <li><strong>Why DSA matters for co-op</strong> — 80% of technical screens include a stack or queue problem</li>
+    </ul>
+    <div style="margin-top: 20px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px;">
+      <p style="margin:0; font-size: 15px;"><strong>📦 Tools:</strong> Python 3.10+ installed. A terminal or IDE ready.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: Learning Objectives -->
+  <section class="slide" data-slide="2">
+    <h2>Learning Objectives</h2>
+    <p>By the end of this session, you will be able to:</p>
+    <div style="margin-top: 16px;">
+      <div class="obj-item">
+        <div class="obj-num">1</div>
+        <div class="obj-text"><strong>Explain</strong> the LIFO and FIFO principles with real-world analogies</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-num">2</div>
+        <div class="obj-text"><strong>Implement</strong> a <code>Stack</code> class with push, pop, peek, and is_empty</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-num">3</div>
+        <div class="obj-text"><strong>Implement</strong> a <code>Queue</code> class using collections.deque</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-num">4</div>
+        <div class="obj-text"><strong>Solve</strong> LeetCode #20 — Valid Parentheses in O(n) time</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: Section Break — Concept: Stack -->
+  <section class="slide section-break" data-slide="3">
+    <h2>📚 The Stack</h2>
+    <p>Last In, First Out (LIFO)</p>
+  </section>
+
+  <!-- SLIDE 4: Stack Concept -->
+  <section class="slide" data-slide="4">
+    <h2>What Is a Stack?</h2>
+    <div class="cols">
+      <div>
+        <p>A <strong>stack</strong> is a linear data structure where elements are added and removed from the <strong>same end</strong> — the top.</p>
+        <p style="margin-top: 12px;"><strong>Analogy:</strong> A stack of plates. You add a plate on top (<em>push</em>). You take a plate from the top (<em>pop</em>). The plate at the bottom is the last one you'll ever touch.</p>
+        <div style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 8px;">
+          <p style="margin:0; font-size: 14px; font-family: var(--font-mono);">
+            <strong>Key operations:</strong><br>
+            push(x) — O(1) add to top<br>
+            pop() — O(1) remove from top<br>
+            peek() — O(1) view top<br>
+            is_empty() — O(1) check
+          </p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="text-align: center;">
+          <div style="font-family: var(--font-mono); font-size: 20px; color: var(--text); line-height: 2;">
+            <div style="border: 2px solid var(--accent); border-radius: 6px; padding: 6px; margin: 4px 20px; background: rgba(88,166,255,0.08);">← ← push / pop → →</div>
+            <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px; margin: 3px 24px;">3  ← top</div>
+            <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px; margin: 3px 24px;">7</div>
+            <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px; margin: 3px 24px;">1</div>
+            <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px; margin: 3px 24px;">9  ← bottom</div>
+          </div>
+          <p style="margin-top: 8px; font-size: 14px;">When we pop: 3 comes out first.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: Stack Implementation -->
+  <section class="slide" data-slide="5">
+    <h2>Implementing a Stack in Python</h2>
+    <p>A stack is trivially built on top of a Python <code>list</code>:</p>
+    <pre><code><span class="highlight">class Stack:</span>
+    def __init__(self):
+        self._items = []
+
+    def push(self, item):
+<span class="highlight">        self._items.append(item)</span>   <span style="color: var(--text-dim);"># O(1) amortized</span>
+
+    def pop(self):
+<span class="highlight">        return self._items.pop()</span>    <span style="color: var(--text-dim);"># O(1)</span>
+
+    def peek(self):
+        if self.is_empty():
+            return None
+        return self._items[-1]
+
+    def is_empty(self):
+        return len(self._items) == 0
+
+    def size(self):
+        return len(self._items)</code></pre>
+    <p style="font-size: 15px;"><strong>Note:</strong> Python's <code>list.append()</code> and <code>list.pop()</code> are both O(1) — a natural stack implementation.</p>
+  </section>
+
+  <!-- SLIDE 6: Section Break — Concept: Queue -->
+  <section class="slide section-break" data-slide="6">
+    <h2>📚 The Queue</h2>
+    <p>First In, First Out (FIFO)</p>
+  </section>
+
+  <!-- SLIDE 7: Queue Concept -->
+  <section class="slide" data-slide="7">
+    <h2>What Is a Queue?</h2>
+    <div class="cols">
+      <div>
+        <p>A <strong>queue</strong> is a linear data structure where elements are added at one end (<em>rear</em>) and removed from the other end (<em>front</em>).</p>
+        <p style="margin-top: 12px;"><strong>Analogy:</strong> A line at a coffee shop. The first person in line gets served first. New people join at the back.</p>
+        <div style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 8px;">
+          <p style="margin:0; font-size: 14px; font-family: var(--font-mono);">
+            <strong>Key operations:</strong><br>
+            enqueue(x) — O(1) add to rear<br>
+            dequeue() — O(1) remove from front<br>
+            front() — O(1) view front<br>
+            is_empty() — O(1) check
+          </p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="text-align: center;">
+          <div style="font-family: var(--font-mono); font-size: 18px; color: var(--text); line-height: 2.2;">
+            <div style="display: flex; justify-content: center; gap: 8px;">
+              <div style="border: 2px solid var(--accent-green); border-radius: 6px; padding: 6px 12px; background: rgba(63,185,80,0.08);">dequeue →</div>
+              <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px 12px;">4</div>
+              <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px 12px;">2</div>
+              <div style="border: 1px solid var(--border); border-radius: 4px; padding: 6px 12px;">8</div>
+              <div style="border: 2px solid var(--accent-orange); border-radius: 6px; padding: 6px 12px; background: rgba(210,153,34,0.08);">← enqueue</div>
+            </div>
+          </div>
+          <p style="margin-top: 4px; font-size: 13px;">Front (4) leaves first. New items join at the rear (orange).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: Queue Implementation -->
+  <section class="slide" data-slide="8">
+    <h2>Implementing a Queue in Python</h2>
+    <p>Use <code>collections.deque</code> for O(1) operations at both ends:</p>
+    <pre><code><span style="color: var(--text-dim);">from collections import deque</span>
+
+<span class="highlight">class Queue:</span>
+    def __init__(self):
+        self._items = deque()
+
+    def enqueue(self, item):
+<span class="highlight">        self._items.append(item)</span>    <span style="color: var(--text-dim);"># O(1) — adds to right (rear)</span>
+
+    def dequeue(self):
+<span class="highlight">        return self._items.popleft()</span> <span style="color: var(--text-dim);"># O(1) — removes from left (front)</span>
+
+    def front(self):
+        return self._items[0] if not self.is_empty() else None
+
+    def is_empty(self):
+        return len(self._items) == 0
+
+    def size(self):
+        return len(self._items)</code></pre>
+    <p style="font-size: 15px;"><strong>Why deque?</strong> Using a plain list for the front would be O(n) — <code>pop(0)</code> shifts all elements. <code>deque.popleft()</code> avoids that.</p>
+  </section>
+
+  <!-- SLIDE 9: Section Break — Valid Parentheses -->
+  <section class="slide section-break" data-slide="9">
+    <h2>⚡ LeetCode #20: Valid Parentheses</h2>
+    <p>A classic stack application</p>
+  </section>
+
+  <!-- SLIDE 10: Problem + Walkthrough -->
+  <section class="slide" data-slide="10">
+    <h2>Valid Parentheses — Problem</h2>
+    <p>Given a string <code>s</code> containing just the characters <code>'('</code>, <code>')'</code>, <code>'{'</code>, <code>'}'</code>, <code>'['</code>, <code>']'</code>, determine if the input string is <strong>valid</strong>.</p>
+    <p style="margin-top: 8px; color: var(--text);">A string is valid if:</p>
+    <ol style="margin: 8px 0 12px 20px; color: var(--text-dim);">
+      <li>Open brackets must be closed by the same type of bracket.</li>
+      <li>Open brackets must be closed in the <strong>correct order</strong>.</li>
+      <li>Every close bracket has a corresponding open bracket of the same type.</li>
+    </ol>
+    <div class="cols" style="margin-top: 8px;">
+      <div class="card">
+        <h3 style="color: var(--accent-green);">✅ Valid</h3>
+        <p style="font-family: var(--font-mono); font-size: 15px;">
+          <code>()</code><br>
+          <code>()[]{}</code><br>
+          <code>{[()]}</code>
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="color: var(--accent-red);">❌ Invalid</h3>
+        <p style="font-family: var(--font-mono); font-size: 15px;">
+          <code>(]</code><br>
+          <code>([)]</code><br>
+          <code>(</code> (unclosed)
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: Solution Walkthrough -->
+  <section class="slide" data-slide="11">
+    <h2>Solution — Stack-Based O(n)</h2>
+    <p><strong>Pattern:</strong> Push opens, pop-and-match on closes.</p>
+    <pre><code><span style="color: var(--text-dim);">def is_valid(s: str) -> bool:</span>
+    matching = {')': '(', '}': '{', ']': '['}
+    stack = []
+
+    for ch in s:
+        if ch in matching:           <span style="color: var(--text-dim);"># Closing bracket</span>
+<span class="highlight">            top = stack.pop() if stack else '#'</span>
+            if top != matching[ch]:
+                return False
+        else:                        <span style="color: var(--text-dim);"># Opening bracket</span>
+<span class="highlight">            stack.append(ch)</span>
+
+    return not stack                 <span style="color: var(--text-dim);"># All opened == closed?</span></code></pre>
+    <div style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;">
+      <p style="margin:0; font-size: 14px;"><strong>Trace <code>"{[()]}"</code>:</strong> push <code>{</code> → push <code>[</code> → push <code>(</code> → pop <code>(</code> ✅ → pop <code>[</code> ✅ → pop <code>{</code> ✅ → empty stack → <strong>True</strong>.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: Exercise Slide -->
+  <section class="slide" data-slide="12">
+    <h2>Exercise — Implement Queue Using Stacks</h2>
+    <p><strong>Problem:</strong> Implement a FIFO queue using <em>only</em> two stacks. Your queue should support <code>push(x)</code>, <code>pop()</code>, <code>peek()</code>, and <code>empty()</code>.</p>
+    <div class="cols" style="margin-top: 8px;">
+      <div>
+        <div class="card" style="height: 100%;">
+          <h3>💡 Hint</h3>
+          <p>Use one stack as the <strong>input</strong> (new items go here) and one as the <strong>output</strong>. When output is empty and you need to pop/peek, transfer everything from input to output — this reverses the order, turning LIFO into FIFO.</p>
+          <p style="margin-top: 8px; font-size: 14px; color: var(--text-dim);">Expected time: 15 minutes. LeetCode #232.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="height: 100%;">
+          <h3>🧪 Starter</h3>
+          <pre style="margin: 0;"><code><span style="color: var(--text-dim);">class MyQueue:
+    def __init__(self):
+        self.input = []   # stack
+        self.output = []  # stack</span>
+    def push(self, x):
+        <span style="color: var(--text-dim);"># Your code here</span>
+
+    def pop(self):
+        <span style="color: var(--text-dim);"># Your code here</span>
+
+    def peek(self):
+        <span style="color: var(--text-dim);"># Your code here</span>
+
+    def empty(self):
+        <span style="color: var(--text-dim);"># Your code here</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: Summary -->
+  <section class="slide" data-slide="13">
+    <h2>Key Takeaways</h2>
+    <div style="margin-top: 16px;">
+      <div class="recap-item">
+        <h3>📌 Stacks = LIFO</h3>
+        <p>Items are added and removed from the same end (top). Python lists make excellent stacks via <code>append()</code> / <code>pop()</code>.</p>
+      </div>
+      <div class="recap-item">
+        <h3>📌 Queues = FIFO</h3>
+        <p>Items enter at the rear and leave from the front. Use <code>collections.deque</code> for O(1) enqueue/dequeue.</p>
+      </div>
+      <div class="recap-item">
+        <h3>📌 Stack &rarr; bracket matching</h3>
+        <p>Valid Parentheses is the canonical stack problem. Push opens, pop-and-validate on closes. Empty stack at the end means valid.</p>
+      </div>
+      <div class="recap-item">
+        <h3>📌 Two stacks = one queue</h3>
+        <p>The two-stack queue is a classic interview twist. Transfer from input to output reverses the order once, giving FIFO.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 14: Next Steps -->
+  <section class="slide" data-slide="14">
+    <h2>Next Steps</h2>
+    <p>Practice these problems on LeetCode this week:</p>
+    <div class="cols-3" style="margin-top: 12px;">
+      <div class="card">
+        <h3 style="color: var(--accent-green);">Easy</h3>
+        <ul>
+          <li>#20 Valid Parentheses</li>
+          <li>#225 Stack using Queues</li>
+          <li>#232 Queue using Stacks</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color: var(--accent-orange);">Medium</h3>
+        <ul>
+          <li>#150 Eval RPN</li>
+          <li>#155 Min Stack</li>
+          <li>#394 Decode String</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>📅 Milestones</h3>
+        <ul style="font-size: 14px;">
+          <li>Project 3: Weather Dashboard (Week 8 ✓)</li>
+          <li>Project 5: Full-Stack App (Week 12)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top: 18px; padding: 12px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; text-align: center;">
+      <p style="margin: 0; font-size: 16px;"><strong>Tomorrow:</strong> Hash Tables &amp; Frequency Counting</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const progress = document.getElementById('progress-bar');
+  const counter = document.getElementById('slide-counter');
+  let current = 0;
+
+  function showSlide(idx) {
+    idx = Math.max(0, Math.min(total - 1, idx));
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    current = idx;
+    progress.style.width = ((idx + 1) / total * 100) + '%';
+    counter.textContent = (idx + 1) + ' / ' + total;
+    if (history.replaceState) {
+      history.replaceState(null, '', '#' + (idx + 1));
+    }
+  }
+
+  // Hash on load
+  if (location.hash) {
+    var n = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 1 && n <= total) current = n - 1;
+  }
+  showSlide(current);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target.matches('input, textarea, select')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+        e.preventDefault();
+        showSlide(current + 1);
+        break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+        e.preventDefault();
+        showSlide(current - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        showSlide(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        showSlide(total - 1);
+        break;
+      case 'f': case 'F':
+        e.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          document.body.requestFullscreen();
+        }
+        break;
+    }
+  });
+
+  // Hash change from browser back/forward
+  window.addEventListener('hashchange', function() {
+    var n = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 1 && n <= total) {
+      showSlide(n - 1);
+    }
+  });
+
+  // Touch / swipe support
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', function(e) {
+    var diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      showSlide(current + (diff > 0 ? 1 : -1));
+    }
+  });
+})();
+</script>
+</body>
+</html>
