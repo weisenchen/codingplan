@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 60 — Review + Problem Session</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --fg: #e6edf3;
+  --fg2: #8b949e;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #d29922;
+  --accent4: #f85149;
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #010409; color: var(--fg); font-family: var(--font); overflow: hidden; }
+
+/* Slide container */
+#deck {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #010409;
+}
+#viewport {
+  position: relative;
+  width: min(100vw, calc(100vh * var(--ratio)));
+  height: min(100vh, calc(100vw / var(--ratio)));
+  --ratio: 16/9;
+  overflow: hidden;
+  background: var(--bg);
+  border-radius: 4px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 64px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Progress bar */
+#progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  z-index: 20;
+}
+#counter {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--fg2);
+  z-index: 20;
+  letter-spacing: 0.5px;
+}
+/* Speaker notes */
+#notes-toggle {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  z-index: 30;
+  background: var(--bg3);
+  border: 1px solid #30363d;
+  color: var(--fg2);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+#notes-toggle:hover { opacity: 1; }
+#notes-panel {
+  position: absolute;
+  bottom: 36px;
+  right: 20px;
+  width: 320px;
+  max-height: 240px;
+  background: var(--bg2);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg2);
+  z-index: 25;
+  overflow-y: auto;
+  display: none;
+}
+#notes-panel.visible { display: block; }
+#notes-panel strong { color: var(--fg); }
+
+/* Typography */
+h1 {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  color: var(--fg);
+}
+h2 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  color: var(--fg);
+}
+h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+p, li { font-size: 18px; line-height: 1.6; color: var(--fg2); }
+code {
+  font-family: var(--mono);
+  background: var(--bg3);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: var(--accent2);
+}
+pre {
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--fg);
+}
+.highlight { background: rgba(88,166,255,0.12); border-left: 3px solid var(--accent); padding-left: 12px; }
+ul { list-style: none; padding-left: 0; }
+li { padding-left: 24px; position: relative; margin-bottom: 8px; }
+li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 8px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-top: 8px;
+}
+.card {
+  background: var(--bg2);
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 20px;
+}
+.card h4 { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--fg); }
+.card p, .card li { font-size: 14px; }
+.accent-a { border-left: 3px solid var(--accent); }
+.accent-b { border-left: 3px solid var(--accent2); }
+.accent-c { border-left: 3px solid var(--accent3); }
+.accent-d { border-left: 3px solid var(--accent4); }
+
+.tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tag-blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+.tag-green { background: rgba(63,185,80,0.15); color: var(--accent2); }
+.tag-yellow { background: rgba(210,153,34,0.15); color: var(--accent3); }
+.tag-red { background: rgba(248,81,73,0.15); color: var(--accent4); }
+
+.progress-indicator { margin-top: auto; margin-bottom: 0; text-align: right; font-family: var(--mono); font-size: 13px; color: var(--fg2); }
+
+/* Title slide */
+.title-slide {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.title-slide h1 { font-size: 56px; margin-bottom: 12px; }
+.title-slide .subtitle { font-size: 24px; color: var(--fg2); margin-bottom: 8px; }
+.title-slide .meta { font-size: 16px; color: var(--fg2); font-family: var(--mono); }
+
+/* Section break */
+.section-break {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+}
+.section-break h2 { font-size: 42px; margin-bottom: 8px; }
+.section-break p { font-size: 20px; color: var(--fg2); }
+
+/* Exercise slide */
+.exercise-hint {
+  background: rgba(210,153,34,0.08);
+  border: 1px solid rgba(210,153,34,0.3);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--accent3);
+}
+.exercise-hint strong { color: var(--accent3); }
+.solution-box {
+  background: rgba(63,185,80,0.06);
+  border: 1px solid rgba(63,185,80,0.25);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  display: none;
+}
+.solution-box.visible { display: block; }
+.solution-box strong { color: var(--accent2); }
+.btn-reveal {
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--bg3);
+  border: 1px solid #30363d;
+  color: var(--fg2);
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background 0.2s;
+}
+.btn-reveal:hover { background: #30363d; }
+
+/* Recap slide */
+.recap-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.recap-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.recap-num.green { background: rgba(63,185,80,0.2); color: var(--accent2); }
+.recap-num.blue { background: rgba(88,166,255,0.2); color: var(--accent); }
+.recap-num.yellow { background: rgba(210,153,34,0.2); color: var(--accent3); }
+
+/* Checkboxes */
+.checklist li::before { content: '☐'; color: var(--fg2); font-size: 16px; }
+.checklist li.done::before { content: '☑'; color: var(--accent2); }
+
+/* Milestone timeline */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #21262d;
+}
+.timeline-item { position: relative; margin-bottom: 14px; }
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 2px solid #30363d;
+}
+.timeline-item.done::before { background: var(--accent2); border-color: var(--accent2); }
+.timeline-item.current::before { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(88,166,255,0.4); }
+.timeline-item .tl-week { font-size: 12px; color: var(--fg2); font-family: var(--mono); }
+.timeline-item .tl-label { font-size: 15px; color: var(--fg); }
+
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  h3 { font-size: 18px; }
+  p, li { font-size: 15px; }
+  pre { font-size: 13px; padding: 10px 12px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .title-slide h1 { font-size: 32px; }
+  .title-slide .subtitle { font-size: 18px; }
+  #viewport { border-radius: 0; }
+  #notes-panel { width: calc(100% - 40px); right: 20px; }
+}
+@media print {
+  body { overflow: visible; }
+  #deck { height: auto; }
+  #viewport { width: 100%; height: auto; border-radius: 0; box-shadow: none; }
+  .slide { position: static; opacity: 1; pointer-events: auto; page-break-after: always; min-height: 720px; }
+  #progress, #counter, #notes-toggle, #notes-panel { display: none; }
+  pre { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+  <div id="viewport">
+    <!-- Slide 0: Title -->
+    <section class="slide title-slide active" data-slide="0">
+      <h1>Day 60 — Review &amp; Problem Session</h1>
+      <p class="subtitle">Trees · Stacks · Recursion</p>
+      <p class="meta">Week 10 · Phase IV: Review · 60 min</p>
+      <div style="margin-top: 24px;">
+        <p style="font-size: 14px; color: var(--fg2);">90-Day Co-op Prep Plan — Waterloo Prep</p>
+        <p style="font-size: 13px; color: var(--fg2); margin-top: 4px;">Re-solve &amp; internalize core data structures</p>
+      </div>
+      <p style="margin-top: auto; font-size: 13px; color: var(--fg2);">Press <kbd style="background:#21262d;padding:1px 6px;border-radius:3px;font-family:mono;">→</kbd> to begin</p>
+      <aside class="notes">Welcome to Day 60. Today is a dedicated review and problem session. We'll re-solve tree, stack, and recursion problems to solidify the patterns before the next project phase. Start the stopwatch — we have 60 minutes of focused practice ahead.</aside>
+    </section>
+
+    <!-- Slide 1: Overview -->
+    <section class="slide" data-slide="1">
+      <h2>Today's Plan</h2>
+      <p style="margin-bottom: 20px;">60 minutes, three core topics. Re-solve, don't just read.</p>
+      <div class="grid-3">
+        <div class="card accent-a">
+          <h4><span class="tag tag-blue">01</span> Trees</h4>
+          <p>Binary tree traversals — inorder, preorder, postorder, level-order. DFS vs BFS patterns.</p>
+        </div>
+        <div class="card accent-b">
+          <h4><span class="tag tag-green">02</span> Stacks</h4>
+          <p>Monotonic stack, expression evaluation, bracket matching. LIFO at full power.</p>
+        </div>
+        <div class="card accent-c">
+          <h4><span class="tag tag-yellow">03</span> Recursion</h4>
+          <p>Divide &amp; conquer, backtracking, memoization. Base cases and recursive leaps.</p>
+        </div>
+      </div>
+      <div style="margin-top: 20px;">
+        <p style="font-size: 15px;"><strong style="color: var(--fg);">Milestone context:</strong> Project 3 (Weather Dashboard) ✓ at Week 8. Project 5 (Full-Stack) arrives Week 12 — these review patterns are your foundation.</p>
+      </div>
+      <aside class="notes">Each section today is 15 minutes of re-solving problems you've seen before, plus a 5-minute flashcard check. The goal is speed and recognition, not struggle. If you can solve a problem in under 8 minutes without peeking, you own it.</aside>
+    </section>
+
+    <!-- Slide 2: Section break — Trees -->
+    <section class="slide section-break" data-slide="2">
+      <h2>🌳 Trees</h2>
+      <p>Traversals · DFS vs BFS · Binary Search Trees</p>
+      <aside class="notes">Trees are the most common non-linear data structure in interviews. Master the three primary traversals — iterative and recursive — and you can solve 80% of tree problems. 15 minutes. Go.</aside>
+    </section>
+
+    <!-- Slide 3: Tree traversals concept -->
+    <section class="slide" data-slide="3">
+      <h3><span class="tag tag-blue">Trees</span> The Three Core Traversals</h3>
+      <div class="grid-2">
+        <div>
+          <div class="card accent-a" style="margin-bottom: 12px;">
+            <h4>Inorder (Left → Root → Right)</h4>
+            <p style="font-size: 14px;">BST inorder = sorted order. Most common interview traversal.</p>
+          </div>
+          <div class="card accent-b" style="margin-bottom: 12px;">
+            <h4>Preorder (Root → Left → Right)</h4>
+            <p style="font-size: 14px;">Tree serialization, copy construction.</p>
+          </div>
+          <div class="card accent-c">
+            <h4>Postorder (Left → Right → Root)</h4>
+            <p style="font-size: 14px;">Delete tree, evaluate expression trees.</p>
+          </div>
+        </div>
+        <div>
+          <pre><code><span style="color:#58a6ff;">class TreeNode:</span>
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+<span style="color:#58a6ff;">def inorder_recursive</span>(root):
+    <span style="color:#8b949e;"># Base case</span>
+    if not root:
+        return []
+    <span style="color:#8b949e;"># Recursive leap: left → visit → right</span>
+    return (inorder_recursive(root.left) +
+            [root.val] +
+            inorder_recursive(root.right))</code></pre>
+          <p style="font-size: 13px; color: var(--fg2); margin-top: 4px;">Recursive is elegant; iterative (stack) handles deep trees.</p>
+        </div>
+      </div>
+      <aside class="notes">The recursive pattern is identical for all three — only the position of the [root.val] append changes. For inorder it goes between the recursions. For preorder it goes before. For postorder it goes after. Memorize that one template and rotate the visit line.</aside>
+    </section>
+
+    <!-- Slide 4: Iterative tree traversal -->
+    <section class="slide" data-slide="4">
+      <h3><span class="tag tag-blue">Trees</span> Iterative Inorder — Stack Pattern</h3>
+      <p style="font-size: 15px; margin-bottom: 8px;">Recursion-free traversal for production code and avoid stack overflow.</p>
+      <div class="grid-2">
+        <div>
+          <pre><code><span style="color:#58a6ff;">def inorder_iterative</span>(root):
+    res, stack = [], []
+    curr = root
+    <span style="color:#8b949e;"># Push all left, pop & visit, go right</span>
+    while curr or stack:
+        while curr:
+            stack.append(curr)
+            curr = curr.left     <span style="color:#8b949e;"># Go as far left as possible</span>
+        curr = stack.pop()
+        res.append(curr.val)     <span style="color:#8b949e;"># Visit</span>
+        curr = curr.right        <span style="color:#8b949e;"># Now check the right subtree</span>
+    return res</code></pre>
+        </div>
+        <div>
+          <div class="card accent-a" style="font-size: 14px;">
+            <p style="font-size: 14px;"><strong style="color: var(--fg);">Pattern:</strong> Stack simulates the call stack. Outer loop runs while either pointer or stack is non-empty.</p>
+            <p style="font-size: 14px; margin-top: 8px;"><strong style="color: var(--fg2);">Preorder iterative:</strong> Visit on push, not on pop. Swap <code>res.append</code> to the inner while loop.</p>
+            <p style="font-size: 14px; margin-top: 8px;"><strong style="color: var(--fg2);">Postorder:</strong> Two-stack or one-stack + visited flag. Harder — practice it last.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">The iterative inorder is the pattern you should be able to write from muscle memory. If you blank, remember: while curr or stack, push all left, pop & visit, go right. That's the whole algorithm.</aside>
+    </section>
+
+    <!-- Slide 5: BFS / Level-order -->
+    <section class="slide" data-slide="5">
+      <h3><span class="tag tag-blue">Trees</span> BFS — Level-Order Traversal</h3>
+      <p style="font-size: 15px; margin-bottom: 8px;">Queue-based. Process level by level — key for "right side view", "zigzag", "max depth per level".</p>
+      <pre><code><span style="color:#58a6ff;">from collections import deque
+
+def level_order</span>(root):
+    if not root:
+        return []
+    res, q = [], deque([root])
+    while q:
+        level_size = len(q)
+        level = []
+        for _ in range(level_size):
+            node = q.popleft()
+            level.append(node.val)
+            if node.left:  q.append(node.left)
+            if node.right: q.append(node.right)
+        res.append(level)
+    return res</code></pre>
+      <div class="grid-2" style="margin-top: 4px;">
+        <div class="card accent-b">
+          <h4>When to use BFS</h4>
+          <ul>
+            <li>Shortest path in unweighted tree</li>
+            <li>Level-based problems</li>
+            <li>Tree is wide (avoid deep recursion)</li>
+          </ul>
+        </div>
+        <div class="card accent-c">
+          <h4>When to use DFS</h4>
+          <ul>
+            <li>Path existence / path sum</li>
+            <li>Serialize / deserialize</li>
+            <li>Tree is deep (prefer iterative stack)</li>
+          </ul>
+        </div>
+      </div>
+      <aside class="notes">BFS uses a deque — always import deque, not list as a queue. Popping from the front of a list is O(n). The level_size trick is essential so you know where each level boundary is.</aside>
+    </section>
+
+    <!-- Slide 6: Section break — Stacks -->
+    <section class="slide section-break" data-slide="6">
+      <h2>📚 Stacks</h2>
+      <p>Monotonic Stack · Expression Evaluation · Bracket Matching</p>
+      <aside class="notes">Stacks are LIFO — last in, first out. But the power comes from monotonic patterns: increasing or decreasing stacks that answer "next greater element" in O(n).</aside>
+    </section>
+
+    <!-- Slide 7: Stack patterns -->
+    <section class="slide" data-slide="7">
+      <h3><span class="tag tag-green">Stacks</span> Monotonic Stack — Next Greater Element</h3>
+      <p style="font-size: 15px; margin-bottom: 8px;">Classic O(n) pattern. Stack maintains elements in decreasing order. When we see a larger element, we pop and record.</p>
+      <div class="grid-2">
+        <div>
+          <pre><code><span style="color:#58a6ff;">def next_greater_elements</span>(nums):
+    n = len(nums)
+    res = [-1] * n
+    stack = []  <span style="color:#8b949e;"># stores indices</span>
+
+    for i in range(n):
+        <span style="color:#8b949e;"># While current > top of stack,</span>
+        <span style="color:#8b949e;"># current is the "next greater"</span>
+        while stack and nums[i] > nums[stack[-1]]:
+            idx = stack.pop()
+            res[idx] = nums[i]
+        stack.append(i)
+
+    return res
+
+<span style="color:#8b949e;"># nums = [2, 1, 5, 3, 4]</span>
+<span style="color:#8b949e;">#   →  [5, 5, -1, 4, -1]</span></code></pre>
+        </div>
+        <div>
+          <div class="card accent-b" style="font-size: 14px;">
+            <p><strong style="color: var(--fg);">Monotonic stack variants:</strong></p>
+            <ul>
+              <li><strong>Decreasing</strong> (shown) → next greater element</li>
+              <li><strong>Increasing</strong> → previous greater / next smaller</li>
+              <li><strong>Circular</strong> — iterate 2×n, index = i % n</li>
+            </ul>
+            <p style="margin-top: 10px;"><strong style="color: var(--fg);">Key insight:</strong> The stack stores <em>indices</em>, not values. You compare by <code>nums[stack[-1]]</code>.</p>
+          </div>
+          <div class="card accent-c" style="margin-top: 8px;">
+            <p><strong style="color: var(--fg);">Practice problems:</strong></p>
+            <ul>
+              <li>Daily Temperatures (LeetCode 739)</li>
+              <li>Largest Rectangle in Histogram (84)</li>
+              <li>Trapping Rain Water (42)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">The monotonic stack is one of the most elegant O(n) patterns. Most people reach for O(n²) brute-force. The trick is recognizing when "next bigger/smaller" relationships apply — temperature maps, stock spans, histogram areas.</aside>
+    </section>
+
+    <!-- Slide 8: Bracket matching -->
+    <section class="slide" data-slide="8">
+      <h3><span class="tag tag-green">Stacks</span> Bracket Matching — Validation Pattern</h3>
+      <p style="font-size: 15px; margin-bottom: 8px;">Push opening brackets, pop and match on closing. Fail early on mismatch or empty stack.</p>
+      <pre><code><span style="color:#58a6ff;">def is_valid</span>(s: str) -> bool:
+    pairs = {')': '(', ']': '[', '}': '{'}
+    stack = []
+    for ch in s:
+        if ch in pairs:          <span style="color:#8b949e;"># closing bracket</span>
+            if not stack or stack.pop() != pairs[ch]:
+                return False
+        else:                     <span style="color:#8b949e;"># opening bracket</span>
+            stack.append(ch)
+    return not stack              <span style="color:#8b949e;"># all must be matched</span>
+
+<span style="color:#8b949e;"># Valid: (), {}[], ({[]})</span>
+<span style="color:#8b949e;"># Invalid: (], ([)], )(</span></code></pre>
+      <p style="font-size: 14px; color: var(--fg2); margin-top: 4px;"><strong>Variations:</strong> Minimum add to make valid, remove invalid brackets, longest valid parentheses.</p>
+      <aside class="notes">This is the entry-level stack problem. Don't dismiss it — the same pattern extends to more complex parsers, HTML tag matching, and expression validation. Key: return not stack at the end, not True.</aside>
+    </section>
+
+    <!-- Slide 9: Section break — Recursion -->
+    <section class="slide section-break" data-slide="9">
+      <h2>🔁 Recursion</h2>
+      <p>Divide &amp; Conquer · Backtracking · Memoization</p>
+      <aside class="notes">Recursion is the mental model for trees, graphs, divide-and-conquer algorithms, and backtracking. If you can write a recursive function without a whiteboard, you're ahead of 70% of candidates.</aside>
+    </section>
+
+    <!-- Slide 10: Recursion patterns -->
+    <section class="slide" data-slide="10">
+      <h3><span class="tag tag-yellow">Recursion</span> The Three Laws</h3>
+      <div class="grid-3">
+        <div class="card accent-a">
+          <h4>1. Base Case</h4>
+          <p style="font-size: 14px;">The simplest input — return without recursing. Without this, infinite recursion.</p>
+          <pre style="font-size: 13px; margin-top: 6px;"><code><span style="color:#8b949e;"># Fibonacci base</span>
+if n &lt;= 1: return n</code></pre>
+        </div>
+        <div class="card accent-b">
+          <h4>2. Recursive Leap</h4>
+          <p style="font-size: 14px;">Assume the function works for smaller inputs. Call it with a reduced problem.</p>
+          <pre style="font-size: 13px; margin-top: 6px;"><code>return fib(n-1) + fib(n-2)</code></pre>
+        </div>
+        <div class="card accent-c">
+          <h4>3. Combine Results</h4>
+          <p style="font-size: 14px;">Merge subproblem answers into the final answer.</p>
+          <pre style="font-size: 13px; margin-top: 6px;"><code><span style="color:#8b949e;"># Tree height</span>
+1 + max(left_h, right_h)</code></pre>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top: 12px;">
+        <p style="font-size: 15px;"><strong style="color: var(--fg);">Recursive leap of faith:</strong> Don't trace through all calls. Verify the base case, then trust that your recursive call returns the right answer for a smaller input.</p>
+      </div>
+      <aside class="notes">The recursive leap of faith is the hardest concept for new programmers. Your brain wants to trace the stack. Don't. Verify the base case is correct, then trust the function. It's like induction — base case + inductive step = all cases.</aside>
+    </section>
+
+    <!-- Slide 11: Backtracking -->
+    <section class="slide" data-slide="11">
+      <h3><span class="tag tag-yellow">Recursion</span> Backtracking — Explore, Try, Undo</h3>
+      <p style="font-size: 15px; margin-bottom: 8px;">Template for permutation / combination / subset problems.</p>
+      <pre><code><span style="color:#58a6ff;">def subsets</span>(nums):
+    res = []
+
+    <span style="color:#58a6ff;">def backtrack</span>(start, path):
+        res.append(path[:])     <span style="color:#8b949e;"># snapshot of current path</span>
+        for i in range(start, len(nums)):
+            path.append(nums[i])        <span style="color:#8b949e;"># choose</span>
+            backtrack(i + 1, path)      <span style="color:#8b949e;"># explore</span>
+            path.pop()                  <span style="color:#8b949e;"># undo (backtrack)</span>
+
+    backtrack(0, [])
+    return res
+
+<span style="color:#8b949e;"># nums = [1,2,3] → [[],[1],[1,2],[1,2,3],[1,3],[2],[2,3],[3]]</span></code></pre>
+      <p style="font-size: 14px; color: var(--fg2);">Variations: permutations (use visited set), combinations (k-sized), combination sum (with repeat).</p>
+      <aside class="notes">Backtracking is DFS on a decision tree. The template is always: add candidate → recurse → remove candidate. The res.append(path[:]) — the slice copy — is the most common bug. Without [:] you append a reference that keeps mutating.</aside>
+    </section>
+
+    <!-- Slide 12: Memoization -->
+    <section class="slide" data-slide="12">
+      <h3><span class="tag tag-yellow">Recursion</span> Memoization — Don't Recompute</h3>
+      <p style="font-size: 15px; margin-bottom: 8px;">Cache results of expensive recursive calls. Top-down DP in disguise.</p>
+      <div class="grid-2">
+        <div>
+          <pre><code><span style="color:#58a6ff;">def fib_memo</span>(n, memo={}):
+    if n in memo:
+        return memo[n]
+    if n &lt;= 1:
+        return n
+    memo[n] = fib_memo(n-1, memo) + fib_memo(n-2, memo)
+    return memo[n]</code></pre>
+          <p style="font-size: 13px; color: var(--fg2);">O(n) time vs O(2ⁿ) naive. The cache turns exponential into linear.</p>
+        </div>
+        <div>
+          <div class="card accent-c">
+            <p><strong style="color: var(--fg);">When to memoize:</strong></p>
+            <ul>
+              <li>Overlapping subproblems</li>
+              <li>Same inputs computed multiple times</li>
+              <li>Optimal substructure exists</li>
+            </ul>
+            <p style="margin-top: 8px;"><strong style="color: var(--fg);">Pattern:</strong> Pass memo as dict parameter. Check before compute. Store after compute.</p>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">Memoization is the bridge from recursion to dynamic programming. Start with recursive, add a cache. If the cache keys can be sorted into a table, you have a DP problem. Practice: climb stairs, coin change, edit distance.</aside>
+    </section>
+
+    <!-- Slide 13: Practice exercises -->
+    <section class="slide" data-slide="13">
+      <h2>✏️ Practice Problems — Re-solve</h2>
+      <p style="font-size: 15px; margin-bottom: 12px;">Set a timer for each. Don't look at solutions for the first 8 minutes.</p>
+      <div class="grid-3">
+        <div class="card accent-a">
+          <h4>🌳 Tree</h4>
+          <p style="font-size: 14px;">Given BST, find the lowest common ancestor (LCA) of two nodes.</p>
+          <div class="exercise-hint">
+            <strong>Hint:</strong> In a BST, LCA is the first node where the two target values split — one on left, one on right.
+          </div>
+          <button class="btn-reveal" onclick="toggleSolution('sol-tree')">Show solution</button>
+          <div id="sol-tree" class="solution-box">
+<pre style="font-size: 13px;">def lca(root, p, q):
+    while root:
+        if p.val &lt; root.val and q.val &lt; root.val:
+            root = root.left
+        elif p.val > root.val and q.val > root.val:
+            root = root.right
+        else:
+            return root</pre>
+          </div>
+        </div>
+        <div class="card accent-b">
+          <h4>📚 Stack</h4>
+          <p style="font-size: 14px;">Given array, return array where each element is the number of consecutive smaller elements before it (stock span).</p>
+          <div class="exercise-hint">
+            <strong>Hint:</strong> Monotonic decreasing stack of (value, span). When you pop, accumulate span.
+          </div>
+          <button class="btn-reveal" onclick="toggleSolution('sol-stack')">Show solution</button>
+          <div id="sol-stack" class="solution-box">
+<pre style="font-size: 13px;">def stock_span(prices):
+    res, stack = [], []
+    for p in prices:
+        span = 1
+        while stack and stack[-1][0] &lt;= p:
+            span += stack.pop()[1]
+        stack.append((p, span))
+        res.append(span)
+    return res</pre>
+          </div>
+        </div>
+        <div class="card accent-c">
+          <h4>🔁 Recursion</h4>
+          <p style="font-size: 14px;">Generate all valid combinations of n pairs of parentheses.</p>
+          <div class="exercise-hint">
+            <strong>Hint:</strong> Backtrack with open and close counters. Only add '(' if open &lt; n, only add ')' if close &lt; open.
+          </div>
+          <button class="btn-reveal" onclick="toggleSolution('sol-recur')">Show solution</button>
+          <div id="sol-recur" class="solution-box">
+<pre style="font-size: 13px;">def generate_parentheses(n):
+    res = []
+    def backtrack(s, open_c, close_c):
+        if len(s) == 2 * n:
+            res.append(s)
+            return
+        if open_c &lt; n:
+            backtrack(s + '(', open_c + 1, close_c)
+        if close_c &lt; open_c:
+            backtrack(s + ')', open_c, close_c + 1)
+    backtrack('', 0, 0)
+    return res</pre>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">These three problems cover tree property exploitation, monotonic stack, and recursive backtracking — three core patterns. The goal is to solve each in under 10 minutes without hints. Track your times.</aside>
+    </section>
+
+    <!-- Slide 14: Flashcards & spaced repetition -->
+    <section class="slide" data-slide="14">
+      <h2>🧠 Flashcards — Spaced Repetition</h2>
+      <p style="font-size: 15px; margin-bottom: 12px;">Run through these mental flash cards. Cover the answer and recall.</p>
+      <div class="grid-2">
+        <div>
+          <div class="card accent-a" style="margin-bottom: 10px;">
+            <h4>Inorder of BST → ?</h4>
+            <p style="font-size: 14px; color: var(--fg2);">Sorted ascending array</p>
+          </div>
+          <div class="card accent-a" style="margin-bottom: 10px;">
+            <h4>Monotonic decreasing stack → ?</h4>
+            <p style="font-size: 14px; color: var(--fg2);">Next greater element</p>
+          </div>
+          <div class="card accent-a" style="margin-bottom: 10px;">
+            <h4>Backtracking time complexity for subsets?</h4>
+            <p style="font-size: 14px; color: var(--fg2);">O(2ⁿ × n)</p>
+          </div>
+        </div>
+        <div>
+          <div class="card accent-b" style="margin-bottom: 10px;">
+            <h4>Tree BFS uses which data structure?</h4>
+            <p style="font-size: 14px; color: var(--fg2);">Queue (deque)</p>
+          </div>
+          <div class="card accent-b" style="margin-bottom: 10px;">
+            <h4>Stack DFS iteration: inorder?</h4>
+            <p style="font-size: 14px; color: var(--fg2);">while curr or stack: push left, pop, go right</p>
+          </div>
+          <div class="card accent-b" style="margin-bottom: 10px;">
+            <h4>Recursive leap of faith means?</h4>
+            <p style="font-size: 14px; color: var(--fg2);">Trust the function for smaller input</p>
+          </div>
+        </div>
+      </div>
+      <div class="exercise-hint" style="margin-top: 8px;">
+        <strong>Spaced repetition tip:</strong> Re-test these cards tomorrow, then in 3 days, then a week. Each retrieval strengthens the memory.
+      </div>
+      <aside class="notes">Spaced repetition is the most effective study technique for interview prep. If you can't recall a concept instantly, it goes back into the "review tomorrow" pile. Use Anki or a paper box system.</aside>
+    </section>
+
+    <!-- Slide 15: Summary -->
+    <section class="slide" data-slide="15">
+      <h2>📌 Key Takeaways</h2>
+      <p style="font-size: 15px; margin-bottom: 16px;">Three things to remember from today's session.</p>
+      <div class="recap-item">
+        <div class="recap-num green">1</div>
+        <div>
+          <p style="font-size: 17px; color: var(--fg);"><strong>Trees → Traversal</strong></p>
+          <p style="font-size: 15px;">Master the recursive template (just move the visit line) and the iterative stack pattern (push all left, pop &amp; visit, go right). BFS = deque + level_size.</p>
+        </div>
+      </div>
+      <div class="recap-item">
+        <div class="recap-num blue">2</div>
+        <div>
+          <p style="font-size: 17px; color: var(--fg);"><strong>Stacks → Monotonic</strong></p>
+          <p style="font-size: 15px;">O(n) "next greater element" by maintaining a decreasing stack of indices. Same pattern extends to rain water, histogram, daily temps.</p>
+        </div>
+      </div>
+      <div class="recap-item">
+        <div class="recap-num yellow">3</div>
+        <div>
+          <p style="font-size: 17px; color: var(--fg);"><strong>Recursion → Trust the Leap</strong></p>
+          <p style="font-size: 15px;">Base case + recursive call that works for smaller input + combine. Backtracking: choose → explore → undo. Memoize overlapping subproblems.</p>
+        </div>
+      </div>
+      <aside class="notes">Recap: 1) Trees — three traversals from one template. 2) Stacks — monotonic pattern for O(n) comparisons. 3) Recursion — leap of faith, backtracking, memoization. Re-solve these in 3 days to cement them.</aside>
+    </section>
+
+    <!-- Slide 16: Next steps -->
+    <section class="slide" data-slide="16">
+      <h2>🚀 Next Steps</h2>
+      <p style="font-size: 15px; margin-bottom: 16px;">What to do between now and the next session.</p>
+      <div class="grid-2">
+        <div class="card accent-a">
+          <h4>Tonight</h4>
+          <ul>
+            <li>Re-solve the 3 practice problems without hints</li>
+            <li>Run through flashcards (cover → recall → check)</li>
+            <li>Time yourself on each solution — target &lt; 8 min</li>
+          </ul>
+        </div>
+        <div class="card accent-b">
+          <h4>This Week</h4>
+          <ul>
+            <li>LeetCode: Daily Temperatures (739), LCA (235/236), Generate Parens (22)</li>
+            <li>Revisit Project 3 code — identify tree-like data patterns</li>
+            <li>Prepare for Project 5 (Full-Stack) — Week 12 target</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top: 16px; background: rgba(88,166,255,0.06); border: 1px solid rgba(88,166,255,0.2); border-radius: 8px; padding: 14px 18px;">
+        <p style="font-size: 14px;"><strong style="color: var(--accent);">📈 Milestone tracker:</strong></p>
+        <div class="timeline" style="margin-top: 8px;">
+          <div class="timeline-item done">
+            <span class="tl-week">Week 3</span>
+            <span class="tl-label">Project 1: CLI Todo List ✓</span>
+          </div>
+          <div class="timeline-item done">
+            <span class="tl-week">Week 6</span>
+            <span class="tl-label">Project 2: Bookmark Saver ✓</span>
+          </div>
+          <div class="timeline-item done">
+            <span class="tl-week">Week 8</span>
+            <span class="tl-label">Project 3: Weather Dashboard ✓</span>
+          </div>
+          <div class="timeline-item" style="opacity: 0.5;">
+            <span class="tl-week">Week 12</span>
+            <span class="tl-label">Project 5: Full-Stack App</span>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">The next milestone is Project 5 at Week 12. These review sessions are the mechanical foundation you'll need for full-stack work — data flows through trees (DOM, routing) and stacks (history, middleware). Keep practicing.</aside>
+    </section>
+
+    <!-- Slide 17: Closing -->
+    <section class="slide title-slide" data-slide="17">
+      <h1>Good Work Today</h1>
+      <p class="subtitle">Trees · Stacks · Recursion — re-solved and reinforced</p>
+      <p style="color: var(--fg2); margin-top: 16px; font-size: 16px;">See you next session — keep the flashcards handy</p>
+      <p style="font-size: 14px; color: var(--fg2); margin-top: 24px;">Last updated: 2026-07-19</p>
+      <aside class="notes">Great session today. The key to mastery is re-solving — not recognizing, not reading the solution, but typing it from memory. If you can write inorder traversal without thinking, you're ready. See you next time.</aside>
+    </section>
+
+    <!-- Progress bar -->
+    <div id="progress" style="width: 5.56%;"></div>
+    <div id="counter">1 / 18</div>
+    <button id="notes-toggle" onclick="toggleNotes()">📝 Notes</button>
+    <div id="notes-panel"></div>
+  </div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+function updateSlide() {
+  slides.forEach((s, i) => {
+    s.classList.toggle('active', i === current);
+  });
+  document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+  document.getElementById('counter').textContent = (current + 1) + ' / ' + total;
+  location.hash = current;
+  updateNotes();
+}
+
+function toggleNotes() {
+  document.getElementById('notes-panel').classList.toggle('visible');
+}
+
+function updateNotes() {
+  const notes = slides[current].querySelector('.notes');
+  const panel = document.getElementById('notes-panel');
+  if (notes && document.getElementById('notes-panel').classList.contains('visible')) {
+    panel.innerHTML = '<strong>Speaker notes:</strong><br>' + notes.textContent.trim();
+  }
+}
+
+function toggleSolution(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('visible');
+  const btn = el.previousElementSibling;
+  btn.textContent = el.classList.contains('visible') ? 'Hide solution' : 'Show solution';
+}
+
+// Hash-based navigation
+window.addEventListener('hashchange', () => {
+  const idx = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(idx) && idx >= 0 && idx < total) {
+    current = idx;
+    updateSlide();
+  }
+});
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    if (current < total - 1) { current++; updateSlide(); }
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (current > 0) { current--; updateSlide(); }
+  } else if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) {
+      document.getElementById('viewport').requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  } else if (e.key === 'n' || e.key === 'N') {
+    toggleNotes();
+  }
+});
+
+// Restore from hash on load
+if (location.hash) {
+  const idx = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(idx) && idx >= 0 && idx < total) {
+    current = idx;
+  }
+}
+updateSlide();
+</script>
+</body>
+</html>
