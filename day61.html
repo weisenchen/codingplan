@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 61 — LeetCode Easy Sprint (Part 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --orange: #d29922;
+  --pink: #f778ba;
+  --red: #f85149;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --slide-w: min(calc(100vw - 48px), 1280px);
+  --slide-h: calc(var(--slide-w) * 9 / 16);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #010409;
+  color: var(--text);
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+#deck {
+  position: relative;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  padding: 48px 56px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* scrollbar */
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* progress bar */
+#progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  z-index: 20;
+}
+
+#counter {
+  position: absolute;
+  bottom: 12px;
+  right: 24px;
+  color: var(--text2);
+  font-size: 13px;
+  font-family: var(--mono);
+  z-index: 20;
+}
+
+/* Title slide */
+.slide.title {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.slide.title h1 {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.slide.title .subtitle {
+  font-size: 22px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.slide.title .meta {
+  font-size: 15px;
+  color: var(--text2);
+  font-family: var(--mono);
+  margin-top: 4px;
+}
+.slide.title .badge {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--accent);
+  font-size: 14px;
+  font-family: var(--mono);
+  border: 1px solid var(--border);
+}
+
+/* section break */
+.slide.section {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.slide.section h2 {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Headers */
+h2 { font-size: 28px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+h3 { font-size: 20px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+
+p, li { font-size: 17px; line-height: 1.65; color: var(--text2); }
+p { margin-bottom: 12px; }
+
+ul { list-style: none; margin-bottom: 12px; }
+ul li { padding-left: 24px; position: relative; margin-bottom: 6px; }
+ul li::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 11px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+ol { margin-bottom: 12px; padding-left: 24px; }
+ol li { font-size: 17px; line-height: 1.65; color: var(--text2); margin-bottom: 6px; }
+
+/* Code */
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+pre .kw { color: var(--pink); }
+pre .fn { color: var(--accent); }
+pre .str { color: var(--accent2); }
+pre .cm { color: var(--text2); font-style: italic; }
+pre .num { color: var(--orange); }
+pre .op { color: var(--red); }
+
+code.inline {
+  background: var(--surface);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--pink);
+}
+
+/* Problem card */
+.problem {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.problem .title { font-size: 18px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+.problem .diff { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 10px; background: rgba(63,185,80,0.15); color: var(--accent2); font-family: var(--mono); }
+.problem .diff.med { background: rgba(210,153,34,0.15); color: var(--orange); }
+.problem p { font-size: 15px; margin-bottom: 6px; }
+
+/* Columns */
+.columns { display: flex; gap: 20px; flex: 1; min-height: 0; }
+.columns > * { flex: 1; }
+
+/* Callout */
+.callout {
+  background: var(--surface2);
+  border-left: 3px solid var(--orange);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 14px;
+}
+.callout p { font-size: 15px; margin-bottom: 0; color: var(--text); }
+.callout strong { color: var(--orange); }
+
+/* Hint reveal box */
+.hint-box {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  color: var(--text2);
+  font-size: 15px;
+}
+
+/* Two-column code + explanation */
+.code-explain { display: flex; gap: 20px; flex: 1; min-height: 0; }
+.code-explain pre { flex: 1; margin-bottom: 0; }
+.code-explain .explain { flex: 1; }
+
+/* Layout fillers */
+.spacer { flex: 1; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  #deck { width: 100vw; height: 56.25vw; border-radius: 0; }
+  .slide { padding: 24px 20px; }
+  .slide.title h1 { font-size: 28px; }
+  .slide.title .subtitle { font-size: 16px; }
+  h2 { font-size: 20px; }
+  p, li { font-size: 14px; }
+  pre { font-size: 12px; padding: 12px; }
+  .columns { flex-direction: column; gap: 10px; }
+  .code-explain { flex-direction: column; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+@media print {
+  body { background: #fff; }
+  #deck { width: 100%; height: auto; border-radius: 0; box-shadow: none; }
+  .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 50vh; padding: 40px; }
+  #progress, #counter { display: none; }
+  .slide.title { background: #fff; }
+  .slide.title h1 { -webkit-text-fill-color: #1a1a2e; }
+  pre { background: #f5f5f5; border-color: #ddd; }
+  .problem { border-color: #ddd; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title active" data-slide="0">
+  <div class="spacer"></div>
+  <h1>LeetCode Easy Sprint</h1>
+  <div class="subtitle">Part 1 — 5 Problems in 50 Minutes</div>
+  <div class="meta">Day 61 · Week 11 · Phase IV</div>
+  <div class="badge">⚡ 10 min per problem</div>
+  <div class="spacer"></div>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>🎯 Today's Mission</h2>
+  <p>Five LeetCode Easy problems. Ten minutes each. No distractions.</p>
+  <div class="grid-2">
+    <div class="problem">
+      <div class="title">① Two Sum</div>
+      <div class="diff">Easy</div>
+      <p>Hash map lookup — the classic interview opener.</p>
+    </div>
+    <div class="problem">
+      <div class="title">② Reverse Linked List</div>
+      <div class="diff">Easy</div>
+      <p>Pointer manipulation — iterative &amp; recursive.</p>
+    </div>
+    <div class="problem">
+      <div class="title">③ Valid Parentheses</div>
+      <div class="diff">Easy</div>
+      <p>Stack-based parsing — bracket matching.</p>
+    </div>
+    <div class="problem">
+      <div class="title">④ Maximum Depth</div>
+      <div class="diff">Easy</div>
+      <p>Binary tree recursion — BFS &amp; DFS.</p>
+    </div>
+    <div class="problem" style="grid-column: 1 / -1;">
+      <div class="title">⑤ FizzBuzz</div>
+      <div class="diff">Easy</div>
+      <p>Conditional logic — don't overthink it.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>⏱ Format:</strong> Read → Think → Code → Test. If stuck after 7 min, peek at the hint. No silent staring.</p>
+  </div>
+</section>
+
+<!-- SLIDE 2: Strategy -->
+<section class="slide" data-slide="2">
+  <h2>⚡ Sprint Strategy</h2>
+  <ol>
+    <li><strong>Read</strong> (30s) — Understand input, output, edge cases.</li>
+    <li><strong>Think</strong> (2 min) — Brainstorm brute force, then optimize.</li>
+    <li><strong>Write</strong> (5 min) — Type clean, readable code.</li>
+    <li><strong>Test</strong> (2.5 min) — Run the examples + one edge case.</li>
+  </ol>
+  <div style="margin-top: 8px;"></div>
+  <h3>Three Rules</h3>
+  <ul>
+    <li><strong>No phone.</strong> Notifications off. Full focus.</li>
+    <li><strong>No IDE sugar.</strong> No autocomplete, no AI. Pen &amp; paper vibes.</li>
+    <li><strong>Verbose &gt; Clever.</strong> Write code a teammate can read at 2 AM.</li>
+  </ul>
+  <div class="callout" style="margin-top: 10px;">
+    <p><strong>🧠 Mindset:</strong> Ten minutes is <em>generous</em> for Easy. The goal is speed + correctness, not elegance. Ship it clean, move on.</p>
+  </div>
+</section>
+
+<!-- SLIDE 3: Two Sum -->
+<section class="slide" data-slide="3">
+  <h2>① Two Sum</h2>
+  <p>Given an array of integers <code class="inline">nums</code> and a target <code class="inline">target</code>, return indices of the two numbers that add up to target.</p>
+  <div class="code-explain">
+    <pre><span class="kw">def</span> <span class="fn">twoSum</span>(nums, target):
+    seen = {}                 <span class="cm"># val → index</span>
+    <span class="kw">for</span> i, n <span class="kw">in</span> <span class="fn">enumerate</span>(nums):
+        diff = target - n
+        <span class="kw">if</span> diff <span class="kw">in</span> seen:
+            <span class="kw">return</span> [seen[diff], i]
+        seen[n] = i
+    <span class="kw">return</span> []</pre>
+    <div class="explain">
+      <p><strong>Key insight:</strong> For each number, check if its complement already exists in the hash map. One pass — O(n) time, O(n) space.</p>
+      <p><strong>Edge cases:</strong> No solution (return <code class="inline">[]</code>), negative numbers, duplicates.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>💡 Tip:</strong> Store the <em>value</em> as key, <em>index</em> as value. Don't forget to check <code class="inline">diff in seen</code> <em>before</em> inserting.</p>
+  </div>
+</section>
+
+<!-- SLIDE 4: Reverse Linked List -->
+<section class="slide" data-slide="4">
+  <h2>② Reverse Linked List</h2>
+  <p>Reverse a singly linked list. Return the new head.</p>
+  <div class="code-explain">
+    <pre><span class="kw">def</span> <span class="fn">reverseList</span>(head):
+    prev = <span class="kw">None</span>
+    curr = head
+    <span class="kw">while</span> curr:
+        nxt = curr.next      <span class="cm"># save next</span>
+        curr.next = prev     <span class="cm"># reverse pointer</span>
+        prev = curr          <span class="cm"># move prev forward</span>
+        curr = nxt           <span class="cm"># move curr forward</span>
+    <span class="kw">return</span> prev</pre>
+    <div class="explain">
+      <p><strong>Three-pointer technique:</strong> <code class="inline">prev</code>, <code class="inline">curr</code>, <code class="inline">nxt</code>. Walk the list, flip each arrow backward.</p>
+      <p><strong>Edge cases:</strong> Empty list (head is <code class="inline">None</code>), single node.</p>
+      <p><strong>Recursive version</strong> also works — but iterative is faster and less stack-prone.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>💡 Tip:</strong> Trace with a 3-node list on paper. Watch how <code class="inline">prev</code> ends up at the old tail (the new head).</p>
+  </div>
+</section>
+
+<!-- SLIDE 5: Valid Parentheses -->
+<section class="slide" data-slide="5">
+  <h2>③ Valid Parentheses</h2>
+  <p>Given a string containing <code class="inline">(){}[]</code>, determine if it's valid — every open bracket has a matching close in the correct order.</p>
+  <div class="code-explain">
+    <pre>pairs = {<span class="str">')'</span>: <span class="str">'('</span>, <span class="str">'}'</span>: <span class="str">'{'</span>, <span class="str">']'</span>: <span class="str">'['</span>}
+
+<span class="kw">def</span> <span class="fn">isValid</span>(s):
+    stack = []
+    <span class="kw">for</span> ch <span class="kw">in</span> s:
+        <span class="kw">if</span> ch <span class="kw">in</span> pairs:          <span class="cm"># closing bracket</span>
+            <span class="kw">if</span> <span class="kw">not</span> stack <span class="kw">or</span> \
+               stack.pop() != pairs[ch]:
+                <span class="kw">return</span> <span class="kw">False</span>
+        <span class="kw">else</span>:
+            stack.append(ch)    <span class="cm"># opening bracket</span>
+    <span class="kw">return</span> <span class="kw">not</span> stack</pre>
+    <div class="explain">
+      <p><strong>Stack invariant:</strong> Push opens, pop and match on closes. Empty stack at the end = valid.</p>
+      <p><strong>Edge cases:</strong> Single char <code class="inline">"("</code>, mismatched <code class="inline">"(]"</code>, nested <code class="inline">"{[]}"</code>.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>💡 Tip:</strong> Use a dict to map close → open for clean matching. <code class="inline">not stack</code> at the end handles unclosed brackets.</p>
+  </div>
+</section>
+
+<!-- SLIDE 6: Max Depth & FizzBuzz -->
+<section class="slide" data-slide="6">
+  <h2>④⑤ Max Depth + FizzBuzz</h2>
+  <div class="columns">
+    <div>
+      <h3>Max Depth of Binary Tree</h3>
+      <pre><span class="kw">def</span> <span class="fn">maxDepth</span>(root):
+    <span class="kw">if</span> <span class="kw">not</span> root:
+        <span class="kw">return</span> <span class="num">0</span>
+    left = <span class="fn">maxDepth</span>(root.left)
+    right = <span class="fn">maxDepth</span>(root.right)
+    <span class="kw">return</span> <span class="num">1</span> + <span class="fn">max</span>(left, right)</pre>
+      <p>Post-order traversal. Empty node = depth 0. Add 1 for the current node. O(n).</p>
+      <p><strong>BFS alternative:</strong> Level-order with a queue — also O(n).</p>
+    </div>
+    <div>
+      <h3>FizzBuzz</h3>
+      <pre><span class="kw">def</span> <span class="fn">fizzBuzz</span>(n):
+    res = []
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, n + <span class="num">1</span>):
+        s = <span class="str">""</span>
+        <span class="kw">if</span> i % <span class="num">3</span> == <span class="num">0</span>: s += <span class="str">"Fizz"</span>
+        <span class="kw">if</span> i % <span class="num">5</span> == <span class="num">0</span>: s += <span class="str">"Buzz"</span>
+        <span class="kw">if</span> <span class="kw">not</span> s: s = <span class="fn">str</span>(i)
+        res.append(s)
+    <span class="kw">return</span> res</pre>
+      <p>String concatenation avoids duplicate divisibility checks. Clean and extensible.</p>
+      <p><strong>Edge case:</strong> <code class="inline">n = 0</code> → empty list.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 7: Timed Sprint Practice -->
+<section class="slide" data-slide="7">
+  <h2>⏱ Timed Sprint</h2>
+  <p>Start a <strong>50-minute timer</strong> now. Solve all 5 problems in order.</p>
+  <div class="grid-2">
+    <div class="problem">
+      <div class="title">① Two Sum</div>
+      <p>Input: <code class="inline">[2,7,11,15]</code>, target <code class="inline">9</code> → <code class="inline">[0,1]</code></p>
+    </div>
+    <div class="problem">
+      <div class="title">② Reverse Linked List</div>
+      <p>Input: <code class="inline">1→2→3→4→5</code> → <code class="inline">5→4→3→2→1</code></p>
+    </div>
+    <div class="problem">
+      <div class="title">③ Valid Parentheses</div>
+      <p>Input: <code class="inline">"()[]{}"</code> → <code class="inline">True</code></p>
+    </div>
+    <div class="problem">
+      <div class="title">④ Max Depth</div>
+      <p>Tree <code class="inline">[3,9,20,null,null,15,7]</code> → depth <code class="inline">3</code></p>
+    </div>
+    <div class="problem" style="grid-column: 1 / -1;">
+      <div class="title">⑤ FizzBuzz</div>
+      <p><code class="inline">n = 15</code> → <code class="inline">["1","2","Fizz","4","Buzz",...,"FizzBuzz"]</code></p>
+    </div>
+  </div>
+  <div class="callout">
+    <p><strong>📋 After sprint:</strong> Review each solution. Did you handle edge cases? Is the code clean? Did you beat 10 min?</p>
+  </div>
+</section>
+
+<!-- SLIDE 8: Warmup Drills -->
+<section class="slide" data-slide="8">
+  <h2>🔥 Warm-Up Drills (if time allows)</h2>
+  <p>Quick variations to solidify patterns:</p>
+  <div class="hint-box">
+    <p><strong>Two Sum II:</strong> Input is <em>sorted</em>. Can you use two pointers instead of a hash map?</p>
+  </div>
+  <div class="hint-box">
+    <p><strong>Min Stack:</strong> Design a stack that supports <code class="inline">push</code>, <code class="inline">pop</code>, <code class="inline">top</code>, and <code class="inline">getMin</code> in O(1).</p>
+  </div>
+  <div class="hint-box">
+    <p><strong>Invert Binary Tree:</strong> Swap left and right children recursively — a riff on Max Depth.</p>
+  </div>
+  <div class="callout">
+    <p><strong>🎯 Goal:</strong> Each drill tests the same pattern from a new angle. Stretch your recognition muscle.</p>
+  </div>
+</section>
+
+<!-- SLICE 9: Summary -->
+<section class="slide" data-slide="9">
+  <h2>📌 Key Takeaways</h2>
+  <div class="problem" style="margin-bottom: 12px;">
+    <div class="title">Hash Map for Lookups</div>
+    <p>Two Sum taught us: trade space for speed. Hash map gives O(1) complement lookup.</p>
+  </div>
+  <div class="problem" style="margin-bottom: 12px;">
+    <div class="title">Pointer Manipulation</div>
+    <p>Reverse Linked List: <code class="inline">prev → curr → nxt</code>. The fundamental linked list choreography.</p>
+  </div>
+  <div class="problem" style="margin-bottom: 12px;">
+    <div class="title">Stack for Matching</div>
+    <p>Valid Parentheses: LIFO structure is perfect for nested/ordered pairs.</p>
+  </div>
+  <div class="problem" style="margin-bottom: 12px;">
+    <div class="title">Tree Recursion</div>
+    <p>Max Depth: post-order traversal. Every tree problem starts here.</p>
+  </div>
+  <div class="problem">
+    <div class="title">Clean Conditionals</div>
+    <p>FizzBuzz: string concatenation beats if-elif chains. Extensible.</p>
+  </div>
+  <div class="callout" style="margin-top: 10px;">
+    <p><strong>📖 Milestone check:</strong> Project 1 (CLI Todo List) ✓ after Week 3 · Project 2 (Bookmark Saver) ✓ after Week 6 · Project 3 (Weather Dashboard) ✓ after Week 8 · <strong>Next: Project 5 (Full-Stack) after Week 12</strong></p>
+  </div>
+</section>
+
+</div>
+
+<div id="progress" style="width: 10%;"></div>
+<div id="counter">1 / 10</div>
+
+<script>
+(function() {
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var current = 0;
+  var progress = document.getElementById('progress');
+  var counter = document.getElementById('counter');
+
+  function showSlide(n) {
+    if (n < 0) n = 0;
+    if (n >= total) n = total - 1;
+    slides.forEach(function(s, i) {
+      s.classList.toggle('active', i === n);
+    });
+    current = n;
+    progress.style.width = ((n + 1) / total * 100) + '%';
+    counter.textContent = (n + 1) + ' / ' + total;
+    location.hash = '#' + n;
+  }
+
+  function nextSlide() { showSlide(current + 1); }
+  function prevSlide() { showSlide(current - 1); }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      prevSlide();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      // toggle speaker notes (none for this deck)
+    }
+  });
+
+  // touch support
+  var touchStartX = 0;
+  var deck = document.getElementById('deck');
+  deck.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  deck.addEventListener('touchend', function(e) {
+    var diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) nextSlide();
+      else prevSlide();
+    }
+  });
+
+  // restore hash
+  if (location.hash) {
+    var n = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(n) && n >= 0 && n < total) showSlide(n);
+  }
+
+  // initial counter
+  showSlide(0);
+})();
+</script>
+
+</body>
+</html>
