@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 62 — LeetCode Easy Sprint (Part 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d14;
+  --bg-card: #15151f;
+  --bg-code: #1a1a28;
+  --fg: #e0e0f0;
+  --fg-dim: #8888a0;
+  --accent: #5fc9f8;
+  --accent-dim: #3a7ca8;
+  --green: #5cf8a8;
+  --yellow: #f8d85c;
+  --orange: #f89a5c;
+  --red: #f85c6c;
+  --border: #282840;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --slide-w: min(100vw, 177.78vh);
+  --slide-h: min(56.25vw, 100vh);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #08080e;
+  font-family: var(--font-sans);
+  color: var(--fg);
+}
+.deck {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.slide {
+  position: absolute;
+  width: var(--slide-w); height: var(--slide-h);
+  max-width: 100vw; max-height: 100vh;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 5vh 6vw;
+  display: flex; flex-direction: column; gap: 2vh;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+
+/* Slide numbering */
+.progress {
+  position: absolute; bottom: 1.5vh; right: 2vw;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--fg-dim);
+  letter-spacing: 0.05em;
+}
+
+/* Progress bar */
+.pbar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--border);
+}
+.pbar-inner {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 0.35s ease;
+}
+
+/* Typography */
+h1 {
+  font-family: var(--font-sans); font-weight: 800; font-size: clamp(2rem, 5vh, 4rem);
+  color: var(--fg); letter-spacing: -0.02em;
+  margin: 0;
+}
+h2 {
+  font-family: var(--font-sans); font-weight: 600; font-size: clamp(1.3rem, 3vh, 2.2rem);
+  color: var(--accent); letter-spacing: -0.01em;
+  margin: 0;
+}
+h3 {
+  font-family: var(--font-sans); font-weight: 600; font-size: clamp(1rem, 2.5vh, 1.5rem);
+  color: var(--fg); margin: 0 0 0.5vh 0;
+}
+.subtitle {
+  font-size: clamp(0.9rem, 2vh, 1.3rem);
+  color: var(--fg-dim);
+  margin-top: -0.5vh;
+}
+p, li { font-size: clamp(0.85rem, 2vh, 1.15rem); line-height: 1.6; color: var(--fg-dim); }
+p { margin: 0.3vh 0; }
+ul { list-style: none; padding: 0; margin: 0.5vh 0; }
+li { padding: 0.2vh 0 0.2vh 1.8em; position: relative; }
+li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
+code, pre {
+  font-family: var(--font-mono);
+  font-size: clamp(0.7rem, 1.6vh, 0.95rem);
+}
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.2vh 1.5vw;
+  overflow-x: auto;
+  margin: 0.5vh 0;
+  line-height: 1.5;
+  color: var(--fg);
+  flex-shrink: 0;
+}
+pre .kw { color: var(--accent); }
+pre .fn { color: var(--green); }
+pre .str { color: var(--yellow); }
+pre .num { color: var(--orange); }
+pre .cm { color: #5a5a7a; font-style: italic; }
+pre .op { color: #c8a0e8; }
+pre .hl { background: rgba(95,201,248,0.12); display: inline-block; width: 100%; }
+
+/* Title slide */
+.slide.title { justify-content: center; align-items: center; text-align: center; gap: 1vh; }
+.slide.title h1 { font-size: clamp(2.2rem, 5.5vh, 4.5rem); }
+.slide.title .meta { margin-top: 2vh; color: var(--fg-dim); font-size: clamp(0.85rem, 1.8vh, 1.1rem); font-family: var(--font-mono); }
+.slide.title .badge {
+  display: inline-block;
+  padding: 0.4vh 1.5vw;
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: clamp(0.65rem, 1.4vh, 0.85rem);
+  margin-bottom: 1.5vh;
+}
+
+/* Section break */
+.slide.section-break { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #0d0d14 0%, #14142a 100%); }
+.slide.section-break h2 { font-size: clamp(1.5rem, 4vh, 3rem); color: var(--fg); }
+
+/* Two-column layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; flex: 1; min-height: 0; }
+
+/* Tags */
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: clamp(0.55rem, 1.2vh, 0.75rem);
+  padding: 0.15vh 0.6vw;
+  border-radius: 4px;
+  margin: 0 0.3vw 0.3vh 0;
+}
+.tag.easy { background: rgba(92,248,168,0.15); color: var(--green); border: 1px solid rgba(92,248,168,0.3); }
+.tag.dif { background: rgba(95,201,248,0.12); color: var(--accent); border: 1px solid rgba(95,201,248,0.25); }
+
+/* Steps */
+.steps { counter-reset: step; list-style: none; padding: 0; }
+.steps li { counter-increment: step; padding-left: 2.5em; position: relative; margin-bottom: 0.6vh; }
+.steps li::before {
+  content: counter(step);
+  position: absolute; left: 0;
+  width: 1.6em; height: 1.6em;
+  background: var(--accent); color: var(--bg);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: clamp(0.6rem, 1.3vh, 0.8rem);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
+
+/* Hint / solution reveal */
+.reveal { margin-top: 0.8vh; }
+.reveal summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: clamp(0.65rem, 1.4vh, 0.85rem);
+  color: var(--accent);
+  padding: 0.3vh 0;
+}
+.reveal summary:hover { color: var(--green); }
+.reveal .solution {
+  margin-top: 0.6vh;
+  padding: 0.8vh 1vw;
+  background: var(--bg-code);
+  border-left: 3px solid var(--accent-dim);
+  border-radius: 0 4px 4px 0;
+}
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: clamp(0.7rem, 1.5vh, 0.9rem); margin: 0.5vh 0; }
+th, td { padding: 0.6vh 1vw; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--accent); font-weight: 600; font-family: var(--font-mono); }
+td { color: var(--fg-dim); }
+
+/* Highlights */
+.highlight { color: var(--green); font-weight: 600; }
+.accent { color: var(--accent); }
+
+/* Key takeaway */
+.key-box {
+  background: rgba(95,201,248,0.08);
+  border: 1px solid rgba(95,201,248,0.25);
+  border-radius: 8px;
+  padding: 1.5vh 2vw;
+  margin-top: 0.5vh;
+}
+.key-box p { color: var(--fg); }
+
+/* Complexity badge */
+.cplx {
+  font-family: var(--font-mono);
+  font-size: clamp(0.6rem, 1.3vh, 0.8rem);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2vh 0.6vw;
+  display: inline-block;
+  margin: 0.1vh 0.2vw;
+  color: var(--fg-dim);
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 3vh 4vw; overflow-y: auto; }
+  .two-col { grid-template-columns: 1fr; gap: 1vh; }
+  pre { font-size: clamp(0.6rem, 2vw, 0.8rem); }
+}
+</style>
+</head>
+<body>
+
+<div class="deck" role="main" aria-label="Slide deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title" data-slide="0">
+  <div class="badge">90-Day Co-op Prep · Phase IV · Week 11</div>
+  <h1>LeetCode Easy Sprint<br><span style="color:var(--accent)">Part 2</span></h1>
+  <p class="subtitle" style="margin-top:1vh">5 essential problems — patterns, code, and complexity analysis</p>
+  <div class="meta">Day 62 · July 21, 2026 · ⏱ 60 min</div>
+  <div class="progress">1 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:6.7%"></div></div>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h2>📋 Today's Lineup</h2>
+  <p class="subtitle">Five LeetCode Easy problems — all frequently asked in Waterloo co-op interviews</p>
+  <div class="two-col">
+    <div>
+      <h3>Problems</h3>
+      <ul>
+        <li><span class="tag easy">Easy</span> <strong>Merge Two Sorted Lists</strong> — linked list traversal</li>
+        <li><span class="tag easy">Easy</span> <strong>Contains Duplicate</strong> — hash set pattern</li>
+        <li><span class="tag easy">Easy</span> <strong>First Unique Character</strong> — frequency map</li>
+        <li><span class="tag easy">Easy</span> <strong>Climbing Stairs</strong> — dynamic programming intro</li>
+        <li><span class="tag easy">Easy</span> <strong>Best Time to Buy/Sell</strong> — greedy / tracking</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Skills You'll Build</h3>
+      <ul>
+        <li>Linked list manipulation with dummy nodes</li>
+        <li>Hash map / set for O(n) lookups</li>
+        <li>String frequency counting</li>
+        <li>Bottom-up DP (Fibonacci pattern)</li>
+        <li>Single-pass greedy optimization</li>
+      </ul>
+      <p style="margin-top:1.5vh; font-size:clamp(0.7rem,1.4vh,0.85rem); padding:0.5vh 0.8vw; background:var(--bg-card); border-radius:6px;">
+        <span class="accent">Milestone check:</span> Project 4 (CLI habit tracker) after Week 10 ✓<br>
+        Project 5 (Full-Stack App) after Week 12 → 2 weeks away
+      </p>
+    </div>
+  </div>
+  <div class="progress">2 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:13.3%"></div></div>
+</section>
+
+<!-- SLIDE 2: Learning Objectives -->
+<section class="slide" data-slide="2">
+  <h2>🎯 Learning Objectives</h2>
+  <p class="subtitle">By the end of this session, you will be able to:</p>
+  <ul>
+    <li>Merge two sorted linked lists <span class="highlight">in-place</span> using a dummy head</li>
+    <li>Detect duplicates in an array using a <span class="highlight">hash set</span> for O(n) time</li>
+    <li>Find the first non-repeating character with a <span class="highlight">frequency map</span></li>
+    <li>Solve the climbing stairs problem using <span class="highlight">bottom-up DP</span></li>
+    <li>Find the maximum profit with a <span class="highlight">single-pass greedy</span> approach</li>
+  </ul>
+  <div class="key-box" style="margin-top:2vh">
+    <p><strong>Pattern recognition:</strong> 4 of 5 problems use hash-based lookups or tracking — the most common LeetCode Easy pattern.</p>
+  </div>
+  <div class="progress">3 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:20%"></div></div>
+</section>
+
+<!-- SLIDE 3: Merge Two Sorted Lists — Concept -->
+<section class="slide" data-slide="3">
+  <h2>🔗 Problem 1: Merge Two Sorted Lists</h2>
+  <p class="subtitle">Given two sorted linked lists, merge them into one sorted list</p>
+  <div class="two-col">
+    <div>
+      <h3>Approach: Dummy Node + Two Pointers</h3>
+      <ul>
+        <li>Create a <span class="accent">dummy head</span> node — avoids edge cases</li>
+        <li>Compare <code>l1.val</code> vs <code>l2.val</code>, append the smaller</li>
+        <li>Advance the pointer of the chosen list</li>
+        <li>When one list ends, <span class="highlight">attach the remainder</span></li>
+      </ul>
+      <p style="margin-top:1vh">
+        <span class="cplx">Time: O(n + m)</span>
+        <span class="cplx">Space: O(1)</span>
+      </p>
+    </div>
+    <div>
+      <h3>Visual</h3>
+      <pre style="font-size:clamp(0.55rem,1.1vh,0.75rem);">
+l1: 1 → 3 → 5 → 7
+l2: 2 → 4 → 6
+
+dummy → 1 → 2 → 3 → 4 → 5 → 6 → 7
+                    ↑
+               result
+</pre>
+    </div>
+  </div>
+  <div class="progress">4 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:26.7%"></div></div>
+</section>
+
+<!-- SLIDE 4: Merge Two Sorted Lists — Code -->
+<section class="slide" data-slide="4">
+  <h2>💻 Merge Two Sorted Lists — Code</h2>
+  <pre>
+<span class="kw">def</span> <span class="fn">mergeTwoLists</span>(l1: ListNode, l2: ListNode) -> ListNode:
+    dummy = ListNode()          <span class="cm"># sentinel</span>
+    curr = dummy
+
+    <span class="kw">while</span> l1 <span class="kw">and</span> l2:
+        <span class="kw">if</span> l1.val < l2.val:
+            curr.next = l1
+            l1 = l1.next
+        <span class="kw">else</span>:
+            curr.next = l2
+            l2 = l2.next
+        curr = curr.next
+
+    <span class="cm"># Attach remaining nodes</span>
+    curr.next = l1 <span class="kw">or</span> l2
+    <span class="kw">return</span> dummy.next</pre>
+  <div class="key-box">
+    <p><strong>Key insight:</strong> The dummy node eliminates the need to handle <code>head is None</code> as a special case. <code>curr.next = l1 or l2</code> handles both remainder cases in one line.</p>
+  </div>
+  <div class="progress">5 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:33.3%"></div></div>
+</section>
+
+<!-- SLIDE 5: Contains Duplicate -->
+<section class="slide" data-slide="5">
+  <h2>🔢 Problem 2: Contains Duplicate</h2>
+  <p class="subtitle">Return true if any value appears at least twice in the array</p>
+  <div class="two-col">
+    <div>
+      <h3>Hash Set Pattern</h3>
+      <p>The brute-force O(n²) checks every pair. The smart approach:</p>
+      <ul>
+        <li>Iterate once, track seen numbers in a <span class="highlight">hash set</span></li>
+        <li>If a number is already in the set → <span class="accent">duplicate found</span></li>
+        <li>Otherwise add it and continue</li>
+      </ul>
+      <p><span class="cplx">Time: O(n)</span> <span class="cplx">Space: O(n)</span></p>
+    </div>
+    <div>
+      <h3>Code</h3>
+      <pre>
+<span class="kw">def</span> <span class="fn">containsDuplicate</span>(nums: List[int]) -> bool:
+    seen = <span class="fn">set</span>()
+    <span class="kw">for</span> n <span class="kw">in</span> nums:
+        <span class="kw">if</span> n <span class="kw">in</span> seen:
+            <span class="kw">return</span> <span class="kw">True</span>
+        seen.<span class="fn">add</span>(n)
+    <span class="kw">return</span> <span class="kw">False</span></pre>
+    </div>
+  </div>
+  <div class="progress">6 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:40%"></div></div>
+</section>
+
+<!-- SLIDE 6: First Unique Character -->
+<section class="slide" data-slide="6">
+  <h2>🔤 Problem 3: First Unique Character</h2>
+  <p class="subtitle">Find the first non-repeating character in a string; return its index</p>
+  <div class="two-col">
+    <div>
+      <h3>Two-Pass Frequency Map</h3>
+      <ul>
+        <li><strong>Pass 1:</strong> Build a <span class="highlight">frequency dict</span> (<code>char → count</code>)</li>
+        <li><strong>Pass 2:</strong> Scan left to right, return first char with count == 1</li>
+        <li>Return <code>-1</code> if none found</li>
+      </ul>
+      <p><span class="cplx">Time: O(n)</span> <span class="cplx">Space: O(1)</span> (26 letters)</p>
+    </div>
+    <div>
+      <h3>Code</h3>
+      <pre>
+<span class="kw">def</span> <span class="fn">firstUniqChar</span>(s: str) -> int:
+    freq = {}
+    <span class="kw">for</span> ch <span class="kw">in</span> s:
+        freq[ch] = freq.<span class="fn">get</span>(ch, 0) + 1
+    <span class="kw">for</span> i, ch <span class="kw">in</span> <span class="fn">enumerate</span>(s):
+        <span class="kw">if</span> freq[ch] == 1:
+            <span class="kw">return</span> i
+    <span class="kw">return</span> -1</pre>
+    </div>
+  </div>
+  <div class="key-box" style="margin-top:0.5vh">
+    <p><strong>Interview tip:</strong> For lowercase-only strings, use an array of size 26 instead of a dict — slightly faster, same logic.</p>
+  </div>
+  <div class="progress">7 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:46.7%"></div></div>
+</section>
+
+<!-- SLIDE 7: First Unique Character — Array variant -->
+<section class="slide" data-slide="7">
+  <h2>⚡ First Unique Char — Array Variant</h2>
+  <p class="subtitle">Same logic, constant-space array for lowercase Latin letters</p>
+  <pre>
+<span class="kw">def</span> <span class="fn">firstUniqChar</span>(s: str) -> int:
+    freq = [0] * 26
+    <span class="kw">for</span> ch <span class="kw">in</span> s:
+        freq[<span class="fn">ord</span>(ch) - <span class="num">97</span>] += 1
+    <span class="kw">for</span> i, ch <span class="kw">in</span> <span class="fn">enumerate</span>(s):
+        <span class="kw">if</span> freq[<span class="fn">ord</span>(ch) - <span class="num">97</span>] == <span class="num">1</span>:
+            <span class="kw">return</span> i
+    <span class="kw">return</span> -1</pre>
+  <div class="key-box">
+    <p><strong>Pattern:</strong> When the input domain is small and bounded (26 letters, 128 ASCII), an array beats a hash map on constant factors — less hashing overhead, better cache locality.</p>
+  </div>
+  <div class="progress">8 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:53.3%"></div></div>
+</section>
+
+<!-- SLIDE 8: Climbing Stairs — Concept -->
+<section class="slide" data-slide="8">
+  <h2>🧗 Problem 4: Climbing Stairs</h2>
+  <p class="subtitle">You climb n steps. Each time you can take 1 or 2 steps. How many distinct ways?</p>
+  <div class="two-col">
+    <div>
+      <h3>It's Fibonacci in Disguise</h3>
+      <p>To reach step <code>n</code>, you must have come from either:</p>
+      <ul>
+        <li>Step <code>n-1</code> (1 step), <strong>or</strong></li>
+        <li>Step <code>n-2</code> (2 steps)</li>
+      </ul>
+      <p>So <code>ways[n] = ways[n-1] + ways[n-2]</code></p>
+      <p>Base: <code>ways[1] = 1</code>, <code>ways[2] = 2</code></p>
+      <p><span class="cplx">Time: O(n)</span> <span class="cplx">Space: O(1)</span></p>
+    </div>
+    <div>
+      <h3>Bottom-Up DP (O(1) space)</h3>
+      <pre>
+<span class="kw">def</span> <span class="fn">climbStairs</span>(n: int) -> int:
+    <span class="kw">if</span> n <= <span class="num">2</span>:
+        <span class="kw">return</span> n
+    one, two = <span class="num">1</span>, <span class="num">2</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">3</span>, n + <span class="num">1</span>):
+        curr = one + two
+        one, two = two, curr
+    <span class="kw">return</span> two</pre>
+    </div>
+  </div>
+  <div class="progress">9 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:60%"></div></div>
+</section>
+
+<!-- SLIDE 9: Climbing Stairs — Dive Deeper -->
+<section class="slide" data-slide="9">
+  <h2>🧠 Climbing Stairs — Why DP Works</h2>
+  <div class="two-col">
+    <div>
+      <h3>Memoization vs Tabulation</h3>
+      <ul>
+        <li><strong>Top-down (memo):</strong> recursive + cache — easier to reason about, uses O(n) call stack</li>
+        <li><strong>Bottom-up (tabulation):</strong> iterative, O(1) space — always preferred in interviews</li>
+      </ul>
+      <p style="margin-top:1vh">The problem is a classic intro to DP because the recurrence is obvious from the problem statement itself.</p>
+    </div>
+    <div>
+      <h3>Walkthrough: n = 5</h3>
+      <pre>
+n=1 → 1
+n=2 → 2
+n=3 → 1+2 = 3
+n=4 → 2+3 = 5
+n=5 → 3+5 = 8  ✅</pre>
+      <p style="font-size:clamp(0.6rem,1.2vh,0.8rem);">The sequence: 1, 2, 3, 5, 8, 13, 21...</p>
+    </div>
+  </div>
+  <div class="progress">10 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:66.7%"></div></div>
+</section>
+
+<!-- SLIDE 10: Best Time to Buy/Sell -->
+<section class="slide" data-slide="10">
+  <h2>📈 Problem 5: Best Time to Buy and Sell Stock</h2>
+  <p class="subtitle">Given daily prices, find max profit from one buy + one sell</p>
+  <div class="two-col">
+    <div>
+      <h3>Greedy Single Pass</h3>
+      <ul>
+        <li>Track <span class="accent">min price seen so far</span></li>
+        <li>For each price, compute <code>profit = price - min_price</code></li>
+        <li>Keep <span class="highlight">max profit</span> seen</li>
+        <li>Update min_price when a lower price appears</li>
+      </ul>
+      <p><span class="cplx">Time: O(n)</span> <span class="cplx">Space: O(1)</span></p>
+    </div>
+    <div>
+      <h3>Code</h3>
+      <pre>
+<span class="kw">def</span> <span class="fn">maxProfit</span>(prices: List[int]) -> int:
+    min_price = float(<span class="str">'inf'</span>)
+    max_profit = <span class="num">0</span>
+    <span class="kw">for</span> p <span class="kw">in</span> prices:
+        <span class="kw">if</span> p < min_price:
+            min_price = p
+        <span class="kw">elif</span> p - min_price > max_profit:
+            max_profit = p - min_price
+    <span class="kw">return</span> max_profit</pre>
+    </div>
+  </div>
+  <div class="progress">11 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:73.3%"></div></div>
+</section>
+
+<!-- SLIDE 11: Best Time — Visual Walkthrough -->
+<section class="slide" data-slide="11">
+  <h2>📉 Best Time — Visual Walkthrough</h2>
+  <p class="subtitle">prices = [7, 1, 5, 3, 6, 4]</p>
+  <table>
+    <tr><th>Day</th><th>Price</th><th>min_price</th><th>Profit</th><th>max_profit</th></tr>
+    <tr><td>1</td><td>7</td><td>7</td><td>0</td><td>0</td></tr>
+    <tr><td>2</td><td>1</td><td><span class="accent">1</span></td><td>0</td><td>0</td></tr>
+    <tr><td>3</td><td>5</td><td>1</td><td>4</td><td><span class="accent">4</span></td></tr>
+    <tr><td>4</td><td>3</td><td>1</td><td>2</td><td>4</td></tr>
+    <tr><td>5</td><td>6</td><td>1</td><td>5</td><td><span class="highlight">5</span></td></tr>
+    <tr><td>6</td><td>4</td><td>1</td><td>3</td><td>5</td></tr>
+  </table>
+  <div class="key-box" style="margin-top:1vh">
+    <p><strong>Pattern:</strong> Buy at the lowest valley, sell at the highest peak after it. You only need to remember the <em>lowest price so far</em> — no need for nested loops.</p>
+  </div>
+  <div class="progress">12 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:80%"></div></div>
+</section>
+
+<!-- SLIDE 12: Practice Exercises -->
+<section class="slide" data-slide="12">
+  <h2>✏️ Practice Exercises (15 min)</h2>
+  <p class="subtitle">Try these — solutions are hidden behind the expand button</p>
+  <div style="display:flex; flex-direction:column; gap:1.2vh; flex:1; overflow-y:auto;">
+    <div>
+      <h3>1. Staircase with 3-step option</h3>
+      <p>Modify Climbing Stairs so you can take 1, 2, or <em>3</em> steps at a time. What's the recurrence?</p>
+      <details class="reveal">
+        <summary>Show solution</summary>
+        <div class="solution">
+<pre><span class="kw">def</span> <span class="fn">climbStairs3</span>(n: int) -> int:
+    <span class="kw">if</span> n <= <span class="num">2</span>: <span class="kw">return</span> n
+    <span class="kw">if</span> n == <span class="num">3</span>: <span class="kw">return</span> <span class="num">4</span>
+    a, b, c = <span class="num">1</span>, <span class="num">2</span>, <span class="num">4</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">4</span>, n + <span class="num">1</span>):
+        a, b, c = b, c, a + b + c
+    <span class="kw">return</span> c</pre>
+  <p>Recurrence: <code>ways[n] = ways[n-1] + ways[n-2] + ways[n-3]</code></p>
+        </div>
+      </details>
+    </div>
+    <div>
+      <h3>2. Buy/Sell with cooldown</h3>
+      <p>You must wait 1 day after selling before you can buy again. Adapt the single-pass approach. (This is a harder problem — try it for the challenge.)</p>
+    </div>
+    <div>
+      <h3>3. Merge Multiple Sorted Lists</h3>
+      <p>Given <em>k</em> sorted linked lists, merge them into one. Hint: use a min-heap (priority queue).</p>
+      <details class="reveal">
+        <summary>Show hint</summary>
+        <div class="solution">
+<pre><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">mergeKLists</span>(lists: List[ListNode]) -> ListNode:
+    heap = []
+    <span class="kw">for</span> i, l <span class="kw">in</span> <span class="fn">enumerate</span>(lists):
+        <span class="kw">if</span> l:
+            heapq.<span class="fn">heappush</span>(heap, (l.val, i, l))
+    dummy = ListNode()
+    curr = dummy
+    <span class="kw">while</span> heap:
+        _, i, node = heapq.<span class="fn">heappop</span>(heap)
+        curr.next = node
+        curr = curr.next
+        <span class="kw">if</span> node.next:
+            heapq.<span class="fn">heappush</span>(heap, (node.next.val, i, node.next))
+    <span class="kw">return</span> dummy.next</pre>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="progress">13 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:86.7%"></div></div>
+</section>
+
+<!-- SLIDE 13: Summary -->
+<section class="slide" data-slide="13">
+  <h2>🎯 Key Takeaways</h2>
+  <p class="subtitle">Write these down — they'll save you in interviews</p>
+  <div class="two-col">
+    <div>
+      <h3>Patterns</h3>
+      <ul>
+        <li><span class="highlight">Dummy node</span> for linked list construction — eliminates edge cases</li>
+        <li><span class="highlight">Hash set/ map</span> for duplicates, frequency, and lookup problems</li>
+        <li><span class="highlight">Constant-space tracking</span> (min_price, two variables) for greedy single-pass</li>
+        <li><span class="highlight">Fibonacci recurrence</span> for combinatorial DP (stairs, robot paths, etc.)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Watch Out For</h3>
+      <ul>
+        <li>Forgetting to attach remaining nodes in merge</li>
+        <li>Using O(n²) when O(n) with a hash set works</li>
+        <li>Writing recursive Fibonacci (stack overflow for large n)</li>
+        <li>Buy/sell: selling before buying (must be chronological)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="progress">14 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:93.3%"></div></div>
+</section>
+
+<!-- SLIDE 14: Next Steps -->
+<section class="slide" data-slide="14">
+  <h2>🚀 Next Steps</h2>
+  <div class="two-col">
+    <div>
+      <h3>🚧 Before Next Session</h3>
+      <ul>
+        <li>Re-implement all 5 problems from memory (no peeking!)</li>
+        <li>Time yourself — aim for &lt; 10 min per problem</li>
+        <li>Solve the 3 practice exercises above</li>
+        <li>Review <strong>Project 5</strong> requirements (Full-Stack App — starts Week 12)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>📅 Coming Up</h3>
+      <ul>
+        <li><strong>Day 63:</strong> LeetCode Easy — sprint wrap-up &amp; mock interview</li>
+        <li><strong>Week 12:</strong> Full-stack project kickoff (React + FastAPI)</li>
+        <li><strong>Week 14:</strong> Resume + behavioural prep</li>
+      </ul>
+      <p style="margin-top:1.5vh; color:var(--green); font-family:var(--font-mono); font-size:clamp(0.6rem,1.3vh,0.8rem);">
+        Consistency beats intensity — 5 problems a day &gt; 50 problems once.
+      </p>
+    </div>
+  </div>
+  <div class="progress">15 / 15</div>
+  <div class="pbar"><div class="pbar-inner" style="width:100%"></div></div>
+</section>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  function show(idx) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    window.location.hash = '#' + (idx + 1);
+  }
+
+  function next() { if (current < total - 1) { current++; show(current); } }
+  function prev() { if (current > 0) { current--; show(current); } }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.documentElement.requestFullscreen?.(); }
+    if (e.key === 'n' || e.key === 'N') {
+      e.preventDefault();
+      document.querySelectorAll('.slide aside').forEach(a => a.style.display = a.style.display === 'block' ? 'none' : 'block');
+    }
+  });
+
+  // Restore from hash on load
+  const hash = parseInt(window.location.hash.slice(1), 10);
+  if (hash > 0 && hash <= total) { current = hash - 1; }
+  show(current);
+
+  // Touch swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+  });
+})();
+</script>
+</body>
+</html>
