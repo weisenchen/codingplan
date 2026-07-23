@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 64 — Binary Search &amp; Sorting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-alt: #161b22;
+  --surface: #1c2333;
+  --border: #30363d;
+  --fg: #e6edf3;
+  --fg-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent-glow: #1f6feb;
+  --green: #3fb950;
+  --orange: #d29922;
+  --red: #f85149;
+  --code-bg: #0d1117;
+  --code-border: #21262d;
+  --slide-ratio: 56.25%;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-serif: 'Literata', Georgia, serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: #0a0c10;
+  font-family: var(--font-mono);
+  color: var(--fg);
+  overflow: hidden;
+}
+#deck {
+  position: relative;
+  width: 100%; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: #0a0c10;
+}
+.slide {
+  position: absolute;
+  width: min(96vw, calc(96vh * 16 / 9));
+  height: min(54vw, 86vh);
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 40px 48px;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+
+.progress {
+  position: absolute;
+  bottom: 16px; right: 24px;
+  font-size: 13px;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  z-index: 10;
+}
+.progress-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.footer-note {
+  position: absolute;
+  bottom: 16px; left: 24px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  z-index: 10;
+}
+
+/* Typography */
+h1 { font-family: var(--font-serif); font-size: 38px; font-weight: 700; color: var(--fg); margin-bottom: 8px; }
+h2 { font-family: var(--font-serif); font-size: 28px; font-weight: 600; color: var(--fg); margin-bottom: 16px; }
+h3 { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+p, li { font-family: var(--font-mono); font-size: 16px; line-height: 1.6; color: var(--fg); }
+.subtitle { font-family: var(--font-mono); font-size: 16px; color: var(--fg-dim); margin-bottom: 8px; }
+.meta { font-family: var(--font-mono); font-size: 14px; color: var(--fg-dim); margin-top: auto; }
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+}
+code { font-family: var(--font-mono); }
+pre code { color: var(--fg); }
+.highlight { color: var(--accent); }
+.comment { color: var(--fg-dim); }
+.keyword { color: var(--red); }
+.string { color: var(--green); }
+.number { color: var(--orange); }
+
+/* Lists */
+ul { list-style: none; padding-left: 0; }
+li { padding: 4px 0 4px 24px; position: relative; }
+li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+ol { padding-left: 24px; }
+ol li { padding: 4px 0; }
+ol li::before { content: none; }
+
+/* Content area */
+.content { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.content.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.content.two-col > * { min-width: 0; }
+
+/* Spacer */
+.spacer { flex: 1; }
+
+/* Title slide */
+.title-slide { justify-content: center; align-items: center; text-align: center; }
+.title-slide .content { align-items: center; }
+.title-slide h1 { font-size: 44px; margin-bottom: 12px; }
+.title-slide .subtitle { font-size: 20px; margin-bottom: 4px; }
+.title-slide .meta { margin-top: 24px; font-size: 14px; }
+
+/* Section break */
+.section-break { justify-content: center; align-items: center; text-align: center; background: var(--accent-glow); border-color: var(--accent); }
+.section-break h2 { font-size: 36px; color: #fff; }
+.section-break .subtitle { color: rgba(255,255,255,0.75); }
+
+/* Exercise card */
+.exercise-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 6px 0;
+}
+.exercise-card .label { color: var(--orange); font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.exercise-card p { font-size: 15px; }
+.exercise-card .hint { color: var(--fg-dim); font-size: 13px; margin-top: 6px; }
+
+/* Checkbox */
+.check { color: var(--green); }
+.cross { color: var(--red); }
+
+/* Tag */
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  margin-right: 6px;
+}
+.tag-easy { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+.tag-mid { background: rgba(210,153,34,0.15); color: var(--orange); border: 1px solid rgba(210,153,34,0.3); }
+
+/* Click-to-reveal */
+.reveal-btn {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px 18px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  margin: 6px 0;
+  transition: background 0.2s;
+}
+.reveal-btn:hover { background: var(--bg-alt); }
+.reveal-content { display: none; margin-top: 8px; }
+.reveal-content.visible { display: block; }
+
+/* Responsive */
+@media (max-width: 700px) {
+  .slide { padding: 24px 20px; }
+  .title-slide h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  h1 { font-size: 28px; }
+  p, li { font-size: 14px; }
+  pre { font-size: 12px; padding: 10px 14px; }
+  .content.two-col { grid-template-columns: 1fr; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div class="content">
+    <div class="subtitle">90-Day Co-op Prep · Phase IV · Week 11</div>
+    <h1>Binary Search &amp; Sorting</h1>
+    <p class="subtitle">Binary search implementation · Quick sort intuition</p>
+    <div class="meta">
+      <span>LeetCode #704 · #35</span><br>
+      Day 64 — July 23, 2026
+    </div>
+  </div>
+  <div class="progress">1 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:7%"></div></div>
+</section>
+
+<!-- SLIDE 1: Overview -->
+<section class="slide" data-slide="1">
+  <h3>Today's Plan</h3>
+  <div class="content">
+    <p><strong>Binary Search &amp; Quick Sort</strong> — two foundational algorithms every SWE interview expects you to know cold.</p>
+    <ul>
+      <li><span class="highlight">Binary Search</span> — the algorithm, invariant, and edge cases</li>
+      <li><span class="highlight">LeetCode #704</span> — classic binary search implementation</li>
+      <li><span class="highlight">LeetCode #35</span> — search insert position variant</li>
+      <li><span class="highlight">Quick Sort intuition</span> — partition, pivot, recursion</li>
+      <li><span class="highlight">Practice exercises</span> — LeetCode problems to lock it in</li>
+    </ul>
+    <p style="margin-top:8px;color:var(--fg-dim);">⏱ ~60 minutes · Coding-heavy session</p>
+  </div>
+  <div class="progress">2 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:14%"></div></div>
+</section>
+
+<!-- SLIDE 2: Prerequisites -->
+<section class="slide" data-slide="2">
+  <h3>Prerequisites</h3>
+  <div class="content">
+    <p>Before starting, you should be comfortable with:</p>
+    <ul>
+      <li><span class="check">✔</span> Arrays and indexing in Python</li>
+      <li><span class="check">✔</span> While loops and <code>while left &lt;= right</code> loops</li>
+      <li><span class="check">✔</span> Function definitions and return statements</li>
+      <li><span class="check">✔</span> Basic recursion (nice-to-have for quicksort)</li>
+    </ul>
+    <p style="margin-top:12px;color:var(--fg-dim);">No packages to install — plain Python.</p>
+  </div>
+  <div class="progress">3 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:21%"></div></div>
+</section>
+
+<!-- SLIDE 3: Learning Objectives -->
+<section class="slide" data-slide="3">
+  <h3>Learning Objectives</h3>
+  <div class="content">
+    <p>By the end of this session, you'll be able to:</p>
+    <ul>
+      <li>Implement <span class="highlight">binary search</span> on a sorted array from memory</li>
+      <li>Identify and handle <span class="highlight">edge cases</span> (empty array, odd/even length, target missing)</li>
+      <li>Solve <span class="highlight">#704</span> and <span class="highlight">#35</span> without looking at a solution</li>
+      <li>Explain the <span class="highlight">quick sort</span> partition step and recurrence</li>
+      <li>Recognize when binary search applies beyond sorted arrays</li>
+    </ul>
+  </div>
+  <div class="progress">4 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:29%"></div></div>
+</section>
+
+<!-- SLIDE 4: Binary Search Concept -->
+<section class="slide" data-slide="4">
+  <h3>Binary Search — The Idea</h3>
+  <div class="content two-col">
+    <div>
+      <p>Search a <strong>sorted</strong> array by repeatedly dividing the search range in half.</p>
+      <p style="margin-top:10px;"><strong>Invariant:</strong> at every step, if the target exists, it's in <code>[left, right]</code>.</p>
+      <ul style="margin-top:8px;">
+        <li>Pick the <span class="highlight">midpoint</span></li>
+        <li>If <code>nums[mid] == target</code> → done</li>
+        <li>If <code>nums[mid] &lt; target</code> → search <span class="highlight">right half</span></li>
+        <li>If <code>nums[mid] &gt; target</code> → search <span class="highlight">left half</span></li>
+      </ul>
+      <p style="margin-top:10px;color:var(--fg-dim);font-size:14px;">O(log n) time · O(1) space</p>
+    </div>
+    <div>
+      <pre><code><span class="comment"># Visual: search for 7</span>
+<span class="comment"># [1, 3, 5, 7, 9, 11, 13]</span>
+<span class="comment">#  L        M         R   → 7 &lt; 9, go left</span>
+<span class="comment">#  L   M    R            → 7 &gt; 3, go right</span>
+<span class="comment">#      L,M,R             → found at index 3</span></code></pre>
+      <p style="color:var(--fg-dim);font-size:13px;">Each step <span style="color:var(--green);">halves</span> the search space. On 1M elements → ~20 comparisons.</p>
+    </div>
+  </div>
+  <div class="progress">5 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:36%"></div></div>
+</section>
+
+<!-- SLIDE 5: Code Walkthrough — Binary Search -->
+<section class="slide" data-slide="5">
+  <h3>Walkthrough: Standard Binary Search</h3>
+  <div class="content">
+    <pre><code><span class="keyword">def</span> <span class="highlight">binary_search</span>(nums: list[int], target: int) -> int:
+    left, right = 0, len(nums) - 1
+
+    <span class="keyword">while</span> left <= right:
+        mid = left + (right - left) // 2  <span class="comment"># avoid overflow</span>
+
+        <span class="keyword">if</span> nums[mid] == target:
+            <span class="keyword">return</span> mid
+        <span class="keyword">elif</span> nums[mid] < target:
+            left = mid + 1                <span class="comment"># search right half</span>
+        <span class="keyword">else</span>:
+            right = mid - 1               <span class="comment"># search left half</span>
+
+    <span class="keyword">return</span> -1                              <span class="comment"># not found</span></code></pre>
+    <p><strong>Key details:</strong></p>
+    <ul>
+      <li><code>left + (right - left) // 2</code> prevents integer overflow (idiom in all languages)</li>
+      <li><code>while left &lt;= right</code> — use <code>&lt;=</code> not <code>&lt;</code>, or you miss single-element arrays</li>
+      <li>Return <code>-1</code> if not found (LC convention)</li>
+    </ul>
+  </div>
+  <div class="progress">6 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:43%"></div></div>
+</section>
+
+<!-- SLIDE 6: Edge Cases -->
+<section class="slide" data-slide="6">
+  <h3>Edge Cases &amp; Gotchas</h3>
+  <div class="content">
+    <div class="exercise-card">
+      <div class="label">Case: Empty array</div>
+      <p><code>nums = []</code> → <code>right = -1</code> → loop never runs → returns <code>-1</code> <span class="check">✔</span></p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Case: Single element</div>
+      <p><code>nums = [5]</code>, target <code>5</code> → <code>left=0, right=0</code> → <code>left &lt;= right</code> is true → <code>mid=0</code> → found.</p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Case: Target not present</div>
+      <p>Loop narrows to empty range, returns <code>-1</code>. But what if we need the <span class="highlight">insertion point</span>? Enter <span class="tag tag-easy">#35</span>.</p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Gotcha: Duplicates</div>
+      <p>Standard binary search returns <span style="color:var(--orange);">any</span> matching index, not necessarily the first or last.</p>
+    </div>
+  </div>
+  <div class="progress">7 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:50%"></div></div>
+</section>
+
+<!-- SLIDE 7: LeetCode #35 — Search Insert Position -->
+<section class="slide" data-slide="7">
+  <h3>Variant: Search Insert Position</h3>
+  <div class="content">
+    <p><span class="tag tag-easy">#35</span> Given a sorted array and a target, return the index <em>or</em> where it would be inserted.</p>
+    <pre><code><span class="keyword">def</span> <span class="highlight">search_insert</span>(nums: list[int], target: int) -> int:
+    left, right = 0, len(nums) - 1
+
+    <span class="keyword">while</span> left <= right:
+        mid = left + (right - left) // 2
+
+        <span class="keyword">if</span> nums[mid] == target:
+            <span class="keyword">return</span> mid
+        <span class="keyword">elif</span> nums[mid] < target:
+            left = mid + 1
+        <span class="keyword">else</span>:
+            right = mid - 1
+
+    <span class="keyword">return</span> left  <span class="comment"># &lt;-- only change from standard BS</span></code></pre>
+    <p>When the loop exits, <code>left</code> is the insertion point. Think about why: <code>right</code> has moved past the last element <code>&lt; target</code>.</p>
+  </div>
+  <div class="progress">8 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:57%"></div></div>
+</section>
+
+<!-- SLIDE 8: Quick Sort Intuition -->
+<section class="slide section-break" data-slide="8">
+  <h2>Quick Sort</h2>
+  <p class="subtitle">Divide &amp; conquer · Partition · In-place</p>
+  <div class="progress">9 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:64%"></div></div>
+</section>
+
+<!-- SLIDE 9: Quick Sort Concept -->
+<section class="slide" data-slide="9">
+  <h3>Quick Sort — The Idea</h3>
+  <div class="content two-col">
+    <div>
+      <p><strong>Divide and conquer</strong> sorting algorithm.</p>
+      <p><strong>Steps:</strong></p>
+      <ol>
+        <li>Pick a <span class="highlight">pivot</span> (e.g., last element)</li>
+        <li><strong>Partition:</strong> rearrange so elements &lt; pivot are left, &gt; pivot are right</li>
+        <li>Recursively sort left and right partitions</li>
+      </ol>
+      <p style="margin-top:8px;color:var(--fg-dim);">
+        Average: <span class="highlight">O(n log n)</span><br>
+        Worst: O(n²) — bad pivot choices<br>
+        Space: O(log n) — recursion stack
+      </p>
+    </div>
+    <div>
+      <pre><code><span class="comment"># Visual: pivot = last element</span>
+<span class="comment"># [3, 6, 8, 10, 1, 2, 1]</span>
+<span class="comment">#               ↑ pivot = 1</span>
+<span class="comment"># After partition:</span>
+<span class="comment"># [1, 1, 2, 10, 8, 6, 3]</span>
+<span class="comment">#  ← left side →  pivot  ← right →</span>
+<span class="comment">#  (already sorted)       (needs sorting)</span></code></pre>
+    </div>
+  </div>
+  <div class="progress">10 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:71%"></div></div>
+</section>
+
+<!-- SLIDE 10: Quick Sort Partition Walkthrough -->
+<section class="slide" data-slide="10">
+  <h3>Walkthrough: Partition Step</h3>
+  <div class="content">
+    <pre><code><span class="keyword">def</span> <span class="highlight">partition</span>(arr: list[int], low: int, high: int) -> int:
+    pivot = arr[high]                 <span class="comment"># pick last element as pivot</span>
+    i = low - 1                       <span class="comment"># index of smaller element</span>
+
+    <span class="keyword">for</span> j <span class="keyword">in</span> range(low, high):
+        <span class="keyword">if</span> arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]  <span class="comment"># swap</span>
+
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]  <span class="comment"># pivot to correct spot</span>
+    <span class="keyword">return</span> i + 1                          <span class="comment"># return pivot index</span>
+
+<span class="keyword">def</span> <span class="highlight">quick_sort</span>(arr, low, high):
+    <span class="keyword">if</span> low < high:
+        pi = partition(arr, low, high)  <span class="comment"># partition index</span>
+        quick_sort(arr, low, pi - 1)    <span class="comment"># sort left of pivot</span>
+        quick_sort(arr, pi + 1, high)   <span class="comment"># sort right of pivot</span></code></pre>
+    <p><code>i</code> tracks the boundary: everything before <code>i</code> is ≤ pivot. <code>j</code> scans the unsorted section.</p>
+  </div>
+  <div class="progress">11 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:79%"></div></div>
+</section>
+
+<!-- SLIDE 11: Exercise 1 — Binary Search -->
+<section class="slide" data-slide="11">
+  <h3>Exercise 1: Binary Search</h3>
+  <div class="content">
+    <div class="exercise-card">
+      <div class="label">Task</div>
+      <p>Implement <code>binary_search(nums, target)</code> that returns the index of target in a sorted array, or -1 if not found.</p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Test cases</div>
+      <p>
+        <code>bs([1,3,5,6], 5)</code> → <span class="highlight">2</span><br>
+        <code>bs([1,3,5,6], 2)</code> → <span class="highlight">-1</span><br>
+        <code>bs([], 5)</code> → <span class="highlight">-1</span>
+      </p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Hint</div>
+      <p class="hint">Use <code>while left &lt;= right</code>. Compute mid with <code>left + (right - left) // 2</code>. Adjust <code>left</code>/<code>right</code> based on comparison.</p>
+    </div>
+    <p style="color:var(--fg-dim);font-size:13px;">Try writing it without looking at the earlier slide first.</p>
+    <button class="reveal-btn" onclick="toggleReveal('sol1')">Click to reveal solution</button>
+    <div id="sol1" class="reveal-content">
+      <pre><code><span class="keyword">def</span> binary_search(nums, target):
+    l, r = 0, len(nums) - 1
+    <span class="keyword">while</span> l <= r:
+        m = l + (r - l) // 2
+        <span class="keyword">if</span> nums[m] == target: <span class="keyword">return</span> m
+        <span class="keyword">if</span> nums[m] < target: l = m + 1
+        <span class="keyword">else</span>: r = m - 1
+    <span class="keyword">return</span> -1</code></pre>
+    </div>
+  </div>
+  <div class="progress">12 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:86%"></div></div>
+</section>
+
+<!-- SLIDE 12: Exercise 2 — Search Insert Position -->
+<section class="slide" data-slide="12">
+  <h3>Exercise 2: Search Insert Position</h3>
+  <div class="content">
+    <div class="exercise-card">
+      <div class="label">Task <span class="tag tag-easy">#35</span></div>
+      <p>Given a sorted array and target, return the index if found, or the index where it would be inserted in order.</p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Test cases</div>
+      <p>
+        <code>si([1,3,5,6], 5)</code> → <span class="highlight">2</span><br>
+        <code>si([1,3,5,6], 2)</code> → <span class="highlight">1</span><br>
+        <code>si([1,3,5,6], 7)</code> → <span class="highlight">4</span><br>
+        <code>si([1,3,5,6], 0)</code> → <span class="highlight">0</span>
+      </p>
+    </div>
+    <div class="exercise-card">
+      <div class="label">Hint</div>
+      <p class="hint">Exactly the same as standard binary search — except return <code>left</code> instead of <code>-1</code> when the loop exits.</p>
+    </div>
+    <button class="reveal-btn" onclick="toggleReveal('sol2')">Click to reveal solution</button>
+    <div id="sol2" class="reveal-content">
+      <pre><code><span class="keyword">def</span> search_insert(nums, target):
+    l, r = 0, len(nums) - 1
+    <span class="keyword">while</span> l <= r:
+        m = l + (r - l) // 2
+        <span class="keyword">if</span> nums[m] == target: <span class="keyword">return</span> m
+        <span class="keyword">if</span> nums[m] < target: l = m + 1
+        <span class="keyword">else</span>: r = m - 1
+    <span class="keyword">return</span> l  <span class="comment"># insertion point</span></code></pre>
+    </div>
+  </div>
+  <div class="progress">13 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:93%"></div></div>
+</section>
+
+<!-- SLIDE 13: Summary -->
+<section class="slide" data-slide="13">
+  <h3>Key Takeaways</h3>
+  <div class="content">
+    <ul>
+      <li><span class="highlight">Binary search</span> cuts the search space in half each iteration — O(log n)</li>
+      <li>Use <code>left + (right - left) // 2</code> for mid — <span class="highlight">always</span></li>
+      <li>Loop condition <code>left &lt;= right</code> — handles single-element arrays</li>
+      <li>Return <code>left</code> from failed search to get the <span class="highlight">insertion point</span> (#35)</li>
+      <li><span class="highlight">Quick sort</span> partitions around a pivot, then recurses on each side</li>
+      <li>Binary search patterns extend to rotated arrays, search spaces, and more</li>
+    </ul>
+    <p style="margin-top:16px;"><strong>Next up:</strong> Day 65 — More sorting: merge sort, plus LC #278 (First Bad Version).</p>
+    <p style="margin-top:6px;color:var(--fg-dim);font-size:13px;">
+      Milestone check: Project 3 (Weather Dashboard) ✅ after Week 8 · Project 5 (Full-Stack) after Week 12
+    </p>
+  </div>
+  <div class="progress">14 / 14</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:100%"></div></div>
+</section>
+
+<aside class="footer-note">Day 64 · 90-Day Co-op Prep</aside>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  const total = slides.length;
+
+  function showSlide(idx) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === idx);
+    });
+    current = idx;
+    location.hash = idx;
+    updateProgress();
+  }
+
+  function updateProgress() {
+    slides.forEach((s, i) => {
+      const prog = s.querySelector('.progress');
+      if (prog) prog.textContent = (i + 1) + ' / ' + total;
+      const fill = s.querySelector('.progress-bar-fill');
+      if (fill) fill.style.width = ((i + 1) / total * 100) + '%';
+    });
+  }
+
+  function prev() { if (current > 0) showSlide(current - 1); }
+  function next() { if (current < total - 1) showSlide(current + 1); }
+
+  function toggleReveal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('visible');
+  }
+  window.toggleReveal = toggleReveal;
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); prev();
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.getElementById('deck').requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      document.querySelectorAll('aside.note').forEach(n => {
+        n.style.display = n.style.display === 'block' ? 'none' : 'block';
+      });
+    } else if (e.key === 'Home') {
+      showSlide(0);
+    } else if (e.key === 'End') {
+      showSlide(total - 1);
+    }
+  });
+
+  // Touch/click nav on slide edges
+  document.querySelectorAll('.slide').forEach(s => {
+    s.addEventListener('click', function(e) {
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x < rect.width * 0.3) prev();
+      else if (x > rect.width * 0.7) next();
+    });
+  });
+
+  // Hash navigation
+  window.addEventListener('hashchange', function() {
+    const h = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(h) && h >= 0 && h < total) showSlide(h);
+  });
+
+  // Init
+  const start = parseInt(location.hash.slice(1), 10);
+  if (!isNaN(start) && start >= 0 && start < total) {
+    showSlide(start);
+  } else {
+    showSlide(0);
+  }
+})();
+</script>
+</body>
+</html>
