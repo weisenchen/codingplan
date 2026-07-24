@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 65: Dynamic Programming Intro — 90-Day Co-op Prep</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --slide-bg: #161822;
+    --text: #e1e4ed;
+    --muted: #8b8fa3;
+    --accent: #7c6cf0;
+    --accent2: #f0a06c;
+    --accent3: #6ccbf0;
+    --code-bg: #1c1e2e;
+    --code-text: #c9d1d9;
+    --keyword: #ff7b72;
+    --string: #a5d6ff;
+    --func: #d2a8ff;
+    --number: #79c0ff;
+    --comment: #8b949e;
+    --border: #2a2d3a;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-display: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); overflow: hidden; }
+  
+  .deck-wrapper {
+    position: relative;
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .deck {
+    position: relative;
+    width: min(100vw, 177.78vh);
+    height: min(100vh, 56.25vw);
+    background: var(--slide-bg);
+    overflow: hidden;
+    border-radius: 2px;
+    box-shadow: 0 0 60px rgba(0,0,0,.5);
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 3.5vh 4vw;
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s ease;
+    overflow-y: auto;
+  }
+  .slide.active { opacity: 1; pointer-events: auto; }
+
+  .slide h1 { font-family: var(--font-display); font-size: 3.2vw; font-weight: 700; letter-spacing: -.02em; margin-bottom: .6em; color: #fff; line-height: 1.15; }
+  .slide h2 { font-family: var(--font-display); font-size: 2vw; font-weight: 600; margin-bottom: .5em; color: var(--accent); }
+  .slide h3 { font-family: var(--font-display); font-size: 1.4vw; font-weight: 600; margin-bottom: .4em; color: var(--accent2); }
+  .slide p { font-size: 1.2vw; line-height: 1.6; margin-bottom: .7em; color: var(--text); }
+  .slide ul { list-style: none; margin-bottom: .7em; }
+  .slide li { font-size: 1.15vw; line-height: 1.55; padding-left: 1.6em; position: relative; margin-bottom: .35em; color: var(--text); }
+  .slide li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
+
+  /* Code */
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2vw 1.5vw; font-family: var(--font-mono); font-size: 1vw; line-height: 1.55; overflow-x: auto; margin-bottom: .7em; }
+  code { font-family: var(--font-mono); }
+  .kw { color: var(--keyword); }
+  .fn { color: var(--func); }
+  .str { color: var(--string); }
+  .num { color: var(--number); }
+  .cm { color: var(--comment); font-style: italic; }
+  .hl { background: rgba(124,108,240,.2); display: inline-block; width: 100%; }
+
+  /* Title slide */
+  .title-slide { justify-content: center; align-items: center; text-align: center; }
+  .title-slide h1 { font-size: 4vw; margin-bottom: .3em; }
+  .title-slide .subtitle { font-size: 1.6vw; color: var(--muted); margin-bottom: .2em; }
+  .title-slide .meta { font-size: 1.2vw; color: var(--accent); }
+  .title-slide .phase-badge { display: inline-block; background: var(--accent); color: #fff; padding: .3em 1.2em; border-radius: 20px; font-size: 1vw; font-weight: 600; margin-bottom: 1.5em; letter-spacing: .05em; }
+
+  /* Section break */
+  .section-break { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, var(--accent) 0%, #4a3aa0 100%); }
+  .section-break h2 { font-size: 3vw; color: #fff; margin-bottom: .3em; }
+  .section-break p { font-size: 1.4vw; color: rgba(255,255,255,.75); }
+  .section-break .progress { color: rgba(255,255,255,.5); }
+  .section-break .progress-bar { background: rgba(255,255,255,.15); }
+  .section-break .progress-bar-fill { background: rgba(255,255,255,.6); }
+
+  /* Two-column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2vw; flex: 1; align-items: start; }
+  .two-col h3 { font-size: 1.2vw; }
+  .two-col p, .two-col li { font-size: 1.05vw; }
+
+  /* Comparison table */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5vw; flex: 1; }
+  .compare-card { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2vw; }
+  .compare-card h3 { font-size: 1.1vw; margin-bottom: .4em; }
+  .compare-card p, .compare-card li { font-size: .95vw; }
+
+  /* Exercise box */
+  .exercise-box { background: rgba(240,160,108,.08); border: 1px solid var(--accent2); border-radius: 8px; padding: 1.2vw 1.5vw; margin-top: .5em; }
+  .exercise-box h3 { color: var(--accent2); font-size: 1.2vw; }
+  .exercise-box p, .exercise-box li { font-size: 1.05vw; }
+  .hint { background: rgba(108,203,240,.08); border: 1px solid var(--accent3); border-radius: 6px; padding: .8vw 1.2vw; margin-top: .5em; }
+  .hint p { font-size: 1vw; color: var(--accent3); }
+
+  /* Recap */
+  .recap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5vw; flex: 1; align-items: center; }
+  .recap-card { background: var(--code-bg); border-radius: 8px; padding: 1.5vw; text-align: center; border-top: 3px solid var(--accent); }
+  .recap-card .num { font-size: 2vw; font-weight: 700; color: var(--accent); display: block; margin-bottom: .3em; }
+  .recap-card p { font-size: 1.05vw; margin: 0; }
+
+  /* Click-to-reveal */
+  .reveal-btn { background: var(--accent); color: #fff; border: none; padding: .5vw 1.2vw; border-radius: 6px; font-size: 1vw; cursor: pointer; margin-top: .5em; }
+  .reveal-btn:hover { filter: brightness(1.15); }
+  .reveal-content { display: none; margin-top: .5em; }
+  .reveal-content.show { display: block; }
+
+  /* Progress */
+  .progress { position: absolute; bottom: 1.2vh; right: 2vw; font-size: .85vw; color: var(--muted); font-family: var(--font-mono); }
+  .progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--border); }
+  .progress-bar-fill { height: 100%; background: var(--accent); transition: width .35s ease; }
+
+  /* Speaker notes (hidden) */
+  aside.notes { display: none; }
+
+  @media (max-width: 768px) {
+    .deck { width: 100vw; height: 100vh; border-radius: 0; }
+    .slide { padding: 4vw; }
+    .slide h1 { font-size: 6vw; }
+    .slide h2 { font-size: 4.5vw; }
+    .slide h3 { font-size: 3.8vw; }
+    .slide p, .slide li { font-size: 3.2vw; }
+    pre { font-size: 2.5vw; padding: 3vw; }
+    .two-col { grid-template-columns: 1fr; gap: 3vw; }
+    .two-col h3 { font-size: 3.5vw; }
+    .two-col p, .two-col li { font-size: 3vw; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .compare-card { padding: 3vw; }
+    .compare-card h3 { font-size: 3.5vw; }
+    .compare-card p, .compare-card li { font-size: 3vw; }
+    .recap-grid { grid-template-columns: 1fr; gap: 3vw; }
+    .recap-card { padding: 3vw; }
+    .recap-card .num { font-size: 5vw; }
+    .recap-card p { font-size: 3vw; }
+    .title-slide h1 { font-size: 7vw; }
+    .title-slide .subtitle { font-size: 4vw; }
+    .exercise-box { padding: 3vw; }
+    .exercise-box h3 { font-size: 3.5vw; }
+    .exercise-box p, .exercise-box li { font-size: 3vw; }
+    .hint { padding: 2.5vw; }
+    .hint p { font-size: 2.8vw; }
+    .section-break h2 { font-size: 6vw; }
+    .section-break p { font-size: 3.5vw; }
+    .reveal-btn { font-size: 3vw; padding: 1.5vw 3vw; }
+    .progress { font-size: 2.5vw; right: 3vw; bottom: 1.5vh; }
+  }
+
+  @media print {
+    .deck { width: 100vw; height: auto; box-shadow: none; border-radius: 0; }
+    .slide { position: relative; opacity: 1; pointer-events: auto; page-break-after: always; height: auto; min-height: 50vw; padding: 2cm; }
+    .progress, .progress-bar { display: none; }
+    body { background: #fff; }
+    .slide { background: #fff; color: #111; }
+    .slide h1, .slide h2 { color: #000; }
+    .slide p, .slide li { color: #222; }
+    pre { background: #f5f5f5; border-color: #ddd; }
+    .section-break { background: #7c6cf0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="deck-wrapper">
+<div class="deck">
+
+<!-- SLIDE 0: Title -->
+<section class="slide title-slide active" data-slide="0">
+  <div>
+    <div class="phase-badge">Phase IV — Week 11</div>
+    <h1>Dynamic Programming<br>Intro</h1>
+    <p class="subtitle">Fibonacci · Memoization · Climbing Stairs · House Robber</p>
+    <p class="meta">Day 65 · 60 min · LeetCode</p>
+  </div>
+  <aside class="notes">Welcome to Day 65. Today we start dynamic programming — one of the most important topics for interviews. We'll build intuition from the ground up.</aside>
+  <div class="progress">1 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:7.7%;"></div></div>
+</section>
+
+<!-- SLIDE 1: Prerequisites & Objectives -->
+<section class="slide" data-slide="1">
+  <h1>Prerequisites &amp; Objectives</h1>
+  <div class="two-col">
+    <div>
+      <h3>Before starting, you should know:</h3>
+      <ul>
+        <li>Basic recursion (function calls itself)</li>
+        <li>Python lists / dict basics</li>
+        <li>Big O notation (O(n), O(2^n))</li>
+      </ul>
+      <h3 style="margin-top:1em;">Today's plan:</h3>
+      <ul>
+        <li><strong>10 min</strong> — What is DP?</li>
+        <li><strong>15 min</strong> — Fibonacci: naive → memoized</li>
+        <li><strong>15 min</strong> — Climbing Stairs walkthrough</li>
+        <li><strong>15 min</strong> — House Robber walkthrough</li>
+        <li><strong>5 min</strong> — Practice &amp; recap</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Learning objectives:</h3>
+      <ul>
+        <li>✅ Recognize <strong>overlapping subproblems</strong></li>
+        <li>✅ Apply top-down <strong>memoization</strong></li>
+        <li>✅ Convert to <strong>bottom-up DP</strong> (tabulation)</li>
+        <li>✅ Solve 2 LeetCode Easy DP problems</li>
+      </ul>
+      <div style="margin-top:1.5em;background:var(--code-bg);border-radius:8px;padding:1vw;border:1px solid var(--border);">
+        <p style="font-size:1vw;margin:0;color:var(--accent);"><strong>💡 Key insight:</strong> DP = recursion + remembering answers so you never recompute the same thing twice.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Make sure learners have basic recursion. If not, review quick: function that calls itself with a base case.</aside>
+  <div class="progress">2 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:15.4%;"></div></div>
+</section>
+
+<!-- SLIDE 2: Section Break — Concept -->
+<section class="slide section-break" data-slide="2">
+  <h2>What is Dynamic Programming?</h2>
+  <p>Solving problems by breaking them into overlapping subproblems<br>and storing results to avoid redundant work</p>
+  <aside class="notes">DP sounds intimidating, but it's really just "don't compute the same thing twice."</aside>
+  <div class="progress">3 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:23.1%;"></div></div>
+</section>
+
+<!-- SLIDE 3: Concept — Overlapping Subproblems -->
+<section class="slide" data-slide="3">
+  <h1>Overlapping Subproblems</h1>
+  <p>In recursive problems like Fibonacci, the same subproblems get solved over and over — that's the <strong>overlapping subproblems</strong> property.</p>
+  <div class="two-col">
+    <div>
+      <h3>❌ Naive recursion</h3>
+      <pre><code><span class="kw">def</span> <span class="fn">fib</span>(n):
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> n
+    <span class="kw">return</span> <span class="fn">fib</span>(n<span class="op">-</span><span class="num">1</span>) + <span class="fn">fib</span>(n<span class="op">-</span><span class="num">2</span>)
+
+<span class="cm"># fib(5) calls fib(4) and fib(3)</span>
+<span class="cm"># fib(4) calls fib(3) AGAIN → duplicated work!</span></code></pre>
+      <p style="font-size:1vw;color:var(--muted);">Time: O(2<sup>n</sup>) — exponential!</p>
+    </div>
+    <div>
+      <h3>✅ With memoization</h3>
+      <pre><code><span class="kw">def</span> <span class="fn">fib</span>(n, memo<span class="op">=</span>{}):
+    <span class="kw">if</span> n <span class="kw">in</span> memo:
+        <span class="kw">return</span> memo[n]
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> n
+    memo[n] <span class="op">=</span> <span class="fn">fib</span>(n<span class="op">-</span><span class="num">1</span>, memo) + \
+               <span class="fn">fib</span>(n<span class="op">-</span><span class="num">2</span>, memo)
+    <span class="kw">return</span> memo[n]
+
+<span class="cm"># Each n computed once → O(n) time</span></code></pre>
+      <p style="font-size:1vw;color:var(--muted);">Time: O(n) — linear!</p>
+    </div>
+  </div>
+  <aside class="notes">Draw the recursion tree on a whiteboard to show how fib(3) is called twice in the naive version. The memoization cache eliminates those duplicates.</aside>
+  <div class="progress">4 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:30.8%;"></div></div>
+</section>
+
+<!-- SLIDE 4: Fibonacci Walkthrough -->
+<section class="slide" data-slide="4">
+  <h1>Fibonacci — Step by Step</h1>
+  <p>Follow along. Create <code>fib.py</code> and type each version.</p>
+  <div class="two-col">
+    <div>
+      <h3>Version 1: Naive (test it)</h3>
+      <pre><code><span class="kw">def</span> <span class="fn">fib_naive</span>(n):
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> n
+    <span class="kw">return</span> <span class="fn">fib_naive</span>(n<span class="op">-</span><span class="num">1</span>) + \
+           <span class="fn">fib_naive</span>(n<span class="op">-</span><span class="num">2</span>)
+
+<span class="cm"># Try: fib_naive(10) → 55</span>
+<span class="cm"># Try: fib_naive(40) → wait...</span></code></pre>
+    </div>
+    <div>
+      <h3>Version 2: Memoized</h3>
+      <pre><code><span class="kw">def</span> <span class="fn">fib_memo</span>(n, memo<span class="op">=</span>{}):
+    <span class="kw">if</span> n <span class="kw">in</span> memo:
+        <span class="kw">return</span> memo[n]
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> n
+    memo[n] <span class="op">=</span> <span class="fn">fib_memo</span>(n<span class="op">-</span><span class="num">1</span>, memo) + \
+               <span class="fn">fib_memo</span>(n<span class="op">-</span><span class="num">2</span>, memo)
+    <span class="kw">return</span> memo[n]
+
+<span class="cm"># Try: fib_memo(100) → instant!</span></code></pre>
+    </div>
+  </div>
+  <h3>Version 3: Bottom-up (for comparison)</h3>
+  <pre style="font-size:.9vw;"><code><span class="kw">def</span> <span class="fn">fib_bottom_up</span>(n):
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> n
+    prev2, prev1 <span class="op">=</span> <span class="num">0</span>, <span class="num">1</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, n <span class="op">+</span> <span class="num">1</span>):
+        cur <span class="op">=</span> prev1 <span class="op">+</span> prev2
+        prev2, prev1 <span class="op">=</span> prev1, cur
+    <span class="kw">return</span> prev1
+<span class="cm"># O(1) space — only 2 variables!</span></code></pre>
+  <aside class="notes">Run fib_naive(40) first — it'll take ~30 seconds. Then run fib_memo(100) — instant. The contrast is the whole point of DP.</aside>
+  <div class="progress">5 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:38.5%;"></div></div>
+</section>
+
+<!-- SLIDE 5: Section Break — Climbing Stairs -->
+<section class="slide section-break" data-slide="5">
+  <h2>LeetCode 70: Climbing Stairs</h2>
+  <p>You climb n stairs, taking 1 or 2 steps at a time.<br>How many distinct ways to reach the top?</p>
+  <aside class="notes">Classic "this is Fibonacci in disguise" problem. Most common DP question asked by interviewers.</aside>
+  <div class="progress">6 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:46.2%;"></div></div>
+</section>
+
+<!-- SLIDE 6: Climbing Stairs Walkthrough -->
+<section class="slide" data-slide="6">
+  <h1>Climbing Stairs — Walkthrough</h1>
+  <p><strong>Problem:</strong> You're climbing a staircase with <code>n</code> steps. Each move is +1 or +2. How many distinct ways to reach the top?</p>
+  <div class="two-col">
+    <div>
+      <h3>Think about it:</h3>
+      <ul>
+        <li>To reach step <code>i</code>, you come from <code>i-1</code> (took 1 step) <em>or</em> <code>i-2</code> (took 2 steps)</li>
+        <li>So: <code>ways[i] = ways[i-1] + ways[i-2]</code></li>
+        <li>Base: <code>ways[1] = 1</code>, <code>ways[2] = 2</code></li>
+      </ul>
+      <p style="margin-top:.5em;color:var(--accent);font-size:1.1vw;"><strong>It's Fibonacci!</strong> <code>ways[n] = fib(n+1)</code></p>
+    </div>
+    <div>
+      <h3>Solution:</h3>
+      <pre style="font-size:.95vw;"><code><span class="kw">def</span> <span class="fn">climbStairs</span>(n):
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">2</span>:
+        <span class="kw">return</span> n
+    prev2, prev1 <span class="op">=</span> <span class="num">1</span>, <span class="num">2</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">3</span>, n <span class="op">+</span> <span class="num">1</span>):
+        cur <span class="op">=</span> prev1 <span class="op">+</span> prev2
+        prev2, prev1 <span class="op">=</span> prev1, cur
+    <span class="kw">return</span> prev1</code></pre>
+      <p style="font-size:.9vw;color:var(--muted);">Time: O(n) · Space: O(1)</p>
+    </div>
+  </div>
+  <aside class="notes">Walk through n=3 manually: (1+1+1), (1+2), (2+1) = 3 ways. Then show how the recurrence emerges naturally from the problem statement.</aside>
+  <div class="progress">7 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:53.8%;"></div></div>
+</section>
+
+<!-- SLIDE 7: Climbing Stairs — Visual -->
+<section class="slide" data-slide="7">
+  <h1>Climbing Stairs — Visual</h1>
+  <p>For n = 5, the number of ways follows the Fibonacci pattern:</p>
+  <div style="display:flex;flex-direction:column;gap:.6vw;flex:1;justify-content:center;">
+    <div style="display:flex;align-items:center;gap:1vw;">
+      <code style="min-width:6vw;font-size:1.1vw;color:var(--muted);">n = 1</code>
+      <div style="flex:1;height:2.5vw;display:flex;gap:.3vw;">
+        <div style="flex:1;background:var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85vw;color:#fff;">way 1</div>
+      </div>
+      <code style="font-size:1.1vw;color:var(--accent);font-weight:700;">= 1</code>
+    </div>
+    <div style="display:flex;align-items:center;gap:1vw;">
+      <code style="min-width:6vw;font-size:1.1vw;color:var(--muted);">n = 2</code>
+      <div style="flex:1;height:2.5vw;display:flex;gap:.3vw;">
+        <div style="flex:1;background:var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85vw;color:#fff;">1+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85vw;color:#fff;">2</div>
+      </div>
+      <code style="font-size:1.1vw;color:var(--accent);font-weight:700;">= 2</code>
+    </div>
+    <div style="display:flex;align-items:center;gap:1vw;">
+      <code style="min-width:6vw;font-size:1.1vw;color:var(--muted);">n = 3</code>
+      <div style="flex:1;height:2.5vw;display:flex;gap:.3vw;">
+        <div style="flex:1;background:var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85vw;color:#fff;">1+1+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85vw;color:#fff;">1+2</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85vw;color:#fff;">2+1</div>
+      </div>
+      <code style="font-size:1.1vw;color:var(--accent);font-weight:700;">= 3</code>
+    </div>
+    <div style="display:flex;align-items:center;gap:1vw;">
+      <code style="min-width:6vw;font-size:1.1vw;color:var(--muted);">n = 4</code>
+      <div style="flex:1;height:2.5vw;display:flex;gap:.3vw;">
+        <div style="flex:1;background:var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75vw;color:#fff;">1+1+1+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75vw;color:#fff;">1+1+2</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75vw;color:#fff;">1+2+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75vw;color:#fff;">2+1+1</div>
+        <div style="flex:1;background:var(--accent3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75vw;color:#fff;">2+2</div>
+      </div>
+      <code style="font-size:1.1vw;color:var(--accent);font-weight:700;">= 5</code>
+    </div>
+    <div style="display:flex;align-items:center;gap:1vw;">
+      <code style="min-width:6vw;font-size:1.1vw;color:var(--muted);">n = 5</code>
+      <div style="flex:1;height:2.5vw;display:flex;gap:.2vw;">
+        <div style="flex:1;background:var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">1+1+1+1+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">1+1+1+2</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">1+1+2+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">1+2+1+1</div>
+        <div style="flex:1;background:var(--accent2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">2+1+1+1</div>
+        <div style="flex:1;background:var(--accent3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">1+2+2</div>
+        <div style="flex:1;background:var(--accent3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">2+1+2</div>
+        <div style="flex:1;background:var(--accent3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.65vw;color:#fff;">2+2+1</div>
+      </div>
+      <code style="font-size:1.1vw;color:var(--accent);font-weight:700;">= 8</code>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:1.1vw;margin-top:.5em;">Pattern: <strong>1, 2, 3, 5, 8</strong> — the sequence is <code>ways[n] = ways[n-1] + ways[n-2]</code>.</p>
+  <aside class="notes">The pattern visualization is a lightbulb moment for many learners. Spend a moment here.</aside>
+  <div class="progress">8 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:61.5%;"></div></div>
+</section>
+
+<!-- SLIDE 8: Section Break — House Robber -->
+<section class="slide section-break" data-slide="8">
+  <h2>LeetCode 198: House Robber</h2>
+  <p>Rob houses on a street — can't rob two adjacent houses.<br>Maximize the total loot.</p>
+  <aside class="notes">Still DP but the recurrence is slightly different — shows DP isn't always Fibonacci. The key is deciding whether to rob the current house or skip it.</aside>
+  <div class="progress">9 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:69.2%;"></div></div>
+</section>
+
+<!-- SLIDE 9: House Robber Walkthrough -->
+<section class="slide" data-slide="9">
+  <h1>House Robber — Walkthrough</h1>
+  <p><strong>Problem:</strong> Array <code>nums</code> = money in each house. Can't rob adjacent houses. Maximize total.</p>
+  <div class="two-col">
+    <div>
+      <h3>Recurrence:</h3>
+      <p>At each house <code>i</code>, two choices:</p>
+      <ul>
+        <li><strong>Rob it:</strong> take <code>nums[i] + dp[i-2]</code></li>
+        <li><strong>Skip it:</strong> keep <code>dp[i-1]</code></li>
+      </ul>
+      <pre style="font-size:.95vw;"><code>dp[i] = max(
+    nums[i] + dp[i-2],   <span class="cm"># rob</span>
+    dp[i-1]               <span class="cm"># skip</span>
+)</code></pre>
+    </div>
+    <div>
+      <h3>Example:</h3>
+      <pre style="font-size:.95vw;"><code><span class="cm"># nums = [1, 2, 3, 1]</span>
+<span class="cm"># dp[0] = 1</span>
+<span class="cm"># dp[1] = max(2, 1) = 2</span>
+<span class="cm"># dp[2] = max(3+1, 2) = 4</span>
+<span class="cm"># dp[3] = max(1+2, 4) = 4</span>
+<span class="cm"># → max = 4 (rob houses 1 + 3 != adjacent)</span>
+
+<span class="kw">def</span> <span class="fn">rob</span>(nums):
+    rob, skip <span class="op">=</span> <span class="num">0</span>, <span class="num">0</span>
+    <span class="kw">for</span> n <span class="kw">in</span> nums:
+        new_rob <span class="op">=</span> skip <span class="op">+</span> n
+        skip <span class="op">=</span> <span class="fn">max</span>(rob, skip)
+        rob <span class="op">=</span> new_rob
+    <span class="kw">return</span> <span class="fn">max</span>(rob, skip)</code></pre>
+      <p style="font-size:.9vw;color:var(--muted);">Time: O(n) · Space: O(1)</p>
+    </div>
+  </div>
+  <aside class="notes">Walk through the example manually on a whiteboard. Show that the optimal decision at each house depends on the best up to i-2 and i-1 — that's the DP subproblem structure.</aside>
+  <div class="progress">10 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:76.9%;"></div></div>
+</section>
+
+<!-- SLIDE 10: Practice Exercises -->
+<section class="slide" data-slide="10">
+  <h1>Practice Exercises</h1>
+  <div class="exercise-box">
+    <h3>✏️ Exercise 1: Fibonacci with Cache Limit</h3>
+    <p>Modify <code>fib_memo</code> to accept a <code>max_size</code> parameter. If the memo cache exceeds <code>max_size</code>, fall back to the naive O(2<sup>n</sup>) approach. Test with <code>fib_limit(100, 5)</code> — how slow is it?</p>
+  </div>
+  <div class="exercise-box" style="margin-top:.7em;">
+    <h3>✏️ Exercise 2: Min Cost Climbing Stairs</h3>
+    <p>LeetCode 746. You're given an array <code>cost</code> where <code>cost[i]</code> is the cost to step on stair <code>i</code>. You can start at step 0 or 1 and climb 1 or 2 steps at a time. Find the <strong>minimum</strong> cost to reach the top.</p>
+    <p style="font-size:1vw;color:var(--muted);margin-top:.3em;">Hint: <code>dp[i] = cost[i] + min(dp[i-1], dp[i-2])</code></p>
+  </div>
+  <div class="hint">
+    <p><strong>💡 General DP approach:</strong> 1) Identify the recurrence relation. 2) Solve base cases. 3) Iterate from bottom-up with O(1) space when possible. 4) Test with small examples first.</p>
+  </div>
+  <div style="margin-top:.7em;">
+    <button class="reveal-btn" onclick="toggleReveal(this)">Show Solutions</button>
+    <div class="reveal-content">
+      <pre style="font-size:.85vw;"><code><span class="cm"># Exercise 1: Fib with cache limit</span>
+<span class="kw">def</span> <span class="fn">fib_limit</span>(n, max_size, memo<span class="op">=</span><span class="kw">None</span>):
+    <span class="kw">if</span> memo <span class="kw">is</span> <span class="kw">None</span>:
+        memo <span class="op">=</span> {}
+    <span class="kw">if</span> n <span class="kw">in</span> memo:
+        <span class="kw">return</span> memo[n]
+    <span class="kw">if</span> n <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> n
+    <span class="kw">if</span> <span class="fn">len</span>(memo) <span class="op">&gt;=</span> max_size:
+        <span class="kw">return</span> <span class="fn">fib_naive</span>(n)  <span class="cm"># fall back</span>
+    memo[n] <span class="op">=</span> <span class="fn">fib_limit</span>(n<span class="op">-</span><span class="num">1</span>, max_size, memo) + \
+               <span class="fn">fib_limit</span>(n<span class="op">-</span><span class="num">2</span>, max_size, memo)
+    <span class="kw">return</span> memo[n]
+
+<span class="cm"># Exercise 2: Min Cost Climbing Stairs</span>
+<span class="kw">def</span> <span class="fn">minCostClimbingStairs</span>(cost):
+    n <span class="op">=</span> <span class="fn">len</span>(cost)
+    prev2, prev1 <span class="op">=</span> cost[<span class="num">0</span>], cost[<span class="num">1</span>]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">2</span>, n):
+        cur <span class="op">=</span> cost[i] <span class="op">+</span> <span class="fn">min</span>(prev1, prev2)
+        prev2, prev1 <span class="op">=</span> prev1, cur
+    <span class="kw">return</span> <span class="fn">min</span>(prev1, prev2)</code></pre>
+    </div>
+  </div>
+  <aside class="notes">These exercises extend the concepts just enough: cache limits test understanding of memoization tradeoffs, and Min Cost Stairs is a small variant on Climbing Stairs that changes the recurrence.</aside>
+  <div class="progress">11 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:84.6%;"></div></div>
+</section>
+
+<!-- SLIDE 11: Recap -->
+<section class="slide" data-slide="11">
+  <h1>Key Takeaways</h1>
+  <div class="recap-grid">
+    <div class="recap-card">
+      <span class="num">1</span>
+      <p><strong>Overlapping subproblems</strong> are the key signal to use DP — if the recursion tree re-computes the same inputs, memoize them.</p>
+    </div>
+    <div class="recap-card">
+      <span class="num">2</span>
+      <p><strong>Top-down</strong> (memoization) is easiest to write. <strong>Bottom-up</strong> (tabulation) saves space and avoids recursion limits.</p>
+    </div>
+    <div class="recap-card">
+      <span class="num">3</span>
+      <p>Many DP problems follow <strong>Fibonacci-style</strong> recurrence (Climbing Stairs) or <strong>max-of-two-choices</strong> (House Robber). Recognize the pattern.</p>
+    </div>
+  </div>
+  <aside class="notes">The three takeaways fit on one slide. Ask learners to write them down.</aside>
+  <div class="progress">12 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:92.3%;"></div></div>
+</section>
+
+<!-- SLIDE 12: Next Steps -->
+<section class="slide" data-slide="12">
+  <h1>Next Steps</h1>
+  <div class="two-col">
+    <div>
+      <h3>Today's practice:</h3>
+      <ul>
+        <li>Run <code>fib_memo(100)</code> and verify instant result</li>
+        <li>Solve <strong>LeetCode 70</strong> (Climbing Stairs) without peeking</li>
+        <li>Solve <strong>LeetCode 198</strong> (House Robber) — Easy</li>
+        <li>Bonus: <strong>LeetCode 746</strong> (Min Cost Climbing Stairs)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Coming up this week:</h3>
+      <ul>
+        <li>Day 66 — DP: Maximum Subarray, Kadane's algorithm</li>
+        <li>Day 67 — DP: Coin Change, Longest Increasing Subsequence</li>
+        <li>Day 68 — Mock interview (DP round)</li>
+        <li>Day 69 — Full DP review &amp; mixed practice</li>
+      </ul>
+      <p style="margin-top:1em;font-size:1vw;color:var(--muted);">Phase IV LeetCode streak: Day 10 of 30</p>
+    </div>
+  </div>
+  <aside class="notes">Reminder: the mock interview on Day 68 will be DP-focused. Practice the recurrence patterns between now and then.</aside>
+  <div class="progress">13 / 13</div>
+  <div class="progress-bar"><div class="progress-bar-fill" style="width:100%;"></div></div>
+</section>
+
+</div>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+
+  function getActiveProgress(index) {
+    const slide = slides[index];
+    return {
+      text: slide.querySelector('.progress'),
+      fill: slide.querySelector('.progress-bar-fill')
+    };
+  }
+
+  function showSlide(index) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === index);
+    });
+    current = index;
+    window.location.hash = index;
+  }
+
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (current < totalSlides - 1) showSlide(current + 1);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (current > 0) showSlide(current - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    } else if (e.key === 'n' || e.key === 'N') {
+      toggleNotes();
+    }
+  });
+
+  // Toggle speaker notes
+  function toggleNotes() {
+    const notes = document.querySelectorAll('aside.notes');
+    const shown = notes[0] && notes[0].style.display !== 'none';
+    notes.forEach(n => { n.style.display = shown ? 'none' : 'block'; });
+  }
+
+  // Hash navigation
+  const hash = window.location.hash.replace('#', '');
+  if (hash && !isNaN(hash)) {
+    const idx = parseInt(hash);
+    if (idx >= 0 && idx < totalSlides) showSlide(idx);
+  }
+
+  // Touch support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', function(e) {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && current < totalSlides - 1) showSlide(current + 1);
+      else if (diff < 0 && current > 0) showSlide(current - 1);
+    }
+  });
+
+  // Click navigation on left/right halves
+  document.querySelector('.deck').addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if (x > rect.width * 0.7) {
+      if (current < totalSlides - 1) showSlide(current + 1);
+    } else if (x < rect.width * 0.3) {
+      if (current > 0) showSlide(current - 1);
+    }
+  });
+})();
+
+function toggleReveal(btn) {
+  const content = btn.nextElementSibling;
+  content.classList.toggle('show');
+  btn.textContent = content.classList.contains('show') ? 'Hide Solutions' : 'Show Solutions';
+}
+</script>
+</body>
+</html>
